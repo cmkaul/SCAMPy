@@ -12,8 +12,8 @@ cdef entr_struct entr_detr(double z, double z_half, bint above_cloudbase) nogil:
         _ret.detr_w = 3.0e-3
         _ret.detr_sc= 3.0e-3
     else:
-        _ret.entr_w = vkb/(z + 1.0e-3)
-        _ret.entr_sc = vkb/z_half
+        _ret.entr_sc = vkb/(z + 1.0e-3)
+        _ret.entr_w = vkb/z_half
         _ret.detr_w = 0.0
         _ret.detr_sc = 0.0
 

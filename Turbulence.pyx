@@ -272,7 +272,7 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
     cpdef update(self,GridMeanVariables GMV, CasesBase Case, TimeStepping TS ):
         # Perform the environmental/updraft decomposition
 
-        # self.decompose_environment(GMV, 'values')
+        self.decompose_environment(GMV, 'values')
 
 
         # Solve updraft equations
@@ -283,8 +283,6 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
         self.UpdThermo.buoyancy(self.UpdVar, GMV)
 
         self.compute_entrainment_detrainment()
-
-
 
         self.solve_updraft_velocity(TS)
         self.solve_area_fraction(GMV)
@@ -302,7 +300,7 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
         self.update_GMV_MF(GMV, TS)
 
         # Compute the decomposition based on the updated updraft variables
-        # self.decompose_environment(GMV, 'mf_update')
+        self.decompose_environment(GMV, 'mf_update')
 
         # Compute the eddy diffusion term with the updated environmental values
         ParameterizationBase.compute_eddy_diffusivities_similarity(self,GMV,Case)
