@@ -74,12 +74,6 @@ _ext = Extension('Simulation1d', ['Simulation1d.pyx'], include_dirs=include_path
 extensions.append(_ext)
 
 
-_ext = Extension('Cases', ['Cases.pyx'], include_dirs=include_path,
-                 extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
-                 runtime_library_dirs=library_dirs)
-extensions.append(_ext)
-
-
 _ext = Extension('Variables', ['Variables.pyx'], include_dirs=include_path,
                  extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
                  runtime_library_dirs=library_dirs)
@@ -115,12 +109,24 @@ _ext = Extension('ReferenceState', ['ReferenceState.pyx'], include_dirs=include_
                  runtime_library_dirs=library_dirs)
 extensions.append(_ext)
 
+
+_ext = Extension('Forcing', ['Forcing.pyx'], include_dirs=include_path,
+                 extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
+                 runtime_library_dirs=library_dirs)
+extensions.append(_ext)
+
+
 _ext = Extension('Surface', ['Surface.pyx'], include_dirs=include_path,
                  extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
                  runtime_library_dirs=library_dirs)
 extensions.append(_ext)
 
 _ext = Extension('surface_functions', ['surface_functions.pyx'], include_dirs=include_path,
+                 extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
+                 runtime_library_dirs=library_dirs)
+extensions.append(_ext)
+
+_ext = Extension('Cases', ['Cases.pyx'], include_dirs=include_path,
                  extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
                  runtime_library_dirs=library_dirs)
 extensions.append(_ext)

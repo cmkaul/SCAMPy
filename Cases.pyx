@@ -7,6 +7,7 @@ from Grid cimport Grid
 from Variables cimport GridMeanVariables
 from ReferenceState cimport ReferenceState
 cimport Surface
+cimport Forcing
 from NetCDFIO cimport NetCDFIO_Stats
 from thermodynamic_functions cimport exner_c, t_to_entropy_c, latent_heat, cpm_c, thetali_c
 
@@ -25,6 +26,8 @@ cdef class CasesBase:
     cpdef initialize_profiles(self, Grid Gr, GridMeanVariables GMV, ReferenceState Ref):
         return
     cpdef initialize_surface(self, Grid Gr, ReferenceState Ref ):
+        return
+    cpdef initialize_forcing(self, Grid Gr,  ReferenceState Ref, GridMeanVariables GMV ):
         return
     cpdef initialize_io(self, NetCDFIO_Stats Stats):
         Stats.add_ts('Tsurface')
@@ -46,6 +49,7 @@ cdef class Soares(CasesBase):
     def __init__(self):
         self.casename = 'Soares2004'
         self.Sur = Surface.SurfaceFixedFlux()
+        self.Fo = Forcing.ForcingStandard()
         return
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats):
         Ref.Pg = 1000.0 * 100.0
@@ -108,6 +112,8 @@ cdef class Soares(CasesBase):
         self.Sur.bflux = g * ( 6.0e-2/self.Sur.Tsurface + (eps_vi -1.0)* 2.5e-5)
         self.Sur.initialize()
 
+        return
+    cpdef initialize_forcing(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV):
         return
 
     cpdef initialize_io(self, NetCDFIO_Stats Stats):
@@ -204,6 +210,31 @@ cdef class Bomex(CasesBase):
         self.Sur.bflux = (g * ((8.0e-3 + (eps_vi-1.0)*(299.1 * 5.2e-5  + 22.45e-3 * 8.0e-3)) /(299.1 * (1.0 + (eps_vi-1) * 22.45e-3))))
         self.Sur.initialize()
         return
+    cpdef initialize_forcing(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV):
+        self.Fo.Gr = Gr
+        self.Fo.Ref = Ref
+        self.Fo.initialize(GMV)
+        for k in xrange(Gr.gw, Gr.nzg-Gr.gw):
+            # Set large-scale cooling
+            if Gr.z_half[k] <= 1500.0:
+                self.Fo.dTdt[k] =  (-2.0/(3600 * 24.0))  * exner_c(Ref.p0_half[k])
+            else:
+                self.Fo.dTdt[k] = (-2.0/(3600 * 24.0) + (Gr.z_half[k] - 1500.0)
+                                    * (0.0 - -2.0/(3600 * 24.0)) / (3000.0 - 1500.0)) * exner_c(Ref.p0_half[k])
+            # Set large-scale drying
+            if Gr.z_half[k] <= 300.0:
+                self.Fo.dqtdt[k] = -1.2e-8   #kg/(kg * s)
+            if Gr.z_half[k] > 300.0 and Gr.z_half[k] <= 500.0:
+                self.Fo.dqtdt[k] = -1.2e-8 + (Gr.z_half[k] - 300.0)*(0.0 - -1.2e-8)/(500.0 - 300.0) #kg/(kg * s)
+
+            #Set large scale subsidence
+            if Gr.z_half[k] <= 1500.0:
+                self.Fo.subsidence[k] = 0.0 + Gr.z_half[k]*(-0.65/100.0 - 0.0)/(1500.0 - 0.0)
+            if Gr.z_half[k] > 1500.0 and Gr.z_half[k] <= 2100.0:
+                self.Fo.subsidence[k] = -0.65/100 + (Gr.z_half[k] - 1500.0)* (0.0 - -0.65/100.0)/(2100.0 - 1500.0)
+        return
+
+
     cpdef initialize_io(self, NetCDFIO_Stats Stats):
         CasesBase.initialize_io(self, Stats)
         return
