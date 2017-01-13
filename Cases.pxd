@@ -9,6 +9,7 @@ from NetCDFIO cimport  NetCDFIO_Stats
 cdef class CasesBase:
     cdef:
         str casename
+        str inversion_option
         SurfaceBase Sur
         ForcingBase Fo
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats)
@@ -18,6 +19,7 @@ cdef class CasesBase:
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)
     cpdef update_surface(self, GridMeanVariables GMV)
+    cpdef update_forcing(self, GridMeanVariables GMV)
 
 cdef class Soares(CasesBase):
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats)
@@ -27,6 +29,7 @@ cdef class Soares(CasesBase):
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)
     cpdef update_surface(self, GridMeanVariables GMV)
+    cpdef update_forcing(self, GridMeanVariables GMV)
 
 cdef class Bomex(CasesBase):
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats)
@@ -36,3 +39,4 @@ cdef class Bomex(CasesBase):
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)
     cpdef update_surface(self, GridMeanVariables GMV)
+    cpdef update_forcing(self, GridMeanVariables GMV)

@@ -43,13 +43,16 @@ cdef class CasesBase:
         return
     cpdef update_surface(self, GridMeanVariables GMV):
         return
+    cpdef update_forcing(self, GridMeanVariables GMV):
+        return
 
 
 cdef class Soares(CasesBase):
     def __init__(self):
         self.casename = 'Soares2004'
         self.Sur = Surface.SurfaceFixedFlux()
-        self.Fo = Forcing.ForcingStandard()
+        self.Fo = Forcing.ForcingNone()
+        self.inversion_option = 'thetal_maxgrad'
         return
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats):
         Ref.Pg = 1000.0 * 100.0
@@ -96,8 +99,6 @@ cdef class Soares(CasesBase):
         plt.plot(GMV.QT.values, Gr.z_half)
         plt.show()
 
-
-
         return
 
     cpdef initialize_surface(self, Grid Gr, ReferenceState Ref ):
@@ -126,11 +127,15 @@ cdef class Soares(CasesBase):
     cpdef update_surface(self, GridMeanVariables GMV):
         self.Sur.update(GMV)
         return
+    cpdef update_forcing(self, GridMeanVariables GMV):
+        return
 
 cdef class Bomex(CasesBase):
     def __init__(self):
         self.casename = 'Bomex'
         self.Sur = Surface.SurfaceFixedFlux()
+        self.Fo = Forcing.ForcingStandard()
+        self.inversion_option = 'theta_rho'
         return
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats):
         Ref.Pg = 1.015e5  #Pressure at ground
@@ -245,7 +250,9 @@ cdef class Bomex(CasesBase):
         self.Sur.update(GMV)
         return
 
-
+    cpdef update_forcing(self, GridMeanVariables GMV):
+        self.Fo.update(GMV)
+        return
 
 
 

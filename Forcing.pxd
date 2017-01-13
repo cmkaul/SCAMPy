@@ -13,6 +13,11 @@ cdef class ForcingBase:
     cpdef initialize(self, GridMeanVariables GMV)
     cpdef update(self, GridMeanVariables GMV)
 
+cdef class ForcingNone(ForcingBase):
+    cpdef initialize(self, GridMeanVariables GMV)
+    cpdef update(self, GridMeanVariables GMV)
+
+
 cdef class ForcingStandard(ForcingBase):
     cpdef initialize(self, GridMeanVariables GMV)
     cpdef update(self, GridMeanVariables GMV)

@@ -25,6 +25,16 @@ cdef class ForcingBase:
     cpdef update(self, GridMeanVariables GMV):
         return
 
+cdef class ForcingNone(ForcingBase):
+    def __init__(self):
+        ForcingBase.__init__(self)
+        return
+    cpdef initialize(self, GridMeanVariables GMV):
+        ForcingBase.initialize(self, GMV)
+        return
+    cpdef update(self, GridMeanVariables GMV):
+        return
+
 
 cdef class ForcingStandard(ForcingBase):
     def __init__(self):
@@ -46,7 +56,5 @@ cdef class ForcingStandard(ForcingBase):
             # Apply large-scale subsidence tendencies
             GMV.H.tendencies[k] -= (GMV.H.values[k+1]-GMV.H.values[k]) * self.Gr.dzi * self.subsidence[k]
             GMV.QT.tendencies[k] -= (GMV.QT.values[k+1]-GMV.QT.values[k]) * self.Gr.dzi * self.subsidence[k]
-
-
 
         return

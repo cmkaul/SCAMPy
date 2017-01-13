@@ -61,6 +61,11 @@ _ext = Extension('turbulence_functions', ['turbulence_functions.pyx'], include_d
                  runtime_library_dirs=library_dirs)
 extensions.append(_ext)
 
+_ext = Extension('utility_functions', ['utility_functions.pyx'], include_dirs=include_path,
+                 extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
+                 runtime_library_dirs=library_dirs)
+extensions.append(_ext)
+
 
 _ext = Extension('Grid', ['Grid.pyx'], include_dirs=include_path,
                  extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
@@ -115,11 +120,16 @@ _ext = Extension('Forcing', ['Forcing.pyx'], include_dirs=include_path,
                  runtime_library_dirs=library_dirs)
 extensions.append(_ext)
 
+_ext = Extension('forcing_functions', ['forcing_functions.pyx'], include_dirs=include_path,
+                 extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
+                 runtime_library_dirs=library_dirs)
+extensions.append(_ext)
 
 _ext = Extension('Surface', ['Surface.pyx'], include_dirs=include_path,
                  extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
                  runtime_library_dirs=library_dirs)
 extensions.append(_ext)
+
 
 _ext = Extension('surface_functions', ['surface_functions.pyx'], include_dirs=include_path,
                  extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,

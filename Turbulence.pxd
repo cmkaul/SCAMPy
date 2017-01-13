@@ -21,7 +21,7 @@ cdef class ParameterizationBase:
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)
     cpdef update(self,GridMeanVariables GMV, CasesBase Case, TimeStepping TS )
-    cpdef update_inversion(self, VariableDiagnostic THL)
+    cpdef update_inversion(self, GridMeanVariables GMV, option)
     cpdef compute_wstar(self, CasesBase Case)
     cpdef compute_eddy_diffusivities_similarity(self, GridMeanVariables GMV, CasesBase Case)
 
@@ -57,7 +57,7 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)
     cpdef update(self,GridMeanVariables GMV, CasesBase Case, TimeStepping TS )
-    cpdef update_inversion(self, VariableDiagnostic THL)
+    cpdef update_inversion(self, GridMeanVariables GMV, option)
     cpdef compute_wstar(self, CasesBase Case)
     cpdef decompose_environment(self, GridMeanVariables GMV, whichvals)
     cpdef compute_entrainment_detrainment(self)
@@ -75,7 +75,7 @@ cdef class SimilarityED(ParameterizationBase):
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)
     cpdef update(self,GridMeanVariables GMV, CasesBase Case, TimeStepping TS )
-    cpdef update_inversion(self, VariableDiagnostic THL)
+    cpdef update_inversion(self, GridMeanVariables GMV, option)
     cpdef compute_wstar(self, CasesBase Case)
 
 

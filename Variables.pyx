@@ -175,10 +175,8 @@ cdef class GridMeanVariables:
                 self.H.values[k]  +=  self.H.tendencies[k] * TS.dt
                 self.QT.values[k]  +=  self.QT.tendencies[k] * TS.dt
 
-                self.U.tendencies[k] = 0.0
-                self.V.tendencies[k] = 0.0
-                self.H.tendencies[k] = 0.0
-                self.QT.tendencies[k] = 0.0
+
+        self.zero_tendencies()
 
         self.U.set_bcs(self.Gr)
         self.V.set_bcs(self.Gr)

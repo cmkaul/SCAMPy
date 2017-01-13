@@ -1,0 +1,1 @@
+cdef double interp2pt(double val1, double val2) nogil

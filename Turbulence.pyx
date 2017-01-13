@@ -20,6 +20,7 @@ from TimeStepping cimport TimeStepping
 from NetCDFIO cimport NetCDFIO_Stats
 from thermodynamic_functions cimport  *
 from turbulence_functions cimport *
+from utility_functions cimport interp2pt
 from libc.math cimport fmax, sqrt
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 
@@ -65,24 +66,44 @@ cdef class ParameterizationBase:
             for k in xrange(gw,nzg-gw):
                 GMV.H.tendencies[k] = (GMV.H.new[k] - GMV.H.values[k]) * TS.dti
                 GMV.QT.tendencies[k] = (GMV.QT.new[k] - GMV.QT.values[k]) * TS.dti
-
-
         return
 
     # Update the diagnosis of the inversion height, using the maximum temperature gradient method
-    cpdef update_inversion(self, VariableDiagnostic THL ):
+    cpdef update_inversion(self, GridMeanVariables GMV, option ):
         cdef:
             double maxgrad = 0.0
             double grad
             Py_ssize_t k
-        with nogil:
-            for k in xrange(self.Gr.gw, self.Gr.gw + self.Gr.nz-1):
-                grad =  (THL.values[k+1] - THL.values[k])*self.Gr.dzi
-                if grad > maxgrad:
-                    maxgrad = grad
-                    self.zi = self.Gr.z[k]
+            Py_ssize_t gw = self.Gr.gw
+            double qv = GMV.QT.values[gw] - GMV.QL.values[gw]
+            double theta_rho_surf = theta_rho_c(self.Ref.p0_half[gw], GMV.T.values[gw], GMV.QT.values[gw], qv)
+            double theta_rho_k
 
-        print('inversion height : ', self.zi)
+        if option == 'theta_rho':
+            with nogil:
+                for k in xrange(self.Gr.gw, self.Gr.gw + self.Gr.nz-1):
+                    qv=GMV.QT.values[k] - GMV.QL.values[k]
+                    theta_rho_k = theta_rho_c(self.Ref.p0_half[k], GMV.T.values[k], GMV.QT.values[k], qv)
+                    if theta_rho_k > theta_rho_surf:
+                        self.zi = self.Gr.z_half[k]
+                        break
+        elif option == 'thetal_maxgrad':
+
+            with nogil:
+                for k in xrange(self.Gr.gw, self.Gr.gw + self.Gr.nz-1):
+                    grad =  (GMV.THL.values[k+1] - GMV.THL.values[k])*self.Gr.dzi
+                    if grad > maxgrad:
+                        maxgrad = grad
+                        self.zi = self.Gr.z[k]
+        else:
+            print('INVERSION HEIGHT OPTION NOT RECOGNIZED')
+
+
+        print('Inversion height ', self.zi)
+
+
+
+
         return
 
     cpdef compute_wstar(self, CasesBase Case):
@@ -91,7 +112,7 @@ cdef class ParameterizationBase:
 
     # Compute eddy diffusivities from similarity theory (Siebesma 2007)
     cpdef compute_eddy_diffusivities_similarity(self, GridMeanVariables GMV, CasesBase Case):
-        self.update_inversion(GMV.THL)
+        self.update_inversion(GMV, Case.inversion_option)
         self.compute_wstar(Case)
 
         cdef:
@@ -249,22 +270,22 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
         Stats.write_profile('entrainment_sc', mean_entr_sc[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('detrainment_sc', mean_detr_sc[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
 
-        Stats.write_profile('massflux', np.sum(self.m[:,self.Gr.gw:self.Gr.nzg-self.Gr.gw ], axis=0))
-        Stats.write_profile('massflux_h', self.massflux_h[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
-        Stats.write_profile('massflux_qt', self.massflux_qt[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        Stats.write_profile('massflux', np.sum(self.m[:,self.Gr.gw-1:self.Gr.nzg-self.Gr.gw -1], axis=0))
+        Stats.write_profile('massflux_h', self.massflux_h[self.Gr.gw-1:self.Gr.nzg-self.Gr.gw-1])
+        Stats.write_profile('massflux_qt', self.massflux_qt[self.Gr.gw-1:self.Gr.nzg-self.Gr.gw-1])
 
         Stats.write_profile('massflux_tendency_h', self.massflux_tendency_h[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('massflux_tendency_qt', self.massflux_tendency_qt[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
 
-        Stats.write_profile('diffusive_flux_h', self.diffusive_flux_h[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
-        Stats.write_profile('diffusive_flux_qt', self.diffusive_flux_qt[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        Stats.write_profile('diffusive_flux_h', self.diffusive_flux_h[self.Gr.gw-1:self.Gr.nzg-self.Gr.gw-1])
+        Stats.write_profile('diffusive_flux_qt', self.diffusive_flux_qt[self.Gr.gw-1:self.Gr.nzg-self.Gr.gw-1])
         Stats.write_profile('diffusive_tendency_h', self.diffusive_tendency_h[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('diffusive_tendency_qt', self.diffusive_tendency_qt[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
 
-        Stats.write_profile('total_flux_h', np.add(self.massflux_h[self.Gr.gw:self.Gr.nzg-self.Gr.gw],
-                                                   self.diffusive_flux_h[self.Gr.gw:self.Gr.nzg-self.Gr.gw]))
-        Stats.write_profile('total_flux_qt', np.add(self.massflux_qt[self.Gr.gw:self.Gr.nzg-self.Gr.gw],
-                                                    self.diffusive_flux_qt[self.Gr.gw:self.Gr.nzg-self.Gr.gw]))
+        Stats.write_profile('total_flux_h', np.add(self.massflux_h[self.Gr.gw-1:self.Gr.nzg-self.Gr.gw-1],
+                                                   self.diffusive_flux_h[self.Gr.gw-1:self.Gr.nzg-self.Gr.gw-1]))
+        Stats.write_profile('total_flux_qt', np.add(self.massflux_qt[self.Gr.gw-1:self.Gr.nzg-self.Gr.gw-1],
+                                                    self.diffusive_flux_qt[self.Gr.gw-1:self.Gr.nzg-self.Gr.gw-1]))
 
         return
 
@@ -314,8 +335,8 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
         return
 
 
-    cpdef update_inversion(self, VariableDiagnostic THL ):
-        ParameterizationBase.update_inversion(self, THL)
+    cpdef update_inversion(self,GridMeanVariables GMV, option):
+        ParameterizationBase.update_inversion(self, GMV,option)
         return
 
     cpdef compute_wstar(self, CasesBase Case):
@@ -385,8 +406,7 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
                     self.entr_sc[i,k] = ret.entr_sc
                     self.detr_w[i,k] = ret.detr_w
                     self.detr_sc[i,k] = ret.detr_sc
-                    with gil:
-                        print(k, self.Gr.z_half[k], self.entr_sc[i,k], self.detr_sc[i,k], above_cloudbase)
+
                 above_cloudbase = True
                 for k in xrange(cloud_base_index, self.Gr.nzg):
                     ret = entr_detr(self.Gr.z[k], self.Gr.z_half[k], above_cloudbase)
@@ -394,8 +414,6 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
                     self.entr_sc[i,k] = ret.entr_sc
                     self.detr_w[i,k] = ret.detr_w
                     self.detr_sc[i,k] = ret.detr_sc
-                    with gil:
-                        print(k, self.Gr.z_half[k], self.entr_sc[i,k], self.detr_sc[i,k], above_cloudbase)
 
 
         return
@@ -404,7 +422,7 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
 
     cpdef set_updraft_surface_bc(self, GridMeanVariables GMV, CasesBase Case):
 
-        self.update_inversion(GMV.THL)
+        self.update_inversion(GMV, Case.inversion_option)
         self.compute_wstar(Case)
 
         cdef:
@@ -418,8 +436,7 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
                 self.w_surface_bc[i] = 0.0
                 self.h_surface_bc[i] = GMV.H.values[gw] + 0.3 * Case.Sur.rho_hflux/sqrt(e_srf) * self.Ref.alpha0_half[gw]
                 self.qt_surface_bc[i] = GMV.QT.values[gw] + 0.3 * Case.Sur.rho_qtflux/sqrt(e_srf) * self.Ref.alpha0_half[gw]
-        print("surf mean H, updraft surf H ", GMV.H.values[gw], self.h_surface_bc[0])
-        print("surf mean qt, updraft surf qt ", GMV.QT.values[gw], self.qt_surface_bc[0])
+
         return
 
 
@@ -434,14 +451,14 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
             double dz = self.Gr.dz
             double w2, w
 
-        #
+
         # with nogil:
         #     for i in xrange(self.n_updrafts):
         #         self.UpdVar.W.values[i, self.Gr.gw-1] = self.w_surface_bc[i]
         #         for k in range(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-        #             a = 1.0 + 2.0 * self.entr_w[k]*w_b * dz
-        #             b = -2.0*self.entr_w[k]* w_b * self.EnvVar.W.values[k]
-        #             c = -self.UpdVar.W.values[i,k-1]*self.UpdVar.W.values[i,k-1] - w_a * dz *(self.UpdVar.B.values[i,k+1]+ self.UpdVar.B.values[i,k])
+        #             a = 1.0 + 0.5 * dz * w_b * self.entr_w[i,k]
+        #             b = dz * w_b * self.entr_w[i,k] * self.UpdVar.W.values[i,k-1]
+        #             c = (0.5 * dz * w_b * self.entr_w[i,k] -1.0 ) * self.UpdVar.W.values[i,k-1]*self.UpdVar.W.values[i,k-1] - 2.0  * dz * w_a * self.UpdVar.B.values[i,k]
         #             if b*b - 4.0 *a *c > 0.0:
         #                 self.UpdVar.W.values[i,k] = fmax( (-b + sqrt(b*b-4.0*a*c))/(2.0*a), 0.0)
         #             else:
@@ -449,7 +466,7 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
         #             if self.UpdVar.W.values[i,k] == 0.0:
         #                 self.UpdVar.W.values[i,k+1:]=0.0
         #                 break
-
+        #
 
         with nogil:
             for i in xrange(self.n_updrafts):
@@ -464,6 +481,7 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
                         self.UpdVar.W.values[i,k] = sqrt(w2)
                     else:
                         self.UpdVar.W.values[i,k:] = 0
+                        break
 
 
 
@@ -482,11 +500,9 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
             with nogil:
                 for i in xrange(self.n_updrafts):
                     self.UpdVar.Area.values[i,gw] = self.area_surface_bc[i]
-                    w_mid = 0.5* (self.UpdVar.W.values[i,gw] + self.UpdVar.W.values[i,gw-1])
                     for k in xrange(gw+1, self.Gr.nzg-gw):
-                        # w_low = w_mid
-                        w_mid = 0.5*(self.UpdVar.W.values[i,k]+self.UpdVar.W.values[i,k-1])
-                        if w_mid > 0.0:
+
+                        if self.UpdVar.W.values[i,k] > 0.0:
                             self.UpdVar.Area.values[i,k] = self.area_surface_bc[i]
                         else:
                             # the updraft has terminated so set its area fraction to zero at this height and all heights above
@@ -504,11 +520,11 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
                     for k in xrange(gw+1, self.Gr.nzg-gw):
                         w_low = w_mid
                         w_mid = 0.5*(self.UpdVar.W.values[i,k]+self.UpdVar.W.values[i,k-1])
-                        if w_mid > 0.0:
+                        if self.UpdVar.W.values[i,k] > 0.0:
                             self.UpdVar.Area.values[i,k] = (self.Ref.rho0_half[k-1]*self.UpdVar.Area.values[i,k-1]*w_low/
                                                             (1.0-(self.entr_sc[i,k-1]-self.detr_sc[i,k-1])*dz)/w_mid/self.Ref.rho0_half[k])
                             # # Limit the increase in updraft area when the updraft decelerates
-                            if self.UpdVar.Area.values[i,k] >  self.area_surface_bc[i] and self.UpdVar.QL.values[i,k] >0.0:
+                            if self.UpdVar.Area.values[i,k] >  self.area_surface_bc[i]:
                                 self.detr_sc[i,k-1] = (self.Ref.rho0_half[k-1] * self.UpdVar.Area.values[i,k-1]*w_low/
                                                    (dz * self.area_surface_bc[i] * w_mid * self.Ref.rho0_half[k]) + self.entr_sc[i,k-1] -1.0/dz)
                                 self.detr_w[i,k-1] = self.detr_sc[i,k-1]
@@ -534,6 +550,7 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
             eos_struct sa
             entr_struct ret
 
+
         with nogil:
             for i in xrange(self.n_updrafts):
                 above_cloudbase = False
@@ -550,6 +567,9 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
 
 
                 for k in xrange(gw+1, self.Gr.nzg-gw):
+                    # self.UpdVar.H.values[i,k] = (0.5 * dz* ret.entr_sc* (GMV.H.values[k] + GMV.H.values[k-1] - self.UpdVar.H.values[i,k-1]) + self.UpdVar.H.values[i,k-1])/(1.0 + 0.5*dz*ret.entr_sc)
+                    # self.UpdVar.QT.values[i,k] = (0.5 * dz* ret.entr_sc* (GMV.QT.values[k] + GMV.QT.values[k-1] - self.UpdVar.QT.values[i,k-1]) + self.UpdVar.QT.values[i,k-1])/(1.0 + 0.5*dz*ret.entr_sc)
+
                     self.UpdVar.H.values[i,k] = self.UpdVar.H.values[i,k-1] - ret.entr_sc * dz * (self.UpdVar.H.values[i,k-1]-self.EnvVar.H.values[k-1])
                     self.UpdVar.QT.values[i,k] = self.UpdVar.QT.values[i,k-1] - ret.entr_sc * dz * (self.UpdVar.QT.values[i,k-1]-self.EnvVar.QT.values[k-1])
                     sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[k],
@@ -559,8 +579,6 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
 
                     above_cloudbase = set_cloudbase_flag(sa.ql, above_cloudbase)
                     ret = entr_detr(self.Gr.z[k], self.Gr.z_half[k], above_cloudbase)
-                    with gil:
-                        print(k, self.Gr.z_half[k], sa.ql, above_cloudbase, ret.entr_sc*1000)
 
 
         self.UpdVar.H.set_bcs(self.Gr)
@@ -579,27 +597,39 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
     cpdef update_GMV_MF(self, GridMeanVariables GMV, TimeStepping TS):
         cdef:
             Py_ssize_t k, i
+            Py_ssize_t gw = self.Gr.gw
             double mf_tend_h=0.0, mf_tend_qt=0.0
-            double w_gmv_mid =0.0, w_upd_mid
+            double gmv_h_interp
+            double gmv_qt_interp
         self.massflux_h[:] = 0.0
         self.massflux_qt[:] = 0.0
 
         # Compute the mass flux and associated scalar fluxes
         with nogil:
-            for k in xrange(1, self.Gr.nzg):
-                for i in xrange(self.n_updrafts):
-                    w_upd_mid = (self.UpdVar.W.values[i,k-1] + self.UpdVar.W.values[i,k] ) * 0.5
+            for i in xrange(self.n_updrafts):
+                self.m[i,gw-1] = 0.0
+                for k in xrange(self.Gr.gw, self.Gr.nzg-1):
+                    self.m[i,k] = self.UpdVar.W.values[i,k] * self.Ref.rho0[k] * interp2pt(self.UpdVar.Area.values[i,k],self.UpdVar.Area.values[i,k+1])
 
-                    self.m[i,k] = self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * (w_upd_mid-w_gmv_mid)
-                    self.massflux_h[k] += self.m[i,k]*(self.UpdVar.H.values[i,k]-self.EnvVar.H.values[k])
-                    self.massflux_qt[k] += self.m[i,k]*(self.UpdVar.QT.values[i,k]-self.EnvVar.QT.values[k])
+        self.massflux_h[gw-1] = 0.0
+        self.massflux_qt[gw-1] = 0.0
+        with nogil:
+            for k in xrange(gw, self.Gr.nzg-gw-1):
+                self.massflux_h[k] = 0.0
+                self.massflux_qt[k] = 0.0
+                gmv_h_interp = interp2pt(GMV.H.values[k], GMV.H.values[k+1])
+                gmv_qt_interp = interp2pt(GMV.QT.values[k], GMV.QT.values[k+1])
+                for i in xrange(self.n_updrafts):
+                    self.massflux_h[k] += self.m[i,k] * (interp2pt(self.UpdVar.H.values[i,k], self.UpdVar.H.values[i,k+1]) - gmv_h_interp )
+                    self.massflux_qt[k] += self.m[i,k] * (interp2pt(self.UpdVar.QT.values[i,k], self.UpdVar.QT.values[i,k+1]) - gmv_qt_interp )
 
         # Compute the  mass flux tendencies
         # Adjust the values of the grid mean variables
         with nogil:
-            for k in xrange(1, self.Gr.nzg):
-                mf_tend_h = (self.massflux_h[k] - self.massflux_h[k-1]) * (-self.Ref.alpha0_half[k] * self.Gr.dzi)
-                mf_tend_qt = (self.massflux_qt[k] - self.massflux_qt[k-1]) * (-self.Ref.alpha0_half[k] * self.Gr.dzi)
+
+            for k in xrange(self.Gr.gw, self.Gr.nzg):
+                mf_tend_h = -(self.massflux_h[k] - self.massflux_h[k-1]) * (self.Ref.alpha0_half[k] * self.Gr.dzi)
+                mf_tend_qt = -(self.massflux_qt[k] - self.massflux_qt[k-1]) * (self.Ref.alpha0_half[k] * self.Gr.dzi)
 
                 GMV.H.mf_update[k] = GMV.H.values[k] +  TS.dt * (mf_tend_h + self.UpdMicro.prec_source_h_tot[k])
                 GMV.QT.mf_update[k] = GMV.QT.values[k] + TS.dt * (mf_tend_qt + self.UpdMicro.prec_source_qt_tot[k])
@@ -607,10 +637,12 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
                 # Prepare the output
                 self.massflux_tendency_h[k] = mf_tend_h
                 self.massflux_tendency_qt[k] = mf_tend_qt
-                self.massflux_h[k] = self.massflux_h[k] * self.Ref.alpha0_half[k]
-                self.massflux_qt[k] = self.massflux_qt[k] * self.Ref.alpha0_half[k]
+                # self.massflux_h[k] = self.massflux_h[k] * self.Ref.alpha0_half[k]
+                # self.massflux_qt[k] = self.massflux_qt[k] * self.Ref.alpha0_half[k]
         GMV.H.set_bcs(self.Gr)
         GMV.QT.set_bcs(self.Gr)
+
+
 
 
         return
@@ -644,7 +676,7 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
         # Solve QT
         with nogil:
             for k in xrange(nz):
-                x[k] =  GMV.QT.mf_update[k+gw]  #self.EnvVar.QT.values[k+gw]
+                x[k] =  GMV.QT.mf_update[k+gw] #self.EnvVar.QT.values[k+gw]
             x[0] = x[0] + TS.dt * Case.Sur.rho_qtflux * self.Gr.dzi * self.Ref.alpha0_half[gw]/ae[gw]
         tridiag_solve(self.Gr.nz, &x[0],&a[0], &b[0], &c[0])
 
@@ -658,7 +690,7 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
         # Solve H
         with nogil:
             for k in xrange(nz):
-                x[k] = GMV.H.mf_update[k+gw]  # self.EnvVar.H.values[k+gw]
+                x[k] = GMV.H.mf_update[k+gw]   # self.EnvVar.H.values[k+gw]
             x[0] = x[0] + TS.dt * Case.Sur.rho_hflux * self.Gr.dzi * self.Ref.alpha0_half[gw]/ae[gw]
         tridiag_solve(self.Gr.nz, &x[0],&a[0], &b[0], &c[0])
 
@@ -710,7 +742,6 @@ cdef class SimilarityED(ParameterizationBase):
             double [:] x = np.zeros((nz,),dtype=np.double, order='c')
             double [:] dummy_ae = np.ones((nzg,),dtype=np.double, order='c')
             double [:] rho_K_m = np.zeros((nzg,),dtype=np.double, order='c')
-        print(Case.Sur.rho_qtflux, Case.Sur.rho_hflux)
 
         with nogil:
             for k in xrange(nzg-1):
@@ -749,8 +780,8 @@ cdef class SimilarityED(ParameterizationBase):
 
         return
 
-    cpdef update_inversion(self, VariableDiagnostic THL ):
-        ParameterizationBase.update_inversion(self, THL)
+    cpdef update_inversion(self, GridMeanVariables GMV, option ):
+        ParameterizationBase.update_inversion(self, GMV, option)
         return
 
     cpdef compute_wstar(self, CasesBase Case):
