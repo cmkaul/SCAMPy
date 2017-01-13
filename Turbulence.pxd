@@ -68,6 +68,8 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
     cpdef update_GMV_MF(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef update_GMV_ED(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
 
+    cpdef update_GMV_MF_implicitMF(self, GridMeanVariables GMV, TimeStepping TS)
+    cpdef update_GMV_ED_implicitMF(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
 
 
 cdef class SimilarityED(ParameterizationBase):
