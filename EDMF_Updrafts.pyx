@@ -110,7 +110,7 @@ cdef class UpdraftVariables:
         if self.H.name == 'thetal':
             Stats.add_profile('updraft_thetal')
         else:
-            Stats.add_profile('updraft_thetal')
+            #Stats.add_profile('updraft_thetal')
             Stats.add_profile('updraft_s')
         Stats.add_profile('updraft_temperature')
         Stats.add_profile('updraft_buoyancy')
@@ -161,7 +161,7 @@ cdef class UpdraftVariables:
             Stats.write_profile('updraft_thetal', self.H.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         else:
             Stats.write_profile('updraft_s', self.H.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
-            Stats.write_profile('updraft_thetal', self.THL.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+            #Stats.write_profile('updraft_thetal', self.THL.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('updraft_temperature', self.T.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('updraft_buoyancy', self.B.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
 
