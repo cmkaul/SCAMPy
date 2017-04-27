@@ -47,7 +47,7 @@ cdef class SurfaceFixedFlux(SurfaceBase):
             self.rho_hflux = rho_tflux / exner_c(self.Ref.Pg)
             # GMV.H.tendencies[gw] += self.rho_hflux * tendency_factor
         elif GMV.H.name == 's':
-            self.rho_hflux = entropy_flux(rho_tflux/self.Ref.rho0[gw-1],self.qtflux, self.Ref.p0_half[gw], GMV.T.values[gw], GMV.QT.values[gw])
+            self.rho_hflux = entropy_flux(rho_tflux/self.Ref.rho0[gw-1],self.rho_qtflux/self.Ref.rho0[gw-1], self.Ref.p0_half[gw], GMV.T.values[gw], GMV.QT.values[gw])
             # GMV.H.tendencies[gw] += self.rho_hflux * tendency_factor
 
         cdef:

@@ -150,7 +150,7 @@ cdef class UpdraftVariables:
         if self.H.name == 'thetal':
             Stats.add_profile('updraft_thetal')
         else:
-            Stats.add_profile('updraft_thetal')
+            # Stats.add_profile('updraft_thetal')
             Stats.add_profile('updraft_s')
         Stats.add_profile('updraft_temperature')
         Stats.add_profile('updraft_buoyancy')
