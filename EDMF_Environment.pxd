@@ -19,7 +19,13 @@ cdef class EnvironmentVariables:
         EnvironmentVariable H
         EnvironmentVariable T
         EnvironmentVariable B
+        EnvironmentVariable TKE
+        EnvironmentVariable Hvar
+        EnvironmentVariable QTvar
+        EnvironmentVariable HQTcov
         Grid Gr
+        bint use_tke
+        bint use_scalar_var
 
     cpdef initialize_io(self, NetCDFIO_Stats Stats )
     cpdef io(self, NetCDFIO_Stats Stats)

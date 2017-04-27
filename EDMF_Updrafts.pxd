@@ -6,6 +6,8 @@ from NetCDFIO cimport NetCDFIO_Stats
 cdef class UpdraftVariable:
     cdef:
         double [:,:] values
+        double [:,:] new
+        double [:,:] old
         double [:,:] tendencies
         double [:,:] flux
         double [:] bulkvalues
@@ -26,10 +28,16 @@ cdef class UpdraftVariables:
         UpdraftVariable T
         UpdraftVariable B
         Py_ssize_t n_updrafts
+        bint prognostic
+        double updraft_fraction
+        double updraft_exponent
     cpdef initialize(self, GridMeanVariables GMV)
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)
     cpdef set_means(self, GridMeanVariables GMV)
+    cpdef set_new_with_values(self)
+    cpdef set_old_with_values(self)
+    cpdef set_values_with_new(self)
 
 cdef class UpdraftThermodynamics:
     cdef:

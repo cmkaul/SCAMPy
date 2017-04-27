@@ -8,6 +8,7 @@ import numpy as np
 include "parameters.pxi"
 include "parameters_edmf.pxi"
 from thermodynamic_functions cimport  *
+from utility_functions cimport gaussian_mean
 # eos_struct, eos, t_to_entropy_c, t_to_thetali_c, eos_first_guess_thetal, \
 # eos_first_guess_entropy, alpha_c, buoyancy_c, latent_heat
 
@@ -24,6 +25,8 @@ import pylab as plt
 cdef class UpdraftVariable:
     def __init__(self, nu, nz, loc, kind, name, units):
         self.values = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.old = np.zeros((nu,nz),dtype=np.double, order='c')  # needed for prognostic updrafts
+        self.new = np.zeros((nu,nz),dtype=np.double, order='c') # needed for prognostic updrafts
         self.tendencies = np.zeros((nu,nz),dtype=np.double, order='c')
         self.flux = np.zeros((nu,nz),dtype=np.double, order='c')
         self.bulkvalues = np.zeros((nz,), dtype=np.double, order = 'c')
@@ -82,23 +85,60 @@ cdef class UpdraftVariables:
         self.T = UpdraftVariable(nu, nzg, 'half', 'scalar', 'temperature','K' )
         self.B = UpdraftVariable(nu, nzg, 'half', 'scalar', 'buoyancy','m^2/s^3' )
 
+        if namelist['turbulence']['scheme'] == 'EDMF_PrognosticTKE':
+            self.prognostic = True
+            try:
+                self.updraft_fraction = namelist['turbulence']['EDMF_PrognosticTKE']['updraft_fraction']
+            except:
+                self.updraft_fraction = 0.1
+            try:
+                self.updraft_exponent = namelist['turbulence']['EDMF_PrognosticTKE']['updraft_exponent']
+            except:
+                self.updraft_exponent = 1.0
+        else:
+            self.prognostic = False
+            self.updraft_fraction = 0.1
+            self.updraft_exponent = 1.0
+
         return
 
     cpdef initialize(self, GridMeanVariables GMV):
         cdef:
             Py_ssize_t i,k
+            double res_fac, gaussian_std
+            double limpart_tot = 0.0, limpart_low = 0.0, limpart_upp = 0.0
+            double lower_lim, upper_lim, init_a_u
 
 
-        with nogil:
-            for k in xrange(self.Gr.nzg):
+        if self.prognostic:
+            res_fac = gaussian_mean(0.9, 1.0)
+            with nogil:
                 for i in xrange(self.n_updrafts):
-                    self.W.values[i,k] = 0.0
-                    self.Area.values[i,k] = 0.1
-                    self.QT.values[i,k] = GMV.QT.values[k]
-                    self.QL.values[i,k] = GMV.QL.values[k]
-                    self.H.values[i,k] = GMV.H.values[k]
-                    self.T.values[i,k] = GMV.T.values[k]
-                    self.B.values[i,k] = GMV.B.values[k]
+                    limpart_tot += self.updraft_exponent ** i
+                for i in xrange(self.n_updrafts):
+                    limpart_upp += self.updraft_exponent ** i
+                    lower_lim = 1.0 - self.updraft_fraction * (1.0 - limpart_low/limpart_tot)
+                    upper_lim = 1.0 - self.updraft_fraction * (1.0 - limpart_upp/limpart_tot)
+                    init_a_u  = upper_lim - lower_lim
+                    for k in xrange(self.Gr.nzg):
+                        self.W.values[i,k] = 0.0
+                        self.Area.values[i,k] = init_a_u
+                        self.QT.values[i,k] = GMV.QT.values[k]
+                        self.QL.values[i,k] = GMV.QL.values[k]
+                        self.H.values[i,k] = GMV.H.values[k]
+                        self.T.values[i,k] = GMV.T.values[k]
+                        self.B.values[i,k] = GMV.B.values[k]
+        else:
+            with nogil:
+                for k in xrange(self.Gr.nzg):
+                    for i in xrange(self.n_updrafts):
+                        self.W.values[i,k] = 0.0
+                        self.Area.values[i,k] = 0.1
+                        self.QT.values[i,k] = GMV.QT.values[k]
+                        self.QL.values[i,k] = GMV.QL.values[k]
+                        self.H.values[i,k] = GMV.H.values[k]
+                        self.T.values[i,k] = GMV.T.values[k]
+                        self.B.values[i,k] = GMV.B.values[k]
 
         return
 
@@ -151,6 +191,45 @@ cdef class UpdraftVariables:
                     self.W.bulkvalues[k] = 0.0
 
         return
+    # quick utility to set "new" arrays with values in the "values" arrays
+    cpdef set_new_with_values(self):
+        with nogil:
+            for i in xrange(self.n_updrafts):
+                for k in xrange(self.Gr.nzg):
+                    self.QT.new[i,k] = self.QT.values[i,k]
+                    self.H.new[i,k] = self.H.values[i,k]
+                    self.QL.new[i,k] = self.QL.values[i,k]
+                    self.W.new[i,k] = self.W.values[i,k]
+                    self.Area.new[i,k] = self.Area.values[i,k]
+
+        return
+
+
+    # quick utility to set "new" arrays with values in the "values" arrays
+    cpdef set_old_with_values(self):
+        with nogil:
+            for i in xrange(self.n_updrafts):
+                for k in xrange(self.Gr.nzg):
+                    self.QT.old[i,k] = self.QT.values[i,k]
+                    self.H.old[i,k] = self.H.values[i,k]
+                    self.QL.old[i,k] = self.QL.values[i,k]
+                    self.W.old[i,k] = self.W.values[i,k]
+                    self.Area.old[i,k] = self.Area.values[i,k]
+
+        return
+    # quick utility to set "tmp" arrays with values in the "new" arrays
+    cpdef set_values_with_new(self):
+        with nogil:
+            for i in xrange(self.n_updrafts):
+                for k in xrange(self.Gr.nzg):
+                    self.QT.values[i,k] = self.QT.new[i,k]
+                    self.H.values[i,k] = self.H.new[i,k]
+                    self.QL.values[i,k] = self.QL.new[i,k]
+                    self.W.values[i,k] = self.W.new[i,k]
+                    self.Area.values[i,k] = self.Area.new[i,k]
+
+        return
+
 
     cpdef io(self, NetCDFIO_Stats Stats):
         Stats.write_profile('updraft_area', self.Area.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
@@ -199,7 +278,6 @@ cdef class UpdraftThermodynamics:
         cdef:
             Py_ssize_t k, i
             double alpha, qv
-
 
         with nogil:
             for i in xrange(self.n_updraft):

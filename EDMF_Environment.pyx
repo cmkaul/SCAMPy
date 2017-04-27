@@ -45,7 +45,25 @@ cdef class EnvironmentVariables:
         self.T = EnvironmentVariable( nz, 'half', 'scalar', 'temperature','K' )
         self.B = EnvironmentVariable( nz, 'half', 'scalar', 'buoyancy','m^2/s^3' )
 
-
+        # Determine whether we need 2nd moment variables
+        if  namelist['turbulence']['scheme'] == 'EDMF_PrognosticTKE':
+            self.use_tke = True
+            self.use_scalar_var = True
+        else:
+            self.use_tke = False
+            self.use_scalar_var = True
+        #Now add the 2nd moment variables
+        if self.use_tke:
+            self.TKE = EnvironmentVariable( nz, 'half', 'scalar', 'tke','m^2/s^2' )
+        if self.use_scalar_var:
+            self.QTvar = EnvironmentVariable( nz, 'half', 'scalar', 'qt_var','kg^2/kg^2' )
+            if namelist['thermodynamics']['thermal_variable'] == 'entropy':
+                self.Hvar = EnvironmentVariable(nz, 'half', 'scalar', 's_var', '(J/kg/K)^2')
+                self.HQTcov = EnvironmentVariable(nz, 'half', 'scalar', 's_qt_covar', '(J/kg/K)(kg/kg)' )
+            elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
+                self.Hvar = EnvironmentVariable(nz, 'half', 'scalar', 'thetal_var', 'K^2')
+                self.HQTcov = EnvironmentVariable(nz, 'half', 'scalar', 'thetal_qt_covar', 'K(kg/kg)' )
+        #
         return
 
     cpdef initialize_io(self, NetCDFIO_Stats Stats):

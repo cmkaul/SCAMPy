@@ -44,6 +44,12 @@ cdef class GridMeanVariables:
         VariableDiagnostic THL
         double (*t_to_prog_fp)(double p0, double T,  double qt, double ql, double qi)   nogil
         double (*prog_to_t_fp)(double H, double pd, double pv, double qt ) nogil
+        bint use_tke
+        bint use_scalar_var
+        VariablePrognostic TKE
+        VariablePrognostic QTvar
+        VariablePrognostic Hvar
+        VariablePrognostic HQTcov
     cpdef zero_tendencies(self)
     cpdef update(self, TimeStepping TS)
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
