@@ -305,19 +305,19 @@ cdef class UpdraftMicrophysics:
             Py_ssize_t k, i
             double psat, qsat, lh
 
-        # with nogil:
-        #     for i in xrange(self.n_updraft):
-        #         for k in xrange(self.Gr.nzg):
-        #             lh = latent_heat(UpdVar.T.values[i,k])
-        #             psat = pv_star(UpdVar.T.values[i,k])
-        #             qsat = qv_star_c(self.Ref.p0_half[k], UpdVar.QT.values[i,k], psat)
-        #
-        #             self.prec_source_qt[i,k] = -fmax(0.0, UpdVar.QL.values[i,k] - self.f_prec*qsat )
-        #             self.prec_source_h[i,k] = -self.prec_source_qt[i,k] /exner_c(self.Ref.p0_half[k]) * lh/cpd
-        #
-        #
-        # self.prec_source_h_tot = np.sum(np.multiply(self.prec_source_h,UpdVar.Area.values), axis=0)
-        # self.prec_source_qt_tot = np.sum(np.multiply(self.prec_source_qt,UpdVar.Area.values), axis=0)
+        with nogil:
+            for i in xrange(self.n_updraft):
+                for k in xrange(self.Gr.nzg):
+                    lh = latent_heat(UpdVar.T.values[i,k])
+                    psat = pv_star(UpdVar.T.values[i,k])
+                    qsat = qv_star_c(self.Ref.p0_half[k], UpdVar.QT.values[i,k], psat)
+
+                    self.prec_source_qt[i,k] = -fmax(0.0, UpdVar.QL.values[i,k] - self.f_prec*qsat )
+                    self.prec_source_h[i,k] = -self.prec_source_qt[i,k] /exner_c(self.Ref.p0_half[k]) * lh/cpd
+
+
+        self.prec_source_h_tot = np.sum(np.multiply(self.prec_source_h,UpdVar.Area.values), axis=0)
+        self.prec_source_qt_tot = np.sum(np.multiply(self.prec_source_qt,UpdVar.Area.values), axis=0)
 
         return
 

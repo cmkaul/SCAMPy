@@ -219,6 +219,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         except:
             self.updraft_surface_height = 100.0
             print('Turbulence--EDMF_PrognosticTKE: defaulting to 100 m height for buoyant tail entrainment')
+        try:
+            self.similarity_diffusivity = namelist['turbulence']['EDMF_PrognosticTKE']['use_similarity_diffusivity']
+        except:
+            self.similarity_diffusivity = False
         # Create the updraft variable class (major diagnostic and prognostic variables)
         self.UpdVar = EDMF_Updrafts.UpdraftVariables(self.n_updrafts, namelist, Gr)
         # Create the class for updraft thermodynamics
@@ -376,29 +380,18 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         self.update_inversion(GMV, Case.inversion_option)
         self.compute_wstar(Case)
-        ParameterizationBase.compute_eddy_diffusivities_similarity(self,GMV,Case)
         # Perform the environmental/updraft decomposition
         self.decompose_environment(GMV, 'values')
 
         self.compute_prognostic_updrafts(GMV, Case, TS)
-
-
-        # Compute the updraft microphysical sources--Here trying something different from Zhihong and integrating the
-        # dynamic updraft equations upward, then applying precipitation adjustment instead of Zhihong's level-by-level
-        # integrate/precipitate, integrate/precipitate approach
-        self.UpdMicro.compute_sources(self.UpdVar)
-
-        # Update updraft variables with microphysical source tendencies
-        self.UpdMicro.update_updraftvars(self.UpdVar)
-
-        # Update GMV.mf_update with mass-flux tendencies and updraft source terms
+        self.decompose_environment(GMV, 'values')
         self.update_GMV_MF(GMV, TS)
-
-        # Compute the decomposition based on the updated updraft variables
         self.decompose_environment(GMV, 'mf_update')
+        self.compute_eddy_diffusivities_tke(GMV, Case)
 
-        # Compute the eddy diffusion term with the updated environmental values
         self.update_GMV_ED(GMV, Case, TS)
+
+
 
 
 
@@ -412,10 +405,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         # self.set_updraft_surface_bc(GMV, Case)
         cdef:
             Py_ssize_t iter_
-
-        self.decompose_environment(GMV, 'values')
-        self.update_inversion(GMV, Case.inversion_option)
-        self.compute_wstar(Case)
 
         self.UpdVar.set_new_with_values()
         self.UpdVar.set_old_with_values()
@@ -432,16 +421,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
 
         self.UpdVar.set_values_with_new()
-        self.decompose_environment(GMV, 'values')
-
-        self.update_GMV_MF(GMV, TS)
-
-
-
-
-
-
-
 
         return
 
@@ -454,6 +433,34 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef compute_wstar(self, CasesBase Case):
         ParameterizationBase.compute_wstar(self,Case)
         return
+
+    cpdef compute_eddy_diffusivities_tke(self, GridMeanVariables GMV, CasesBase Case):
+        cdef:
+            Py_ssize_t k
+            Py_ssize_t gw = self.Gr.gw
+            double tau = 0.5 * self.zi / self.wstar
+            double l1, l2, lm
+            double l_ob, z_
+        if self.similarity_diffusivity:
+            ParameterizationBase.compute_eddy_diffusivities_similarity(self,GMV, Case)
+        else:
+            for k in xrange(gw, self.Gr.nzg-gw):
+                l1 = tau * sqrt(self.EnvVar.TKE.values[k])
+                z_ = self.Gr.z_half[k]
+                l_ob = Case.Sur.obukhov_length
+                if l_ob < 0.0: #unstable
+                    l2 = vkb * z_ * ( (1.0 - 100.0 * z_/l_ob)**0.2 )
+                elif l_ob > 0.0: #stable
+                    l2 = vkb * z_ /  (1. + 2.7 *z_/l_ob)
+                else:
+                    l2 = vkb * z_
+                lm = 1.0/(1.0/l1 + 1.0/l2)
+                self.KH.values[k] = 0.25 * lm * sqrt(self.EnvVar.TKE.values[k])
+                self.KM.values[k] = self.KH.values[k]/3.0
+
+        return
+
+
 
     # Find values of environmental variables by subtracting updraft values from grid mean values
     # whichvals used to check which substep we are on--correspondingly use 'GMV.SomeVar.value' (last timestep value)
@@ -797,7 +804,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     else:
                         self.UpdVar.H.new[i,k] = self.EnvVar.H.values[k]
                         self.UpdVar.QT.new[i,k] = self.EnvVar.QT.values[k]
-
+                    sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[k],
+                             self.UpdVar.QT.values[i,k], self.UpdVar.H.values[i,k])
+                    self.UpdVar.QL.values[i,k] = sa.ql
+                    self.UpdVar.T.values[i,k] = sa.T
 
         self.UpdVar.H.set_bcs(self.Gr)
         self.UpdVar.QT.set_bcs(self.Gr)
@@ -849,8 +859,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 mf_tend_h = -(self.massflux_h[k] - self.massflux_h[k-1]) * (self.Ref.alpha0_half[k] * self.Gr.dzi)
                 mf_tend_qt = -(self.massflux_qt[k] - self.massflux_qt[k-1]) * (self.Ref.alpha0_half[k] * self.Gr.dzi)
 
-                GMV.H.mf_update[k] = GMV.H.values[k] +  TS.dt * (mf_tend_h + self.UpdMicro.prec_source_h_tot[k])
-                GMV.QT.mf_update[k] = GMV.QT.values[k] + TS.dt * (mf_tend_qt + self.UpdMicro.prec_source_qt_tot[k])
+                GMV.H.mf_update[k] = GMV.H.values[k] +  TS.dt * mf_tend_h + self.UpdMicro.prec_source_h_tot[k]
+                GMV.QT.mf_update[k] = GMV.QT.values[k] + TS.dt * mf_tend_qt + self.UpdMicro.prec_source_qt_tot[k]
 
                 # Prepare the output
                 self.massflux_tendency_h[k] = mf_tend_h
@@ -860,8 +870,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         GMV.H.set_bcs(self.Gr)
         GMV.QT.set_bcs(self.Gr)
 
-
-
+        GMV.satadjust()
 
         return
 
@@ -904,8 +913,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 mf_tend_h = -(self.massflux_h[k] - self.massflux_h[k-1]) * (self.Ref.alpha0_half[k] * self.Gr.dzi)
                 mf_tend_qt = -(self.massflux_qt[k] - self.massflux_qt[k-1]) * (self.Ref.alpha0_half[k] * self.Gr.dzi)
 
-                GMV.H.mf_update[k] = GMV.H.values[k] +  TS.dt * (mf_tend_h + self.UpdMicro.prec_source_h_tot[k])
-                GMV.QT.mf_update[k] = GMV.QT.values[k] + TS.dt * (mf_tend_qt + self.UpdMicro.prec_source_qt_tot[k])
+                GMV.H.mf_update[k] = GMV.H.values[k] +  TS.dt * mf_tend_h + self.UpdMicro.prec_source_h_tot[k]
+                GMV.QT.mf_update[k] = GMV.QT.values[k] + TS.dt * mf_tend_qt + self.UpdMicro.prec_source_qt_tot[k]
 
                 # Prepare the output
                 self.massflux_tendency_h[k] = mf_tend_h
@@ -1044,6 +1053,10 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
     def __init__(self, namelist, Grid Gr, ReferenceState Ref):
         # Initialize the base parameterization class
         ParameterizationBase.__init__(self,  Gr, Ref)
+        try:
+            self.dt = namelist['time_stepping']['dt']
+        except:
+            self.dt = 1.0
         # Set the number of updrafts (1)
         try:
             self.n_updrafts = namelist['turbulence']['EDMF_BulkSteady']['updraft_number']
@@ -1064,8 +1077,11 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
         try:
             if namelist['turbulence']['EDMF_BulkSteady']['entrainment'] == 'cloudy':
                 self.entr_detr_fp = entr_detr_cloudy
-            elif namelist['tubulence']['EDMF_BulkSteady']['entrainment'] == 'dry':
+            elif namelist['turbulence']['EDMF_BulkSteady']['entrainment'] == 'dry':
                 self.entr_detr_fp = entr_detr_dry
+            elif namelist['turbulence']['EDMF_BulkSteady']['entrainment'] == 'inverse_z':
+                self.entr_detr_fp = entr_detr_inverse_z
+
             else:
                 print('Turbulence--EDMF_BulkSteady: Entrainment rate namelist option is not recognized')
         except:
@@ -1150,6 +1166,9 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
         Stats.add_profile('total_flux_h')
         Stats.add_profile('total_flux_qt')
 
+        Stats.add_profile('precip_source_h')
+        Stats.add_profile('precip_source_qt')
+
         return
 
     cpdef io(self, NetCDFIO_Stats Stats):
@@ -1197,6 +1216,9 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
                                                    self.diffusive_flux_h[self.Gr.gw-1:self.Gr.nzg-self.Gr.gw-1]))
         Stats.write_profile('total_flux_qt', np.add(self.massflux_qt[self.Gr.gw-1:self.Gr.nzg-self.Gr.gw-1],
                                                     self.diffusive_flux_qt[self.Gr.gw-1:self.Gr.nzg-self.Gr.gw-1]))
+
+        Stats.write_profile('precip_source_h', np.divide(self.UpdMicro.prec_source_h_tot[self.Gr.gw:self.Gr.nzg-self.Gr.gw],self.dt))
+        Stats.write_profile('precip_source_qt', np.divide(self.UpdMicro.prec_source_qt_tot[self.Gr.gw:self.Gr.nzg-self.Gr.gw],self.dt))
 
         return
 
@@ -1541,8 +1563,8 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
                 mf_tend_h = -(self.massflux_h[k] - self.massflux_h[k-1]) * (self.Ref.alpha0_half[k] * self.Gr.dzi)
                 mf_tend_qt = -(self.massflux_qt[k] - self.massflux_qt[k-1]) * (self.Ref.alpha0_half[k] * self.Gr.dzi)
 
-                GMV.H.mf_update[k] = GMV.H.values[k] +  TS.dt * (mf_tend_h + self.UpdMicro.prec_source_h_tot[k])
-                GMV.QT.mf_update[k] = GMV.QT.values[k] + TS.dt * (mf_tend_qt + self.UpdMicro.prec_source_qt_tot[k])
+                GMV.H.mf_update[k] = GMV.H.values[k] +  TS.dt * mf_tend_h + self.UpdMicro.prec_source_h_tot[k]
+                GMV.QT.mf_update[k] = GMV.QT.values[k] + TS.dt * mf_tend_qt + self.UpdMicro.prec_source_qt_tot[k]
 
                 # Prepare the output
                 self.massflux_tendency_h[k] = mf_tend_h
@@ -1596,8 +1618,8 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
                 mf_tend_h = -(self.massflux_h[k] - self.massflux_h[k-1]) * (self.Ref.alpha0_half[k] * self.Gr.dzi)
                 mf_tend_qt = -(self.massflux_qt[k] - self.massflux_qt[k-1]) * (self.Ref.alpha0_half[k] * self.Gr.dzi)
 
-                GMV.H.mf_update[k] = GMV.H.values[k] +  TS.dt * (mf_tend_h + self.UpdMicro.prec_source_h_tot[k])
-                GMV.QT.mf_update[k] = GMV.QT.values[k] + TS.dt * (mf_tend_qt + self.UpdMicro.prec_source_qt_tot[k])
+                GMV.H.mf_update[k] = GMV.H.values[k] +  TS.dt * mf_tend_h + self.UpdMicro.prec_source_h_tot[k]
+                GMV.QT.mf_update[k] = GMV.QT.values[k] + TS.dt * mf_tend_qt + self.UpdMicro.prec_source_qt_tot[k]
 
                 # Prepare the output
                 self.massflux_tendency_h[k] = mf_tend_h

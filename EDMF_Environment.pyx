@@ -8,12 +8,14 @@ import numpy as np
 include "parameters.pxi"
 import cython
 from Grid cimport  Grid
-
+from ReferenceState cimport ReferenceState
+from Variables cimport VariableDiagnostic
+from libc.math cimport fmax, fmin, sqrt, exp
+from thermodynamic_functions cimport  *
 
 cdef class EnvironmentVariable:
     def __init__(self, nz, loc, kind, name, units):
         self.values = np.zeros((nz,),dtype=np.double, order='c')
-        self.tendencies = np.zeros((nz,),dtype=np.double, order='c')
         self.flux = np.zeros((nz,),dtype=np.double, order='c')
         if loc != 'half' and loc != 'full':
             print('Invalid location setting for variable! Must be half or full')
@@ -44,6 +46,7 @@ cdef class EnvironmentVariables:
 
         self.T = EnvironmentVariable( nz, 'half', 'scalar', 'temperature','K' )
         self.B = EnvironmentVariable( nz, 'half', 'scalar', 'buoyancy','m^2/s^3' )
+        self.CF = EnvironmentVariable(nz, 'half', 'scalar','cloud_fraction', '-')
 
         # Determine whether we need 2nd moment variables
         if  namelist['turbulence']['scheme'] == 'EDMF_PrognosticTKE':
@@ -90,4 +93,83 @@ cdef class EnvironmentVariables:
         Stats.write_profile('env_temperature', self.T.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         return
 
+cdef class EnvironmentThermodynamics:
+    def __init__(self, namelist, Grid Gr, ReferenceState Ref, EnvironmentVariables EnvVar):
+        self.Gr = Gr
+        self.Ref = Ref
+        try:
+            self.quadrature_order = namelist['condensation']['quadrature_order']
+        except:
+            self.quadrature_order = 5
+        if EnvVar.H.name == 's':
+            self.t_to_prog_fp = t_to_entropy_c
+            self.prog_to_t_fp = eos_first_guess_entropy
+        elif EnvVar.H.name == 'thetal':
+            self.t_to_prog_fp = t_to_thetali_c
+            self.prog_to_t_fp = eos_first_guess_thetal
 
+
+        return
+
+
+
+    cdef void eos_update_SA_sgs(self, EnvironmentVariables EnvVar, VariableDiagnostic GMV_B):
+
+        a, w = np.polynomial.hermite.hermgauss(self.quadrature_order)
+        cdef:
+            Py_ssize_t gw = self.Gr.gw
+            Py_ssize_t k, m_q, m_h
+            double [:] abscissas = a
+            double [:] weights = w
+            double  outer_int_ql, outer_int_T, outer_int_alpha, outer_int_cf
+            double  inner_int_ql, inner_int_T, inner_int_alpha, inner_int_cf
+            double h_hat, qt_hat, sd_h, sd_q, corr, mu_h_star, sigma_h_star, qt_var
+            double sqpi_inv = 1.0/sqrt(pi)
+            double temp_m, alpha_m, qv_m, ql_m, qi_m
+            double sqrt2 = sqrt(2.0)
+            double sd_q_lim
+            eos_struct sa
+
+
+        with nogil:
+            for k in xrange(gw, self.Gr.nzg-gw):
+                sd_q = sqrt(EnvVar.QTvar.values[k])
+                sd_h = sqrt(EnvVar.Hvar.values[k])
+                corr = fmax(fmin(EnvVar.HQTcov.values[k]/fmax(sd_h*sd_q, 1e-13),1.0),-1.0)
+                # limit sd_q to prevent negative qt_hat
+                sd_q_lim = (1e-10 - EnvVar.QT.values[k])/(sqrt2 * abscissas[0])
+                sd_q = fmin(sd_q, sd_q_lim)
+                qt_var = sd_q * sd_q
+                sigma_h_star = sqrt(fmax(1.0-corr*corr,0.0)) * sd_h
+                outer_int_alpha = 0.0
+                outer_int_T = 0.0
+                outer_int_ql = 0.0
+                outer_int_cf = 0.0
+                for m_q in xrange(self.quadrature_order):
+                    qt_hat    = EnvVar.QT.values[k] + sqrt2 * sd_q * abscissas[m_q]
+                    mu_h_star = EnvVar.H.values[k]  + sqrt2 * corr * sd_h * abscissas[m_q]
+                    inner_int_T     = 0.0
+                    inner_int_ql    = 0.0
+                    inner_int_alpha = 0.0
+                    inner_int_cf    = 0.0
+                    for m_h in xrange(self.quadrature_order):
+                        h_hat = sqrt2 * sigma_h_star * abscissas[m_h] + mu_h_star
+                        sa = eos(self.t_to_prog_fp,self.prog_to_t_fp, self.Ref.p0_half[k], EnvVar.QT.values[k], EnvVar.H.values[k])
+                        temp_m = sa.T
+                        ql_m = sa.ql
+                        qv_m = EnvVar.QT.values[k] - ql_m
+                        alpha_m = alpha_c(self.Ref.p0_half[k], temp_m, qt_hat, qv_m)
+                        inner_int_ql    += ql_m    * weights[m_h] * sqpi_inv
+                        inner_int_T     += temp_m  * weights[m_h] * sqpi_inv
+                        inner_int_alpha += alpha_m * weights[m_h] * sqpi_inv
+                        if ql_m  > ql_threshold:
+                            inner_int_cf += weights[m_h] * sqpi_inv
+                    outer_int_ql    += inner_int_ql    * weights[m_q] * sqpi_inv
+                    outer_int_T     += inner_int_T     * weights[m_q] * sqpi_inv
+                    outer_int_alpha += inner_int_alpha * weights[m_q] * sqpi_inv
+                    outer_int_cf    += inner_int_cf    * weights[m_q] * sqpi_inv
+                EnvVar.QL.values[k]    = outer_int_ql
+                EnvVar.B.values[k] = g * (outer_int_alpha - self.Ref.alpha0_half[k])/self.Ref.alpha0_half[k] - GMV_B.values[k]
+                EnvVar.T.values[k]  = outer_int_T
+                EnvVar.CF.values[k]    = outer_int_cf
+        return

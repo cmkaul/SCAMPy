@@ -42,43 +42,25 @@ cdef class SurfaceFixedFlux(SurfaceBase):
 
         self.rho_qtflux = self.lhf/(latent_heat(self.Tsurface))
 
-        # GMV.QT.tendencies[gw] += self.qtflux * tendency_factor
+
         if GMV.H.name == 'thetal':
             self.rho_hflux = rho_tflux / exner_c(self.Ref.Pg)
-            # GMV.H.tendencies[gw] += self.rho_hflux * tendency_factor
         elif GMV.H.name == 's':
             self.rho_hflux = entropy_flux(rho_tflux/self.Ref.rho0[gw-1],self.rho_qtflux/self.Ref.rho0[gw-1], self.Ref.p0_half[gw], GMV.T.values[gw], GMV.QT.values[gw])
-            # GMV.H.tendencies[gw] += self.rho_hflux * tendency_factor
 
         cdef:
             double windspeed = np.maximum(np.sqrt(GMV.U.values[gw]*GMV.U.values[gw] + GMV.V.values[gw] * GMV.V.values[gw]), 0.01)
+            double cp_ = cpm_c(GMV.QT.values[gw])
+            double lv = latent_heat(GMV.T.values[gw])
 
-
+        self.b_flux = (g * self.Ref.alpha0_half[gw]/cp_/GMV.T.values[gw]
+                       * (self.shf + (eps_vi-1.0) * cp_ * GMV.T.values[gw] * self.lhf /lv))
         if not self.ustar_fixed:
             self.ustar = compute_ustar(windspeed, self.bflux, self.zrough, self.Gr.z_half[gw])
 
-        # GMV.U.tendencies[gw] -= self.ustar * self.ustar/windspeed * GMV.U.values[gw] * tendency_factor
-        # GMV.V.tendencies[gw] -= self.ustar * self.ustar/windspeed * GMV.V.values[gw] * tendency_factor
-
+        self.obukhov_length = -self.ustar *self.ustar *self.ustar /self.b_flux /vkb
 
         return
 
-
-
-
-
-# cdef class SurfaceMom:
-#     def __init__(self,namelist):
-#         try:
-#             self.ustar = namelist['surface']['ustar']
-#         except:
-#             self.ustar = 0.0
-#         return
-#     cpdef update(self, Variables.):
-#         cdef double windspeed = np.maximum(np.sqrt(PV.u[0]*PV.u[0] + PV.v[0] *PV.v[0]), 0.01)
-#         self.u_flux = -self.ustar * self.ustar/windspeed * PV.u[0]
-#         self.v_flux = -self.ustar * self.ustar/windspeed * PV.v[0]
-#
-#         return
 
 

@@ -78,6 +78,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef compute_prognostic_updrafts(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
     cpdef update_inversion(self, GridMeanVariables GMV, option)
     cpdef compute_wstar(self, CasesBase Case)
+    cpdef compute_eddy_diffusivities_tke(self, GridMeanVariables GMV, CasesBase Case)
     cpdef decompose_environment(self, GridMeanVariables GMV, whichvals)
     cpdef compute_entrainment_detrainment(self)
     cpdef set_updraft_surface_bc(self, GridMeanVariables GMV, CasesBase Case)
@@ -98,6 +99,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
 cdef class EDMF_BulkSteady(ParameterizationBase):
     cdef:
+        double dt
         Py_ssize_t n_updrafts
         EDMF_Updrafts.UpdraftVariables UpdVar
         EDMF_Updrafts.UpdraftMicrophysics UpdMicro
