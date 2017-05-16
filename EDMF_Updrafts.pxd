@@ -25,6 +25,7 @@ cdef class UpdraftVariables:
         UpdraftVariable QT
         UpdraftVariable QL
         UpdraftVariable H
+        UpdraftVariable THL
         UpdraftVariable T
         UpdraftVariable B
         Py_ssize_t n_updrafts
@@ -55,10 +56,12 @@ cdef class UpdraftMicrophysics:
         Grid.Grid Gr
         ReferenceState.ReferenceState Ref
         Py_ssize_t n_updraft
-        double f_prec
         double [:,:] prec_source_h
         double [:,:] prec_source_qt
         double [:]  prec_source_h_tot
         double [:] prec_source_qt_tot
+        double max_supersaturation
+        void compute_update_combined_local_thetal(self, double p0, double t, double *qt, double *ql, double *h,
+                                                   Py_ssize_t i, Py_ssize_t k) nogil
     cpdef compute_sources(self, UpdraftVariables UpdVar)
     cpdef update_updraftvars(self, UpdraftVariables UpdVar)

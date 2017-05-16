@@ -6,7 +6,6 @@
 
 import numpy as np
 include "parameters.pxi"
-include "parameters_edmf.pxi"
 from thermodynamic_functions cimport  *
 from utility_functions cimport gaussian_mean
 # eos_struct, eos, t_to_entropy_c, t_to_thetali_c, eos_first_guess_thetal, \
@@ -82,6 +81,7 @@ cdef class UpdraftVariables:
         elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
             self.H = UpdraftVariable(nu, nzg, 'half', 'scalar', 'thetal','K' )
 
+        self.THL = UpdraftVariable(nu, nzg, 'half', 'scalar', 'thetal', 'K')
         self.T = UpdraftVariable(nu, nzg, 'half', 'scalar', 'temperature','K' )
         self.B = UpdraftVariable(nu, nzg, 'half', 'scalar', 'buoyancy','m^2/s^3' )
 
@@ -184,10 +184,10 @@ cdef class UpdraftVariables:
                                             /(self.Area.bulkvalues[k] + self.Area.bulkvalues[k+1]))
                 else:
                     self.QT.bulkvalues[k] = GMV.QT.values[k]
-                    self.QL.bulkvalues[k] = GMV.QL.values[k]
+                    self.QL.bulkvalues[k] = 0.0
                     self.H.bulkvalues[k] = GMV.H.values[k]
                     self.T.bulkvalues[k] = GMV.T.values[k]
-                    self.B.bulkvalues[k] = GMV.B.values[k]
+                    self.B.bulkvalues[k] = 0.0
                     self.W.bulkvalues[k] = 0.0
 
         return
@@ -290,11 +290,11 @@ cdef class UpdraftThermodynamics:
 
 
 cdef class UpdraftMicrophysics:
-    def __init__(self, n_updraft, Grid.Grid Gr, ReferenceState.ReferenceState Ref):
+    def __init__(self, paramlist, n_updraft, Grid.Grid Gr, ReferenceState.ReferenceState Ref):
         self.Gr = Gr
         self.Ref = Ref
         self.n_updraft = n_updraft
-        self.f_prec = 0.02 # precipitation conversion fraction
+        self.max_supersaturation = paramlist['turbulence']['updraft_microphysics']['max_supersaturation']
         self.prec_source_h = np.zeros((n_updraft, Gr.nzg), dtype=np.double, order='c')
         self.prec_source_qt = np.zeros((n_updraft, Gr.nzg), dtype=np.double, order='c')
         self.prec_source_h_tot = np.zeros((Gr.nzg,), dtype=np.double, order='c')
@@ -305,6 +305,7 @@ cdef class UpdraftMicrophysics:
             Py_ssize_t k, i
             double psat, qsat, lh
 
+
         with nogil:
             for i in xrange(self.n_updraft):
                 for k in xrange(self.Gr.nzg):
@@ -312,7 +313,7 @@ cdef class UpdraftMicrophysics:
                     psat = pv_star(UpdVar.T.values[i,k])
                     qsat = qv_star_c(self.Ref.p0_half[k], UpdVar.QT.values[i,k], psat)
 
-                    self.prec_source_qt[i,k] = -fmax(0.0, UpdVar.QL.values[i,k] - self.f_prec*qsat )
+                    self.prec_source_qt[i,k] = -fmax(0.0, UpdVar.QL.values[i,k] - self.max_supersaturation*qsat )
                     self.prec_source_h[i,k] = -self.prec_source_qt[i,k] /exner_c(self.Ref.p0_half[k]) * lh/cpd
 
 
@@ -329,30 +330,27 @@ cdef class UpdraftMicrophysics:
             for i in xrange(self.n_updraft):
                 for k in xrange(self.Gr.nzg):
                     UpdVar.QT.values[i,k] += self.prec_source_qt[i,k]
+                    UpdVar.QL.values[i,k] += self.prec_source_qt[i,k]
                     UpdVar.H.values[i,k] += self.prec_source_h[i,k]
 
         return
 
+    cdef void compute_update_combined_local_thetal(self, double p0, double t, double *qt, double *ql, double *h,
+                                                   Py_ssize_t i, Py_ssize_t k) nogil:
+        cdef:
+            double psat, qsat, lh
+        # Language note: array indexing must be used to dereference pointers in Cython. * notation (C-style dereferencing)
+        # is reserved for packing tuples
+        lh = latent_heat(t)
+        psat = pv_star(t)
+        qsat = qv_star_c(p0, qt[0], psat)
+        self.prec_source_qt[i,k] = -fmax(0.0, ql[0] - self.max_supersaturation*qsat )
+        self.prec_source_h[i,k] = -self.prec_source_qt[i,k] /exner_c(p0) * lh/cpd
+        qt[0] += self.prec_source_qt[i,k]
+        ql[0] += self.prec_source_qt[i,k]
+        h[0] += self.prec_source_h[i,k]
 
 
 
 
-
-
-
-
-# Functions
-cdef inline double entr_inverse_z(double z_):
-    return entr_c1/z_
-
-
-
-
-
-
-
-
-
-
-
-
+        return

@@ -18,6 +18,7 @@ cdef class ParameterizationBase:
         VariableDiagnostic KM
         VariableDiagnostic KH
         double wstar
+        double prandtl_number
     cpdef initialize(self, GridMeanVariables GMV)
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)
@@ -34,9 +35,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         EDMF_Updrafts.UpdraftMicrophysics UpdMicro
         EDMF_Updrafts.UpdraftThermodynamics UpdThermo
         EDMF_Environment.EnvironmentVariables EnvVar
+        EDMF_Environment.EnvironmentThermodynamics EnvThermo
         Py_ssize_t updraft_iterations
-        entr_struct (*entr_detr_fp) (double z, double z_half, bint above_cloudbase, double zi) nogil
+        entr_struct (*entr_detr_fp) (double z, double z_half, double zi) nogil
         bint const_area
+        bint use_local_micro
         double surface_area
         double [:,:] entr_w
         double [:,:] entr_sc
@@ -60,6 +63,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double [:] diffusive_flux_qt
         double [:] diffusive_tendency_h
         double [:] diffusive_tendency_qt
+        double [:] mixing_length
+        double [:] tke_bflux
+        double [:] tke_dissipation
+        double [:] tke_entr_loss
+        double [:] tke_detr_gain
         Py_ssize_t wu_option
         double updraft_fraction
         double updraft_exponent
@@ -70,6 +78,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         Py_ssize_t au_optB_srf
         double au_optB1_frac
         double updraft_surface_height
+        double tke_ed_coeff
+        double w_entr_coeff
+        double w_buoy_coeff
+        double tke_diss_coeff
 
     cpdef initialize(self, GridMeanVariables GMV)
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
@@ -78,10 +90,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef compute_prognostic_updrafts(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
     cpdef update_inversion(self, GridMeanVariables GMV, option)
     cpdef compute_wstar(self, CasesBase Case)
+    cpdef compute_mixing_length(self, double obukhov_length)
     cpdef compute_eddy_diffusivities_tke(self, GridMeanVariables GMV, CasesBase Case)
     cpdef decompose_environment(self, GridMeanVariables GMV, whichvals)
     cpdef compute_entrainment_detrainment(self)
-    cpdef set_updraft_surface_bc(self, GridMeanVariables GMV, CasesBase Case)
     cpdef solve_updraft_velocity(self,  TimeStepping TS)
     cpdef solve_area_fraction(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef solve_updraft_scalars(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
@@ -90,6 +102,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
     cpdef update_GMV_MF_implicitMF(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef update_GMV_ED_implicitMF(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
+    cpdef compute_tke_bflux(self, GridMeanVariables GMV)
+    cpdef compute_tke_dissipation(self)
+    cpdef compute_tke_entr_detr(self)
 
 
 
@@ -105,8 +120,9 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
         EDMF_Updrafts.UpdraftMicrophysics UpdMicro
         EDMF_Updrafts.UpdraftThermodynamics UpdThermo
         EDMF_Environment.EnvironmentVariables EnvVar
-        entr_struct (*entr_detr_fp) (double z, double z_half, bint above_cloudbase, double zi) nogil
+        entr_struct (*entr_detr_fp) (double z, double z_half, double zi) nogil
         bint const_area
+        bint use_local_micro
         double surface_area
         double [:,:] entr_w
         double [:,:] entr_sc
@@ -125,6 +141,10 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
         double [:] diffusive_flux_qt
         double [:] diffusive_tendency_h
         double [:] diffusive_tendency_qt
+        double surface_scalar_coeff
+        double w_entr_coeff
+        double w_buoy_coeff
+        double max_area_factor
 
     cpdef initialize(self, GridMeanVariables GMV)
     cpdef initialize_io(self, NetCDFIO_Stats Stats)

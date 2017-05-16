@@ -1,7 +1,7 @@
 from NetCDFIO cimport NetCDFIO_Stats
 from Grid cimport  Grid
 from ReferenceState cimport ReferenceState
-from Variables cimport VariableDiagnostic
+from Variables cimport VariableDiagnostic, GridMeanVariables
 
 cdef class EnvironmentVariable:
     cdef:
@@ -18,6 +18,7 @@ cdef class EnvironmentVariables:
         EnvironmentVariable QT
         EnvironmentVariable QL
         EnvironmentVariable H
+        EnvironmentVariable THL
         EnvironmentVariable T
         EnvironmentVariable B
         EnvironmentVariable TKE
@@ -40,6 +41,10 @@ cdef class EnvironmentThermodynamics:
         double (*t_to_prog_fp)(double p0, double T,  double qt, double ql, double qi)   nogil
         double (*prog_to_t_fp)(double H, double pd, double pv, double qt ) nogil
         void eos_update_SA_sgs(self, EnvironmentVariables EnvVar, VariableDiagnostic GMV_B)
+        double [:] thl_cloudy
+        double [:] qt_cloudy
+        double [:] t_cloudy
+    cpdef satadjust(self, EnvironmentVariables EnvVar, GridMeanVariables GMV)
 
 
 

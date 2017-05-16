@@ -53,12 +53,12 @@ cdef class SurfaceFixedFlux(SurfaceBase):
             double cp_ = cpm_c(GMV.QT.values[gw])
             double lv = latent_heat(GMV.T.values[gw])
 
-        self.b_flux = (g * self.Ref.alpha0_half[gw]/cp_/GMV.T.values[gw]
+        self.bflux = (g * self.Ref.alpha0_half[gw]/cp_/GMV.T.values[gw]
                        * (self.shf + (eps_vi-1.0) * cp_ * GMV.T.values[gw] * self.lhf /lv))
         if not self.ustar_fixed:
             self.ustar = compute_ustar(windspeed, self.bflux, self.zrough, self.Gr.z_half[gw])
 
-        self.obukhov_length = -self.ustar *self.ustar *self.ustar /self.b_flux /vkb
+        self.obukhov_length = -self.ustar *self.ustar *self.ustar /self.bflux /vkb
 
         return
 

@@ -3,7 +3,7 @@ cimport numpy as np
 from libc.math cimport sqrt, log, fabs,atan, exp, fmax, pow
 include "parameters.pxi"
 
-cdef entr_struct entr_detr_cloudy(double z, double z_half, bint above_cloudbase, double zi) nogil:
+cdef entr_struct entr_detr_cloudy(double z, double z_half,  double zi) nogil:
     cdef entr_struct _ret
     cdef double eps = 1.0 # to avoid division by zero when z = 0 or z_i
 
@@ -23,7 +23,7 @@ cdef entr_struct entr_detr_cloudy(double z, double z_half, bint above_cloudbase,
     return  _ret
 
 
-cdef entr_struct entr_detr_dry(double z, double z_half, bint above_cloudbase, double zi) nogil:
+cdef entr_struct entr_detr_dry(double z, double z_half, double zi) nogil:
     cdef entr_struct _ret
     cdef double eps = 1.0 # to avoid division by zero when z = 0 or z_i
     # Following Soares 2004
@@ -34,7 +34,7 @@ cdef entr_struct entr_detr_dry(double z, double z_half, bint above_cloudbase, do
 
     return  _ret
 
-cdef entr_struct entr_detr_inverse_z(double z, double z_half, bint above_cloudbase, double zi) nogil:
+cdef entr_struct entr_detr_inverse_z(double z, double z_half,  double zi) nogil:
     cdef:
         entr_struct _ret
         double er0_zmin = 1.0 # lower limit for z in computation of entrainment/detrainment rates

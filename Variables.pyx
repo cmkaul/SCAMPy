@@ -186,6 +186,12 @@ cdef class GridMeanVariables:
         self.V.zero_tendencies(self.Gr)
         self.QT.zero_tendencies(self.Gr)
         self.H.zero_tendencies(self.Gr)
+        if self.use_tke:
+            self.TKE.zero_tendencies(self.Gr)
+        if self.use_scalar_var:
+            self.QTvar.zero_tendencies(self.Gr)
+            self.Hvar.zero_tendencies(self.Gr)
+            self.HQTcov.zero_tendencies(self.Gr)
 
         return
 
@@ -198,15 +204,28 @@ cdef class GridMeanVariables:
                 self.V.values[k]  +=  self.V.tendencies[k] * TS.dt
                 self.H.values[k]  +=  self.H.tendencies[k] * TS.dt
                 self.QT.values[k]  +=  self.QT.tendencies[k] * TS.dt
-
-
-        self.zero_tendencies()
-
         self.U.set_bcs(self.Gr)
         self.V.set_bcs(self.Gr)
         self.H.set_bcs(self.Gr)
         self.QT.set_bcs(self.Gr)
 
+        if self.use_tke:
+            with nogil:
+                for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+                    self.TKE.values[k]  +=  self.TKE.tendencies[k] * TS.dt
+            self.TKE.set_bcs(self.Gr)
+        if self.use_scalar_var:
+            with nogil:
+                for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+                    self.QTvar.values[k]  +=  self.QTvar.tendencies[k] * TS.dt
+                    self.Hvar.values[k] += self.Hvar.tendencies[k] * TS.dt
+                    self.HQTcov.values[k] += self.HQTcov.tendencies[k] * TS.dt
+            self.QTvar.set_bcs(self.Gr)
+            self.Hvar.set_bcs(self.Gr)
+            self.HQTcov.set_bcs(self.Gr)
+
+
+        self.zero_tendencies()
         self.satadjust()
 
         print(TS.nstep, TS.t, TS.dt)
