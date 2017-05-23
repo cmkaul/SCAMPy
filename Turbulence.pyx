@@ -69,6 +69,8 @@ cdef class ParameterizationBase:
             for k in xrange(gw,nzg-gw):
                 GMV.H.tendencies[k] += (GMV.H.new[k] - GMV.H.values[k]) * TS.dti
                 GMV.QT.tendencies[k] += (GMV.QT.new[k] - GMV.QT.values[k]) * TS.dti
+                GMV.U.tendencies[k] += (GMV.U.new[k] - GMV.U.values[k]) * TS.dti
+                GMV.V.tendencies[k] += (GMV.V.new[k] - GMV.V.values[k]) * TS.dti
 
         return
 
@@ -846,9 +848,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.UpdMicro.compute_sources(self.UpdVar)
             self.UpdMicro.update_updraftvars(self.UpdVar)
 
-
-
-
         self.UpdVar.H.set_bcs(self.Gr)
         self.UpdVar.QT.set_bcs(self.Gr)
         return
@@ -966,9 +965,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         GMV.H.set_bcs(self.Gr)
         GMV.QT.set_bcs(self.Gr)
 
-
-
-
         return
 
 
@@ -1027,61 +1023,82 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.diffusive_flux_h[k+gw] =  -rho_ae_K_m[k+gw] * (GMV.H.new[k+gw+1] - GMV.H.new[k+gw]) * self.Gr.dzi * self.Ref.alpha0[k+gw]
             self.diffusive_flux_h[gw-1] = Case.Sur.rho_hflux*self.Ref.alpha0_half[gw]
 
+        # Solve U
+        with nogil:
+            for k in xrange(nz):
+                x[k] = GMV.U.values[k+gw]
+            x[0] = x[0] + TS.dt * Case.Sur.rho_uflux * self.Gr.dzi * self.Ref.alpha0_half[gw]/ae[gw]
+        tridiag_solve(self.Gr.nz, &x[0],&a[0], &b[0], &c[0])
+
+        with nogil:
+            for k in xrange(nz):
+                GMV.U.new[k+gw] = x[k]
+
+        # Solve V
+        with nogil:
+            for k in xrange(nz):
+                x[k] = GMV.V.values[k+gw]
+            x[0] = x[0] + TS.dt * Case.Sur.rho_vflux * self.Gr.dzi * self.Ref.alpha0_half[gw]/ae[gw]
+        tridiag_solve(self.Gr.nz, &x[0],&a[0], &b[0], &c[0])
+
+        with nogil:
+            for k in xrange(nz):
+                GMV.V.new[k+gw] = x[k]
 
         return
 
     cpdef update_GMV_ED_implicitMF(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
-        cdef:
-            Py_ssize_t k
-            Py_ssize_t gw = self.Gr.gw
-            Py_ssize_t nzg = self.Gr.nzg
-            Py_ssize_t nz = self.Gr.nz
-            double [:] a = np.zeros((nz,),dtype=np.double, order='c') # for tridiag solver
-            double [:] b = np.zeros((nz,),dtype=np.double, order='c') # for tridiag solver
-            double [:] c = np.zeros((nz,),dtype=np.double, order='c') # for tridiag solver
-            double [:] x = np.zeros((nz,),dtype=np.double, order='c') # for tridiag solver
-            #double [:] ae = np.subtract(np.ones((nzg,),dtype=np.double, order='c'),self.UpdVar.Area.bulkvalues) # area of environment
-            double [:] ae = np.ones((nzg,), dtype=np.double, order='c')
-            double [:] rho_ae_K_m = np.zeros((nzg,),dtype=np.double, order='c')
-            double [:] massflux = np.sum(self.m,axis=0)
-
-        with nogil:
-            for k in xrange(nzg-1):
-                rho_ae_K_m[k] = 0.5 * (ae[k]*self.KH.values[k]+ ae[k+1]*self.KH.values[k+1]) * self.Ref.rho0[k]
-
-        # Matrix is the same for all variables that use the same eddy diffusivity, we can construct once and reuse
-        construct_tridiag_diffusion_implicitMF(nzg, gw, self.Gr.dzi, TS.dt, &rho_ae_K_m[0],&massflux[0], &self.Ref.rho0_half[0],&self.Ref.alpha0[0],
-                                    &ae[0], &a[0], &b[0], &c[0])
-
-        # Solve QT
-        with nogil:
-            for k in xrange(nz):
-                x[k] =  GMV.QT.mf_update[k+gw] #self.EnvVar.QT.values[k+gw]
-            x[0] = x[0] + TS.dt * Case.Sur.rho_qtflux * self.Gr.dzi * self.Ref.alpha0_half[gw]/ae[gw]
-        tridiag_solve(self.Gr.nz, &x[0],&a[0], &b[0], &c[0])
-
-        with nogil:
-            for k in xrange(nz):
-                GMV.QT.new[k+gw] = x[k]  # GMV.QT.mf_update[k+gw] + ae[k+gw] *(x[k] - self.EnvVar.QT.values[k+gw])
-                self.diffusive_tendency_qt[k+gw] = (GMV.QT.new[k+gw] - GMV.QT.mf_update[k+gw]) * TS.dti
-                self.diffusive_flux_qt[k+gw] = -self.KH.values[k+gw] * 0.5* (GMV.QT.new[k+gw+1] - GMV.QT.new[k+gw-1]) * self.Gr.dzi
-            self.diffusive_flux_qt[gw-1] = Case.Sur.rho_qtflux*self.Ref.alpha0_half[gw]
-
-        # Solve H
-        with nogil:
-            for k in xrange(nz):
-                x[k] = GMV.H.mf_update[k+gw]   # self.EnvVar.H.values[k+gw]
-            x[0] = x[0] + TS.dt * Case.Sur.rho_hflux * self.Gr.dzi * self.Ref.alpha0_half[gw]/ae[gw]
-        tridiag_solve(self.Gr.nz, &x[0],&a[0], &b[0], &c[0])
-
-        with nogil:
-            for k in xrange(nz):
-                GMV.H.new[k+gw] = x[k] #GMV.H.mf_update[k+gw] + ae[k+gw] *(x[k] - self.EnvVar.H.values[k+gw])
-                self.diffusive_tendency_h[k+gw] = (GMV.H.new[k+gw] - GMV.H.mf_update[k+gw]) * TS.dti
-                self.diffusive_flux_h[k+gw] = -self.KH.values[k+gw] * 0.5* (GMV.H.new[k+gw+1] - GMV.H.new[k+gw-1]) * self.Gr.dzi
-            self.diffusive_flux_h[gw-1] = Case.Sur.rho_hflux*self.Ref.alpha0_half[gw]
-
-
+        # cdef:
+        #     Py_ssize_t k
+        #     Py_ssize_t gw = self.Gr.gw
+        #     Py_ssize_t nzg = self.Gr.nzg
+        #     Py_ssize_t nz = self.Gr.nz
+        #     double [:] a = np.zeros((nz,),dtype=np.double, order='c') # for tridiag solver
+        #     double [:] b = np.zeros((nz,),dtype=np.double, order='c') # for tridiag solver
+        #     double [:] c = np.zeros((nz,),dtype=np.double, order='c') # for tridiag solver
+        #     double [:] x = np.zeros((nz,),dtype=np.double, order='c') # for tridiag solver
+        #     #double [:] ae = np.subtract(np.ones((nzg,),dtype=np.double, order='c'),self.UpdVar.Area.bulkvalues) # area of environment
+        #     double [:] ae = np.ones((nzg,), dtype=np.double, order='c')
+        #     double [:] rho_ae_K_m = np.zeros((nzg,),dtype=np.double, order='c')
+        #     double [:] massflux = np.sum(self.m,axis=0)
+        #
+        # with nogil:
+        #     for k in xrange(nzg-1):
+        #         rho_ae_K_m[k] = 0.5 * (ae[k]*self.KH.values[k]+ ae[k+1]*self.KH.values[k+1]) * self.Ref.rho0[k]
+        #
+        # # Matrix is the same for all variables that use the same eddy diffusivity, we can construct once and reuse
+        # construct_tridiag_diffusion_implicitMF(nzg, gw, self.Gr.dzi, TS.dt, &rho_ae_K_m[0],&massflux[0], &self.Ref.rho0_half[0],&self.Ref.alpha0[0],
+        #                             &ae[0], &a[0], &b[0], &c[0])
+        #
+        # # Solve QT
+        # with nogil:
+        #     for k in xrange(nz):
+        #         x[k] =  GMV.QT.mf_update[k+gw] #self.EnvVar.QT.values[k+gw]
+        #     x[0] = x[0] + TS.dt * Case.Sur.rho_qtflux * self.Gr.dzi * self.Ref.alpha0_half[gw]/ae[gw]
+        # tridiag_solve(self.Gr.nz, &x[0],&a[0], &b[0], &c[0])
+        #
+        # with nogil:
+        #     for k in xrange(nz):
+        #         GMV.QT.new[k+gw] = x[k]  # GMV.QT.mf_update[k+gw] + ae[k+gw] *(x[k] - self.EnvVar.QT.values[k+gw])
+        #         self.diffusive_tendency_qt[k+gw] = (GMV.QT.new[k+gw] - GMV.QT.mf_update[k+gw]) * TS.dti
+        #         self.diffusive_flux_qt[k+gw] = -self.KH.values[k+gw] * 0.5* (GMV.QT.new[k+gw+1] - GMV.QT.new[k+gw-1]) * self.Gr.dzi
+        #     self.diffusive_flux_qt[gw-1] = Case.Sur.rho_qtflux*self.Ref.alpha0_half[gw]
+        #
+        # # Solve H
+        # with nogil:
+        #     for k in xrange(nz):
+        #         x[k] = GMV.H.mf_update[k+gw]   # self.EnvVar.H.values[k+gw]
+        #     x[0] = x[0] + TS.dt * Case.Sur.rho_hflux * self.Gr.dzi * self.Ref.alpha0_half[gw]/ae[gw]
+        # tridiag_solve(self.Gr.nz, &x[0],&a[0], &b[0], &c[0])
+        #
+        # with nogil:
+        #     for k in xrange(nz):
+        #         GMV.H.new[k+gw] = x[k] #GMV.H.mf_update[k+gw] + ae[k+gw] *(x[k] - self.EnvVar.H.values[k+gw])
+        #         self.diffusive_tendency_h[k+gw] = (GMV.H.new[k+gw] - GMV.H.mf_update[k+gw]) * TS.dti
+        #         self.diffusive_flux_h[k+gw] = -self.KH.values[k+gw] * 0.5* (GMV.H.new[k+gw+1] - GMV.H.new[k+gw-1]) * self.Gr.dzi
+        #     self.diffusive_flux_h[gw-1] = Case.Sur.rho_hflux*self.Ref.alpha0_half[gw]
+        #
+        #
         return
 
     cpdef compute_tke_bflux(self, GridMeanVariables GMV):
@@ -1155,9 +1172,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     self.tke_detr_gain[k] += ((self.detrL[i,k]+self.detrB[i,k]) * 0.5 * (self.UpdVar.W.values[i,k]-self.EnvVar.W.values[k])
                                               * (self.UpdVar.W.values[i,k]-self.EnvVar.W.values[k]) * self.Gr.dzi)
         return
-
-
-
 
 
 
@@ -1483,7 +1497,6 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
             double dz = self.Gr.dz
             double w2, w
 
-
         # with nogil:
         #     for i in xrange(self.n_updrafts):
         #         self.UpdVar.W.values[i, self.Gr.gw-1] = self.w_surface_bc[i]
@@ -1697,72 +1710,70 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
                 GMV.H.mf_update[k] = GMV.H.values[k] +  TS.dt * mf_tend_h + self.UpdMicro.prec_source_h_tot[k]
                 GMV.QT.mf_update[k] = GMV.QT.values[k] + TS.dt * mf_tend_qt + self.UpdMicro.prec_source_qt_tot[k]
 
+                # Horiontal velocities have no mass flux tendency (u_updraft = u_environment, v_updraft = v_environment)
+                GMV.U.mf_update[k] = GMV.U.values[k]
+                GMV.V.mf_update[k] = GMV.V.values[k]
+
                 # Prepare the output
                 self.massflux_tendency_h[k] = mf_tend_h
                 self.massflux_tendency_qt[k] = mf_tend_qt
-                # self.massflux_h[k] = self.massflux_h[k] * self.Ref.alpha0_half[k]
-                # self.massflux_qt[k] = self.massflux_qt[k] * self.Ref.alpha0_half[k]
+
         GMV.H.set_bcs(self.Gr)
         GMV.QT.set_bcs(self.Gr)
-
-
-
-
         return
 
 
 
     cpdef update_GMV_MF_implicitMF(self, GridMeanVariables GMV, TimeStepping TS):
-        cdef:
-            Py_ssize_t k, i
-            Py_ssize_t gw = self.Gr.gw
-            double mf_tend_h=0.0, mf_tend_qt=0.0
-            double gmv_h_interp
-            double gmv_qt_interp
-        self.massflux_h[:] = 0.0
-        self.massflux_qt[:] = 0.0
-
-        # Compute the mass flux and associated scalar fluxes
-        with nogil:
-            for i in xrange(self.n_updrafts):
-                self.m[i,gw-1] = 0.0
-                for k in xrange(self.Gr.gw, self.Gr.nzg-1):
-                    self.m[i,k] = self.UpdVar.W.values[i,k] * self.Ref.rho0[k] * interp2pt(self.UpdVar.Area.values[i,k],self.UpdVar.Area.values[i,k+1])
-
-        self.massflux_h[gw-1] = 0.0
-        self.massflux_qt[gw-1] = 0.0
-        with nogil:
-            for k in xrange(gw, self.Gr.nzg-gw-1):
-                self.massflux_h[k] = 0.0
-                self.massflux_qt[k] = 0.0
-                gmv_h_interp = 0.0#interp2pt(GMV.H.values[k], GMV.H.values[k+1])
-                gmv_qt_interp = 0.0 #interp2pt(GMV.QT.values[k], GMV.QT.values[k+1])
-                for i in xrange(self.n_updrafts):
-                    self.massflux_h[k] += self.m[i,k] * (interp2pt(self.UpdVar.H.values[i,k], self.UpdVar.H.values[i,k+1]) - gmv_h_interp )
-                    self.massflux_qt[k] += self.m[i,k] * (interp2pt(self.UpdVar.QT.values[i,k], self.UpdVar.QT.values[i,k+1]) - gmv_qt_interp )
-
-        # Compute the  mass flux tendencies
-        # Adjust the values of the grid mean variables
-        with nogil:
-
-            for k in xrange(self.Gr.gw, self.Gr.nzg):
-                mf_tend_h = -(self.massflux_h[k] - self.massflux_h[k-1]) * (self.Ref.alpha0_half[k] * self.Gr.dzi)
-                mf_tend_qt = -(self.massflux_qt[k] - self.massflux_qt[k-1]) * (self.Ref.alpha0_half[k] * self.Gr.dzi)
-
-                GMV.H.mf_update[k] = GMV.H.values[k] +  TS.dt * mf_tend_h + self.UpdMicro.prec_source_h_tot[k]
-                GMV.QT.mf_update[k] = GMV.QT.values[k] + TS.dt * mf_tend_qt + self.UpdMicro.prec_source_qt_tot[k]
-
-                # Prepare the output
-                self.massflux_tendency_h[k] = mf_tend_h
-                self.massflux_tendency_qt[k] = mf_tend_qt
-                # self.massflux_h[k] = self.massflux_h[k] * self.Ref.alpha0_half[k]
-                # self.massflux_qt[k] = self.massflux_qt[k] * self.Ref.alpha0_half[k]
-        GMV.H.set_bcs(self.Gr)
-        GMV.QT.set_bcs(self.Gr)
-
-
-
-
+        # cdef:
+        #     Py_ssize_t k, i
+        #     Py_ssize_t gw = self.Gr.gw
+        #     double mf_tend_h=0.0, mf_tend_qt=0.0
+        #     double gmv_h_interp
+        #     double gmv_qt_interp
+        # self.massflux_h[:] = 0.0
+        # self.massflux_qt[:] = 0.0
+        #
+        # # Compute the mass flux and associated scalar fluxes
+        # with nogil:
+        #     for i in xrange(self.n_updrafts):
+        #         self.m[i,gw-1] = 0.0
+        #         for k in xrange(self.Gr.gw, self.Gr.nzg-1):
+        #             self.m[i,k] = self.UpdVar.W.values[i,k] * self.Ref.rho0[k] * interp2pt(self.UpdVar.Area.values[i,k],self.UpdVar.Area.values[i,k+1])
+        #
+        # self.massflux_h[gw-1] = 0.0
+        # self.massflux_qt[gw-1] = 0.0
+        # with nogil:
+        #     for k in xrange(gw, self.Gr.nzg-gw-1):
+        #         self.massflux_h[k] = 0.0
+        #         self.massflux_qt[k] = 0.0
+        #         gmv_h_interp = 0.0#interp2pt(GMV.H.values[k], GMV.H.values[k+1])
+        #         gmv_qt_interp = 0.0 #interp2pt(GMV.QT.values[k], GMV.QT.values[k+1])
+        #         for i in xrange(self.n_updrafts):
+        #             self.massflux_h[k] += self.m[i,k] * (interp2pt(self.UpdVar.H.values[i,k], self.UpdVar.H.values[i,k+1]) - gmv_h_interp )
+        #             self.massflux_qt[k] += self.m[i,k] * (interp2pt(self.UpdVar.QT.values[i,k], self.UpdVar.QT.values[i,k+1]) - gmv_qt_interp )
+        #
+        # # Compute the  mass flux tendencies
+        # # Adjust the values of the grid mean variables
+        # with nogil:
+        #
+        #     for k in xrange(self.Gr.gw, self.Gr.nzg):
+        #         mf_tend_h = -(self.massflux_h[k] - self.massflux_h[k-1]) * (self.Ref.alpha0_half[k] * self.Gr.dzi)
+        #         mf_tend_qt = -(self.massflux_qt[k] - self.massflux_qt[k-1]) * (self.Ref.alpha0_half[k] * self.Gr.dzi)
+        #
+        #         GMV.H.mf_update[k] = GMV.H.values[k] +  TS.dt * mf_tend_h + self.UpdMicro.prec_source_h_tot[k]
+        #         GMV.QT.mf_update[k] = GMV.QT.values[k] + TS.dt * mf_tend_qt + self.UpdMicro.prec_source_qt_tot[k]
+        #
+        #         # Horiontal velocities have no mass flux tendency (u_updraft = u_environment, v_updraft = v_environment)
+        #         GMV.U.mf_update[k] = GMV.U.values[k]
+        #         GMV.V.mf_update[k] = GMV.V.values[k]
+        #
+        #         # Prepare the output
+        #         self.massflux_tendency_h[k] = mf_tend_h
+        #         self.massflux_tendency_qt[k] = mf_tend_qt
+        #
+        # GMV.H.set_bcs(self.Gr)
+        # GMV.QT.set_bcs(self.Gr)
         return
 
 
@@ -1823,60 +1834,85 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
             self.diffusive_flux_h[gw-1] = Case.Sur.rho_hflux*self.Ref.alpha0_half[gw]
 
 
+        # Solve U
+        with nogil:
+            for k in xrange(nz):
+                x[k] = GMV.U.values[k+gw]
+            x[0] = x[0] + TS.dt * Case.Sur.rho_uflux * self.Gr.dzi * self.Ref.alpha0_half[gw]/ae[gw]
+        tridiag_solve(self.Gr.nz, &x[0],&a[0], &b[0], &c[0])
+
+        with nogil:
+            for k in xrange(nz):
+                GMV.U.new[k+gw] = x[k]
+            #     self.diffusive_tendency_h[k+gw] = (GMV.H.new[k+gw] - GMV.H.mf_update[k+gw]) * TS.dti
+            #     self.diffusive_flux_h[k+gw] =  -rho_ae_K_m[k+gw] * (GMV.H.new[k+gw+1] - GMV.H.new[k+gw]) * self.Gr.dzi * self.Ref.alpha0[k+gw]
+            # self.diffusive_flux_h[gw-1] = Case.Sur.rho_hflux*self.Ref.alpha0_half[gw]
+
+        # Solve V
+        with nogil:
+            for k in xrange(nz):
+                x[k] = GMV.V.values[k+gw]
+            x[0] = x[0] + TS.dt * Case.Sur.rho_vflux * self.Gr.dzi * self.Ref.alpha0_half[gw]/ae[gw]
+        tridiag_solve(self.Gr.nz, &x[0],&a[0], &b[0], &c[0])
+
+        with nogil:
+            for k in xrange(nz):
+                GMV.V.new[k+gw] = x[k]
+            #     self.diffusive_tendency_h[k+gw] = (GMV.H.new[k+gw] - GMV.H.mf_update[k+gw]) * TS.dti
+            #     self.diffusive_flux_h[k+gw] =  -rho_ae_K_m[k+gw] * (GMV.H.new[k+gw+1] - GMV.H.new[k+gw]) * self.Gr.dzi * self.Ref.alpha0[k+gw]
+            # self.diffusive_flux_h[gw-1] = Case.Sur.rho_hflux*self.Ref.alpha0_half[gw]
         return
 
     cpdef update_GMV_ED_implicitMF(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
-        cdef:
-            Py_ssize_t k
-            Py_ssize_t gw = self.Gr.gw
-            Py_ssize_t nzg = self.Gr.nzg
-            Py_ssize_t nz = self.Gr.nz
-            double [:] a = np.zeros((nz,),dtype=np.double, order='c') # for tridiag solver
-            double [:] b = np.zeros((nz,),dtype=np.double, order='c') # for tridiag solver
-            double [:] c = np.zeros((nz,),dtype=np.double, order='c') # for tridiag solver
-            double [:] x = np.zeros((nz,),dtype=np.double, order='c') # for tridiag solver
-            #double [:] ae = np.subtract(np.ones((nzg,),dtype=np.double, order='c'),self.UpdVar.Area.bulkvalues) # area of environment
-            double [:] ae = np.ones((nzg,), dtype=np.double, order='c')
-            double [:] rho_ae_K_m = np.zeros((nzg,),dtype=np.double, order='c')
-            double [:] massflux = np.sum(self.m,axis=0)
-
-        with nogil:
-            for k in xrange(nzg-1):
-                rho_ae_K_m[k] = 0.5 * (ae[k]*self.KH.values[k]+ ae[k+1]*self.KH.values[k+1]) * self.Ref.rho0[k]
-
-        # Matrix is the same for all variables that use the same eddy diffusivity, we can construct once and reuse
-        construct_tridiag_diffusion_implicitMF(nzg, gw, self.Gr.dzi, TS.dt, &rho_ae_K_m[0],&massflux[0], &self.Ref.rho0_half[0],&self.Ref.alpha0[0],
-                                    &ae[0], &a[0], &b[0], &c[0])
-
-        # Solve QT
-        with nogil:
-            for k in xrange(nz):
-                x[k] =  GMV.QT.mf_update[k+gw] #self.EnvVar.QT.values[k+gw]
-            x[0] = x[0] + TS.dt * Case.Sur.rho_qtflux * self.Gr.dzi * self.Ref.alpha0_half[gw]/ae[gw]
-        tridiag_solve(self.Gr.nz, &x[0],&a[0], &b[0], &c[0])
-
-        with nogil:
-            for k in xrange(nz):
-                GMV.QT.new[k+gw] = x[k]  # GMV.QT.mf_update[k+gw] + ae[k+gw] *(x[k] - self.EnvVar.QT.values[k+gw])
-                self.diffusive_tendency_qt[k+gw] = (GMV.QT.new[k+gw] - GMV.QT.mf_update[k+gw]) * TS.dti
-                self.diffusive_flux_qt[k+gw] = -self.KH.values[k+gw] * 0.5* (GMV.QT.new[k+gw+1] - GMV.QT.new[k+gw-1]) * self.Gr.dzi
-            self.diffusive_flux_qt[gw-1] = Case.Sur.rho_qtflux*self.Ref.alpha0_half[gw]
-
-        # Solve H
-        with nogil:
-            for k in xrange(nz):
-                x[k] = GMV.H.mf_update[k+gw]   # self.EnvVar.H.values[k+gw]
-            x[0] = x[0] + TS.dt * Case.Sur.rho_hflux * self.Gr.dzi * self.Ref.alpha0_half[gw]/ae[gw]
-        tridiag_solve(self.Gr.nz, &x[0],&a[0], &b[0], &c[0])
-
-        with nogil:
-            for k in xrange(nz):
-                GMV.H.new[k+gw] = x[k] #GMV.H.mf_update[k+gw] + ae[k+gw] *(x[k] - self.EnvVar.H.values[k+gw])
-                self.diffusive_tendency_h[k+gw] = (GMV.H.new[k+gw] - GMV.H.mf_update[k+gw]) * TS.dti
-                self.diffusive_flux_h[k+gw] = -self.KH.values[k+gw] * 0.5* (GMV.H.new[k+gw+1] - GMV.H.new[k+gw-1]) * self.Gr.dzi
-            self.diffusive_flux_h[gw-1] = Case.Sur.rho_hflux*self.Ref.alpha0_half[gw]
-
-
+        # cdef:
+        #     Py_ssize_t k
+        #     Py_ssize_t gw = self.Gr.gw
+        #     Py_ssize_t nzg = self.Gr.nzg
+        #     Py_ssize_t nz = self.Gr.nz
+        #     double [:] a = np.zeros((nz,),dtype=np.double, order='c') # for tridiag solver
+        #     double [:] b = np.zeros((nz,),dtype=np.double, order='c') # for tridiag solver
+        #     double [:] c = np.zeros((nz,),dtype=np.double, order='c') # for tridiag solver
+        #     double [:] x = np.zeros((nz,),dtype=np.double, order='c') # for tridiag solver
+        #     #double [:] ae = np.subtract(np.ones((nzg,),dtype=np.double, order='c'),self.UpdVar.Area.bulkvalues) # area of environment
+        #     double [:] ae = np.ones((nzg,), dtype=np.double, order='c')
+        #     double [:] rho_ae_K_m = np.zeros((nzg,),dtype=np.double, order='c')
+        #     double [:] massflux = np.sum(self.m,axis=0)
+        #
+        # with nogil:
+        #     for k in xrange(nzg-1):
+        #         rho_ae_K_m[k] = 0.5 * (ae[k]*self.KH.values[k]+ ae[k+1]*self.KH.values[k+1]) * self.Ref.rho0[k]
+        #
+        # # Matrix is the same for all variables that use the same eddy diffusivity, we can construct once and reuse
+        # construct_tridiag_diffusion_implicitMF(nzg, gw, self.Gr.dzi, TS.dt, &rho_ae_K_m[0],&massflux[0], &self.Ref.rho0_half[0],&self.Ref.alpha0[0],
+        #                             &ae[0], &a[0], &b[0], &c[0])
+        #
+        # # Solve QT
+        # with nogil:
+        #     for k in xrange(nz):
+        #         x[k] =  GMV.QT.mf_update[k+gw] #self.EnvVar.QT.values[k+gw]
+        #     x[0] = x[0] + TS.dt * Case.Sur.rho_qtflux * self.Gr.dzi * self.Ref.alpha0_half[gw]/ae[gw]
+        # tridiag_solve(self.Gr.nz, &x[0],&a[0], &b[0], &c[0])
+        #
+        # with nogil:
+        #     for k in xrange(nz):
+        #         GMV.QT.new[k+gw] = x[k]  # GMV.QT.mf_update[k+gw] + ae[k+gw] *(x[k] - self.EnvVar.QT.values[k+gw])
+        #         self.diffusive_tendency_qt[k+gw] = (GMV.QT.new[k+gw] - GMV.QT.mf_update[k+gw]) * TS.dti
+        #         self.diffusive_flux_qt[k+gw] = -self.KH.values[k+gw] * 0.5* (GMV.QT.new[k+gw+1] - GMV.QT.new[k+gw-1]) * self.Gr.dzi
+        #     self.diffusive_flux_qt[gw-1] = Case.Sur.rho_qtflux*self.Ref.alpha0_half[gw]
+        #
+        # # Solve H
+        # with nogil:
+        #     for k in xrange(nz):
+        #         x[k] = GMV.H.mf_update[k+gw]   # self.EnvVar.H.values[k+gw]
+        #     x[0] = x[0] + TS.dt * Case.Sur.rho_hflux * self.Gr.dzi * self.Ref.alpha0_half[gw]/ae[gw]
+        # tridiag_solve(self.Gr.nz, &x[0],&a[0], &b[0], &c[0])
+        #
+        # with nogil:
+        #     for k in xrange(nz):
+        #         GMV.H.new[k+gw] = x[k] #GMV.H.mf_update[k+gw] + ae[k+gw] *(x[k] - self.EnvVar.H.values[k+gw])
+        #         self.diffusive_tendency_h[k+gw] = (GMV.H.new[k+gw] - GMV.H.mf_update[k+gw]) * TS.dti
+        #         self.diffusive_flux_h[k+gw] = -self.KH.values[k+gw] * 0.5* (GMV.H.new[k+gw+1] - GMV.H.new[k+gw-1]) * self.Gr.dzi
+        #     self.diffusive_flux_h[gw-1] = Case.Sur.rho_hflux*self.Ref.alpha0_half[gw]
         return
 
 
@@ -1955,6 +1991,27 @@ cdef class SimilarityED(ParameterizationBase):
                 GMV.H.new[k+gw] = x[k]
 
 
+        # Solve U
+        with nogil:
+            for k in xrange(nz):
+                x[k] = GMV.U.values[k+gw]
+            x[0] = x[0] + TS.dt * Case.Sur.rho_uflux * self.Gr.dzi * self.Ref.alpha0_half[gw]
+
+        tridiag_solve(self.Gr.nz, &x[0],&a[0], &b[0], &c[0])
+        with nogil:
+            for k in xrange(nz):
+                GMV.U.new[k+gw] = x[k]
+
+        # Solve V
+        with nogil:
+            for k in xrange(nz):
+                x[k] = GMV.V.values[k+gw]
+            x[0] = x[0] + TS.dt * Case.Sur.rho_vflux * self.Gr.dzi * self.Ref.alpha0_half[gw]
+
+        tridiag_solve(self.Gr.nz, &x[0],&a[0], &b[0], &c[0])
+        with nogil:
+            for k in xrange(nz):
+                GMV.V.new[k+gw] = x[k]
         ParameterizationBase.update(self, GMV,Case, TS)
 
         return
