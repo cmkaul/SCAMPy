@@ -7,7 +7,7 @@
 import numpy as np
 include "parameters.pxi"
 import cython
-from Variables cimport GridMeanVariables
+from Variables cimport GridMeanVariables, VariablePrognostic
 from forcing_functions cimport  convert_forcing_entropy, convert_forcing_thetal
 
 cdef class ForcingBase:
@@ -17,6 +17,9 @@ cdef class ForcingBase:
         self.subsidence = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
         self.dTdt = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
         self.dqtdt = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
+        self.ug = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
+        self.vg = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
+
         if GMV.H.name == 's':
             self.convert_forcing_prog_fp = convert_forcing_entropy
         elif GMV.H.name == 'thetal':
@@ -24,6 +27,16 @@ cdef class ForcingBase:
         return
     cpdef update(self, GridMeanVariables GMV):
         return
+    cpdef coriolis_force(self, VariablePrognostic U, VariablePrognostic V):
+        cdef:
+            Py_ssize_t k
+            Py_ssize_t gw = self.Gr.gw
+        for k in xrange(gw, self.Gr.nzg-gw):
+            U.tendencies[k] -= self.coriolis_param * (self.vg[k] - V.values[k])
+            V.tendencies[k] += self.coriolis_param * (self.ug[k] - U.values[k])
+        return
+
+
 
 cdef class ForcingNone(ForcingBase):
     def __init__(self):
@@ -34,6 +47,9 @@ cdef class ForcingNone(ForcingBase):
         return
     cpdef update(self, GridMeanVariables GMV):
         return
+    cpdef coriolis_force(self, VariablePrognostic U, VariablePrognostic V):
+        return
+
 
 
 cdef class ForcingStandard(ForcingBase):
@@ -57,4 +73,14 @@ cdef class ForcingStandard(ForcingBase):
             GMV.H.tendencies[k] -= (GMV.H.values[k+1]-GMV.H.values[k]) * self.Gr.dzi * self.subsidence[k]
             GMV.QT.tendencies[k] -= (GMV.QT.values[k+1]-GMV.QT.values[k]) * self.Gr.dzi * self.subsidence[k]
 
+        if self.apply_coriolis:
+            self.coriolis_force(GMV.U, GMV.V)
+
         return
+
+
+    cpdef coriolis_force(self, VariablePrognostic U, VariablePrognostic V):
+        ForcingBase.coriolis_force(self, U, V)
+        return
+
+

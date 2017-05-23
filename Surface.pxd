@@ -14,6 +14,8 @@ cdef class SurfaceBase:
         double ustar
         double rho_qtflux
         double rho_hflux
+        double rho_uflux
+        double rho_vflux
         double obukhov_length
         bint ustar_fixed
         Grid Gr

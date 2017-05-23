@@ -136,6 +136,8 @@ cdef class Bomex(CasesBase):
         self.Sur = Surface.SurfaceFixedFlux()
         self.Fo = Forcing.ForcingStandard()
         self.inversion_option = 'theta_rho'
+        self.Fo.apply_coriolis = True
+        self.Fo.coriolis_param = 0.376e-4 # s^{-1}
         return
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats):
         Ref.Pg = 1.015e5  #Pressure at ground
@@ -220,6 +222,8 @@ cdef class Bomex(CasesBase):
         self.Fo.Ref = Ref
         self.Fo.initialize(GMV)
         for k in xrange(Gr.gw, Gr.nzg-Gr.gw):
+            # Geostrophic velocity profiles. vg = 0
+            self.Fo.ug[k] = -10.0 + (1.8e-3)*Gr.z_half[k]
             # Set large-scale cooling
             if Gr.z_half[k] <= 1500.0:
                 self.Fo.dTdt[k] =  (-2.0/(3600 * 24.0))  * exner_c(Ref.p0_half[k])

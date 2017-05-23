@@ -888,8 +888,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 env_h_interp = interp2pt(self.EnvVar.H.values[k], self.EnvVar.H.values[k+1])
                 env_qt_interp = interp2pt(self.EnvVar.QT.values[k], self.EnvVar.QT.values[k+1])
                 for i in xrange(self.n_updrafts):
-                    self.massflux_h[k] += self.m[i,k] * (interp2pt(self.UpdVar.H.values[i,k], self.UpdVar.H.values[i,k+1]) - env_h_interp )
-                    self.massflux_qt[k] += self.m[i,k] * (interp2pt(self.UpdVar.QT.values[i,k], self.UpdVar.QT.values[i,k+1]) - env_qt_interp )
+                    self.massflux_h[k] += self.m[i,k] * (interp2pt(self.UpdVar.H.values[i,k],
+                                                                   self.UpdVar.H.values[i,k+1]) - env_h_interp )
+                    self.massflux_qt[k] += self.m[i,k] * (interp2pt(self.UpdVar.QT.values[i,k],
+                                                                    self.UpdVar.QT.values[i,k+1]) - env_qt_interp )
 
         # Compute the  mass flux tendencies
         # Adjust the values of the grid mean variables
@@ -1100,7 +1102,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 grad_thl_plus = (self.EnvVar.THL.values[k+1] - self.EnvVar.THL.values[k]) * self.Gr.dzi
                 grad_qt_plus = (self.EnvVar.QT.values[k+1] - self.EnvVar.QT.values[k]) * self.Gr.dzi
                 cf = self.EnvVar.CF.values[k]
-                theta_rho_mean = theta_rho_c(self.Ref.p0_half[k], GMV.T.values[k], GMV.QT.values[k], GMV.QT.values[k]-GMV.QL.values[k])
+                theta_rho_mean = theta_rho_c(self.Ref.p0_half[k], GMV.T.values[k],
+                                             GMV.QT.values[k], GMV.QT.values[k]-GMV.QL.values[k])
                 qt_d = (self.EnvVar.QT.values[k] - cf * self.EnvThermo.qt_cloudy[k])/ fmax((1.0 - cf),1.0e-10)
                 thl_d = (self.EnvVar.THL.values[k] - cf * self.EnvThermo.thl_cloudy[k])/ fmax((1.0 - cf),1.0e-10)
                 qs_s = self.EnvThermo.qt_cloudy[k] - self.EnvVar.QL.values[k]/fmax(cf, 1e-10)
@@ -1108,12 +1111,17 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 db_dqt_d = g/theta_rho_mean * (eps_vi - 1.0) * thl_d
                 lh = latent_heat(self.EnvThermo.t_cloudy[k])
 
-                db_dthl_s = g/theta_rho_mean * (1.0 + eps_vi * (1.0 +lh/Rv/self.EnvThermo.t_cloudy[k]) * qs_s - self.EnvThermo.qt_cloudy[k])
-                db_dthl_s = db_dthl_s/(1.0 + lh * lh/(cpm_c(self.EnvThermo.qt_cloudy[k])*Rv*self.EnvThermo.t_cloudy[k]*self.EnvThermo.t_cloudy[k]) * qs_s)
-                db_dqt_s = (lh/cpm_c(self.EnvThermo.qt_cloudy[k])/self.EnvThermo.t_cloudy[k] * db_dthl_s - g/theta_rho_mean) * self.EnvThermo.thl_cloudy[k]
+                db_dthl_s = g/theta_rho_mean * (1.0 + eps_vi * (1.0 +lh/Rv/self.EnvThermo.t_cloudy[k])
+                                                * qs_s - self.EnvThermo.qt_cloudy[k])
+                db_dthl_s /= (1.0 + lh * lh/(cpm_c(self.EnvThermo.qt_cloudy[k]) * Rv * self.EnvThermo.t_cloudy[k]
+                                             * self.EnvThermo.t_cloudy[k]) * qs_s)
+                db_dqt_s = (lh/cpm_c(self.EnvThermo.qt_cloudy[k])/self.EnvThermo.t_cloudy[k] * db_dthl_s
+                            - g/theta_rho_mean) * self.EnvThermo.thl_cloudy[k]
 
-                self.tke_bflux[k] = ( -self.KH.values[k] * 0.5 * (grad_thl_plus + grad_thl_minus) * ((1.0 - cf)*db_dthl_d + cf * db_dthl_s)
-                                     - self.KH.values[k] * 0.5 * (grad_qt_plus + grad_qt_minus) *  ((1.0 - cf) * db_dqt_d + cf * db_dqt_s))
+                self.tke_bflux[k] = ( -self.KH.values[k] * 0.5 * (grad_thl_plus + grad_thl_minus)
+                                      * ((1.0 - cf)*db_dthl_d + cf * db_dthl_s)
+                                     - self.KH.values[k] * 0.5 * (grad_qt_plus + grad_qt_minus)
+                                      *  ((1.0 - cf) * db_dqt_d + cf * db_dqt_s))
         return
 
     # Note we need mixing length again here....
