@@ -45,8 +45,6 @@ cdef class ParameterizationBase:
         # get values from paramlist
         self.prandtl_number = paramlist['turbulence']['prandtl_number']
 
-
-
         return
     cpdef initialize(self, GridMeanVariables GMV):
         return
