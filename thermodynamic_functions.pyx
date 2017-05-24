@@ -89,6 +89,9 @@ cdef double pv_star(double T) nogil  :
     cdef double TC = T - 273.15
     return 6.1094*exp((17.625*TC)/float(TC+243.04))*100
 
+cdef double qv_star_t(double p0, double T) nogil:
+    cdef double pv = pv_star(T)
+    return eps_v * pv / (p0 + (eps_v-1.0)*pv)
 
 cdef  double latent_heat(double T) nogil  :
     cdef double TC = T - 273.15

@@ -42,6 +42,8 @@ cdef  double t_to_thetali_c(double p0, double T,  double qt, double ql, double q
 
 cdef  double pv_star(double T)   nogil
 
+cdef double qv_star_t(double p0, double T) nogil
+
 cdef  double latent_heat(double T) nogil
    
 

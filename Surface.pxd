@@ -10,6 +10,9 @@ cdef class SurfaceBase:
         double qsurface
         double shf
         double lhf
+        double cm
+        double ch
+        double cq
         double bflux
         double ustar
         double rho_qtflux
@@ -24,5 +27,12 @@ cdef class SurfaceBase:
     cpdef update(self, GridMeanVariables GMV)
 
 cdef class SurfaceFixedFlux(SurfaceBase):
+    cpdef initialize(self)
+    cpdef update(self, GridMeanVariables GMV)
+
+
+cdef class SurfaceFixedCoeffs(SurfaceBase):
+    cdef:
+        double s_surface
     cpdef initialize(self)
     cpdef update(self, GridMeanVariables GMV)

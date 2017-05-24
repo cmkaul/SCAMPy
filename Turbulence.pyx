@@ -901,6 +901,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 GMV.H.mf_update[k] = GMV.H.values[k] +  TS.dt * mf_tend_h + self.UpdMicro.prec_source_h_tot[k]
                 GMV.QT.mf_update[k] = GMV.QT.values[k] + TS.dt * mf_tend_qt + self.UpdMicro.prec_source_qt_tot[k]
 
+                #No mass flux tendency for U, V
+                GMV.U.mf_update[k] = GMV.U.values[k]
+                GMV.V.mf_update[k] = GMV.V.values[k]
+
                 # Prepare the output
                 self.massflux_tendency_h[k] = mf_tend_h
                 self.massflux_tendency_qt[k] = mf_tend_qt
