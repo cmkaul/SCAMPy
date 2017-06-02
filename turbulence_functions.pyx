@@ -1,7 +1,10 @@
 import numpy as np
 cimport numpy as np
-from libc.math cimport sqrt, log, fabs,atan, exp, fmax, pow
+from libc.math cimport cbrt, sqrt, log, fabs,atan, exp, fmax, pow
 include "parameters.pxi"
+
+
+# Entrainment Rates
 
 cdef entr_struct entr_detr_cloudy(double z, double z_half,  double zi) nogil:
     cdef entr_struct _ret
@@ -46,6 +49,40 @@ cdef entr_struct entr_detr_inverse_z(double z, double z_half,  double zi) nogil:
 
 
 
+# Other functions
+
+cdef double get_wstar(double bflux, double zi ):
+    return cbrt(bflux * zi)
+
+
+cdef double get_inversion(double *theta_rho, double *u, double *v, double *z_half,
+                          Py_ssize_t kmin, Py_ssize_t kmax, double Ri_bulk_crit):
+    cdef:
+        double theta_rho_b = theta_rho[kmin]
+        double h, Ri_bulk=0.0, Ri_bulk_low
+        Py_ssize_t k = kmin
+
+
+    # test if we need to look at the free convective limit
+    if (u[kmin] * u[kmin] + v[kmin] * v[kmin]) <= 0.01:
+        print('low vel option')
+        with nogil:
+            for k in xrange(kmin,kmax):
+                if theta_rho[k] > theta_rho_b:
+                    break
+        h = (z_half[k] - z_half[k-1])/(theta_rho[k] - theta_rho[k-1]) * (theta_rho_b - theta_rho[k-1]) + z_half[k-1]
+    else:
+        with nogil:
+            for k in xrange(kmin,kmax):
+                Ri_bulk_low = Ri_bulk
+                Ri_bulk = g * (theta_rho[k] - theta_rho_b) * z_half[k]/theta_rho_b / (u[k] * u[k] + v[k] * v[k])
+                if Ri_bulk > Ri_bulk_crit:
+                    break
+        h = (z_half[k] - z_half[k-1])/(Ri_bulk - Ri_bulk_low) * (Ri_bulk_crit - Ri_bulk_low) + z_half[k-1]
+
+    return h
+
+# Dustbin
 
 cdef bint set_cloudbase_flag(double ql, bint current_flag) nogil:
     cdef bint new_flag

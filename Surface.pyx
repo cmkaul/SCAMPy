@@ -7,14 +7,17 @@
 import numpy as np
 include "parameters.pxi"
 import cython
-from thermodynamic_functions cimport latent_heat, cpm_c, exner_c, qv_star_t, sd_c, sv_c, pv_star
-from surface_functions import entropy_flux, compute_ustar
+from thermodynamic_functions cimport latent_heat, cpm_c, exner_c, qv_star_t, sd_c, sv_c, pv_star, theta_rho_c
+from surface_functions cimport entropy_flux, compute_ustar, buoyancy_flux
+from turbulence_functions cimport get_wstar, get_inversion
 from Variables cimport GridMeanVariables
+from libc.math cimport cbrt
 
 
 
 cdef class SurfaceBase:
-    def __init__(self):
+    def __init__(self, paramlist):
+        self.Ri_bulk_crit = paramlist['turbulence']['Ri_bulk_crit']
         return
     cpdef initialize(self):
         return
@@ -24,23 +27,22 @@ cdef class SurfaceBase:
 
 
 
-
-
-
 cdef class SurfaceFixedFlux(SurfaceBase):
-    def __init__(self):
-        SurfaceBase.__init__(self)
+    def __init__(self,paramlist):
+        SurfaceBase.__init__(self, paramlist)
         return
     cpdef initialize(self):
         return
 
     cpdef update(self, GridMeanVariables GMV):
         cdef:
-            Py_ssize_t gw = self.Gr.gw
+            Py_ssize_t k, gw = self.Gr.gw
+            Py_ssize_t kmin = gw, kmax = self.Gr.nzg-gw
             double rho_tflux =  self.shf /(cpm_c(self.qsurface))
-            double windspeed = np.maximum(np.sqrt(GMV.U.values[gw]*GMV.U.values[gw] + GMV.V.values[gw] * GMV.V.values[gw]), 0.01)
-            double cp_ = cpm_c(GMV.QT.values[gw])
-            double lv = latent_heat(GMV.T.values[gw])
+            double windspeed = np.sqrt(GMV.U.values[gw]*GMV.U.values[gw] + GMV.V.values[gw] * GMV.V.values[gw])
+            double zi, wstar, qv
+            double [:] theta_rho = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
+
 
         self.rho_qtflux = self.lhf/(latent_heat(self.Tsurface))
 
@@ -50,10 +52,25 @@ cdef class SurfaceFixedFlux(SurfaceBase):
             self.rho_hflux = entropy_flux(rho_tflux/self.Ref.rho0[gw-1],self.rho_qtflux/self.Ref.rho0[gw-1],
                                           self.Ref.p0_half[gw], GMV.T.values[gw], GMV.QT.values[gw])
 
-        self.bflux = (g * self.Ref.alpha0[gw-1]/cp_/GMV.T.values[gw]
-                       * (self.shf + (eps_vi-1.0) * cp_ * GMV.T.values[gw] * self.lhf /lv))
+        self.bflux = buoyancy_flux(self.shf, self.lhf, GMV.T.values[gw], GMV.QT.values[gw],self.Ref.alpha0[gw-1]  )
+
 
         if not self.ustar_fixed:
+            # Correction to windspeed for free convective cases (Beljaars, QJRMS (1994), 121, pp. 255-270)
+            # Value 1.2 is empirical, but should be O(1)
+            if windspeed < 0.1:  #???? Not sure of the limit here
+                if self.bflux > 0.0:
+                    # Need to get theta_rho
+                    with nogil:
+                        for k in xrange(self.Gr.nzg):
+                            qv = GMV.QT.values[k] - GMV.QL.values[k]
+                            theta_rho[k] = theta_rho_c(self.Ref.p0_half[k], GMV.T.values[k], GMV.QT.values[k], qv)
+
+                    zi = get_inversion(&theta_rho[0], &GMV.U.values[0], &GMV.V.values[0], &self.Gr.z_half[0], kmin, kmax, self.Ri_bulk_crit)
+                    wstar = get_wstar(self.bflux, zi)
+                    windspeed = np.sqrt(windspeed*windspeed  + (1.2 *wstar)*(1.2 * wstar) )
+                else:
+                    print('WARNING: Low windspeed + stable conditions, need to check ustar computation')
             self.ustar = compute_ustar(windspeed, self.bflux, self.zrough, self.Gr.z_half[gw])
 
         self.obukhov_length = -self.ustar *self.ustar *self.ustar /self.bflux /vkb
@@ -65,8 +82,8 @@ cdef class SurfaceFixedFlux(SurfaceBase):
 
 # Cases such as Rico which provide values of transfer coefficients
 cdef class SurfaceFixedCoeffs(SurfaceBase):
-    def __init__(self):
-        SurfaceBase.__init__(self)
+    def __init__(self, paramlist):
+        SurfaceBase.__init__(self, paramlist)
         return
     cpdef initialize(self):
         cdef:
@@ -101,8 +118,7 @@ cdef class SurfaceFixedCoeffs(SurfaceBase):
 
         ## where I left off
 
-        self.bflux = (g * self.Ref.alpha0[gw-1]/cp_/GMV.T.values[gw]
-                       * (self.shf + (eps_vi-1.0) * cp_ * GMV.T.values[gw] * self.lhf /lv))
+        self.bflux = buoyancy_flux(self.shf, self.lhf, GMV.T.values[gw], GMV.QT.values[gw],self.Ref.alpha0[gw-1]  )
 
 
         self.ustar =  np.sqrt(self.cm) * windspeed

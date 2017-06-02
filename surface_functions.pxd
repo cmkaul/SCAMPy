@@ -8,6 +8,8 @@ import numpy as np
 include "parameters.pxi"
 import cython
 
+cdef double buoyancy_flux(double shf, double lhf, double T_b, double qt_b, double alpha0_0)
+
 cdef inline double psi_m_unstable(double zeta, double zeta0)
 
 cdef inline double psi_m_unstable(double zeta, double zeta0)

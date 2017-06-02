@@ -2,7 +2,11 @@ import numpy as np
 from thermodynamic_functions cimport latent_heat, pd_c, pv_c, sd_c, sv_c, cpm_c
 include "parameters.pxi"
 
-
+cdef double buoyancy_flux(double shf, double lhf, double T_b, double qt_b, double alpha0_0):
+    cdef:
+        double cp_ = cpm_c(qt_b)
+        double lv = latent_heat(T_b)
+    return (g * alpha0_0 / cp_ / T_b * (shf + (eps_vi-1.0) * cp_ * T_b * lhf /lv))
 
 
 cdef inline double psi_m_unstable(double zeta, double zeta0):

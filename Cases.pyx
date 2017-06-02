@@ -11,15 +11,15 @@ cimport Forcing
 from NetCDFIO cimport NetCDFIO_Stats
 from thermodynamic_functions cimport exner_c, t_to_entropy_c, latent_heat, cpm_c, thetali_c
 
-def CasesFactory(namelist):
+def CasesFactory(namelist, paramlist):
     if namelist['meta']['casename'] == 'Soares':
-        return Soares()
+        return Soares(paramlist)
     elif namelist['meta']['casename'] == 'Bomex':
-        return Bomex()
+        return Bomex(paramlist)
 
 
 cdef class CasesBase:
-    def __init__(self):
+    def __init__(self, paramlist):
         return
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats):
         return
@@ -48,11 +48,11 @@ cdef class CasesBase:
 
 
 cdef class Soares(CasesBase):
-    def __init__(self):
+    def __init__(self, paramlist):
         self.casename = 'Soares2004'
-        self.Sur = Surface.SurfaceFixedFlux()
+        self.Sur = Surface.SurfaceFixedFlux(paramlist)
         self.Fo = Forcing.ForcingNone()
-        self.inversion_option = 'thetal_maxgrad'
+        self.inversion_option = 'critical_Ri'
         return
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats):
         Ref.Pg = 1000.0 * 100.0
@@ -131,11 +131,11 @@ cdef class Soares(CasesBase):
         return
 
 cdef class Bomex(CasesBase):
-    def __init__(self):
+    def __init__(self, paramlist):
         self.casename = 'Bomex'
-        self.Sur = Surface.SurfaceFixedFlux()
+        self.Sur = Surface.SurfaceFixedFlux(paramlist)
         self.Fo = Forcing.ForcingStandard()
-        self.inversion_option = 'theta_rho'
+        self.inversion_option = 'critical_Ri'
         self.Fo.apply_coriolis = True
         self.Fo.coriolis_param = 0.376e-4 # s^{-1}
         return

@@ -273,5 +273,11 @@ cdef class EnvironmentThermodynamics:
                     EnvVar.B.values[k] = buoyancy_c(self.Ref.alpha0_half[k], alpha) - GMV.B.values[k]
                     EnvVar.THL.values[k] = t_to_thetali_c(self.Ref.p0_half[k], EnvVar.T.values[k], EnvVar.QT.values[k],
                                                           EnvVar.QL.values[k], 0.0)
-
+                    if EnvVar.QL.values[k] > 0.0:
+                        EnvVar.CF.values[k] = 1.0
+                    else:
+                        EnvVar.CF.values[k] = 0.0
+                    self.thl_cloudy[k] = EnvVar.THL.values[k]
+                    self.qt_cloudy[k] = EnvVar.QT.values[k]
+                    self.t_cloudy[k] = EnvVar.T.values[k]
         return

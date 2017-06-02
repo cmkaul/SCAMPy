@@ -161,7 +161,7 @@ cdef class GridMeanVariables:
         # Determine whether we need 2nd moment variables
         if  namelist['turbulence']['scheme'] == 'EDMF_PrognosticTKE':
             self.use_tke = True
-            self.use_scalar_var = True
+            self.use_scalar_var = False
         else:
             self.use_tke = False
             self.use_scalar_var = True

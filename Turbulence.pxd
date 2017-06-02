@@ -19,12 +19,12 @@ cdef class ParameterizationBase:
         VariableDiagnostic KH
         double wstar
         double prandtl_number
+        double Ri_bulk_crit
     cpdef initialize(self, GridMeanVariables GMV)
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)
     cpdef update(self,GridMeanVariables GMV, CasesBase Case, TimeStepping TS )
     cpdef update_inversion(self, GridMeanVariables GMV, option)
-    cpdef compute_wstar(self, CasesBase Case)
     cpdef compute_eddy_diffusivities_similarity(self, GridMeanVariables GMV, CasesBase Case)
 
 
@@ -40,6 +40,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         entr_struct (*entr_detr_fp) (double z, double z_half, double zi) nogil
         bint const_area
         bint use_local_micro
+        bint similarity_diffusivity
         double surface_area
         double [:,:] entr_w
         double [:,:] entr_sc
@@ -57,6 +58,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double [:,:] m # mass flux
         double [:] massflux_h
         double [:] massflux_qt
+        double [:] massflux_tke
         double [:] massflux_tendency_h
         double [:] massflux_tendency_qt
         double [:] diffusive_flux_h
@@ -64,10 +66,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double [:] diffusive_tendency_h
         double [:] diffusive_tendency_qt
         double [:] mixing_length
-        double [:] tke_bflux
+        double [:] tke_buoy
         double [:] tke_dissipation
-        double [:] tke_entr_loss
-        double [:] tke_detr_gain
+        double [:] tke_entr_gain
+        double [:] tke_detr_loss
+        double [:] tke_shear
         Py_ssize_t wu_option
         double updraft_fraction
         double updraft_exponent
@@ -88,10 +91,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef io(self, NetCDFIO_Stats Stats)
     cpdef update(self,GridMeanVariables GMV, CasesBase Case, TimeStepping TS )
     cpdef compute_prognostic_updrafts(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
+    cpdef compute_diagnostic_updrafts(self, GridMeanVariables GMV, CasesBase Case)
     cpdef update_inversion(self, GridMeanVariables GMV, option)
-    cpdef compute_wstar(self, CasesBase Case)
     cpdef compute_mixing_length(self, double obukhov_length)
     cpdef compute_eddy_diffusivities_tke(self, GridMeanVariables GMV, CasesBase Case)
+    cpdef reset_surface_tke(self, GridMeanVariables GMV, CasesBase Case)
     cpdef decompose_environment(self, GridMeanVariables GMV, whichvals)
     cpdef compute_entrainment_detrainment(self)
     cpdef solve_updraft_velocity(self,  TimeStepping TS)
@@ -102,9 +106,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
     cpdef update_GMV_MF_implicitMF(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef update_GMV_ED_implicitMF(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
-    cpdef compute_tke_bflux(self, GridMeanVariables GMV)
-    cpdef compute_tke_dissipation(self)
+    cpdef compute_diagnostic_tke(self, GridMeanVariables GMV, CasesBase Case)
+    cpdef compute_tke(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
+    cpdef compute_tke_buoy(self, GridMeanVariables GMV)
+    cpdef compute_tke_dissipation(self, TimeStepping TS)
     cpdef compute_tke_entr_detr(self)
+    cpdef compute_tke_shear(self, GridMeanVariables GMV)
+    cpdef update_tke_MF(self, GridMeanVariables GMV, TimeStepping TS)
+    cpdef update_tke_ED(self, GridMeanVariables GMV, CasesBase Case,TimeStepping TS)
 
 
 
@@ -151,11 +160,10 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
     cpdef io(self, NetCDFIO_Stats Stats)
     cpdef update(self,GridMeanVariables GMV, CasesBase Case, TimeStepping TS )
     cpdef update_inversion(self, GridMeanVariables GMV, option)
-    cpdef compute_wstar(self, CasesBase Case)
     cpdef decompose_environment(self, GridMeanVariables GMV, whichvals)
     cpdef compute_entrainment_detrainment(self)
     cpdef set_updraft_surface_bc(self, GridMeanVariables GMV, CasesBase Case)
-    cpdef solve_updraft_velocity(self,  TimeStepping TS)
+    cpdef solve_updraft_velocity(self)
     cpdef solve_area_fraction(self, GridMeanVariables GMV)
     cpdef solve_updraft_scalars(self, GridMeanVariables GMV)
     cpdef update_GMV_MF(self, GridMeanVariables GMV, TimeStepping TS)
@@ -171,6 +179,5 @@ cdef class SimilarityED(ParameterizationBase):
     cpdef io(self, NetCDFIO_Stats Stats)
     cpdef update(self,GridMeanVariables GMV, CasesBase Case, TimeStepping TS )
     cpdef update_inversion(self, GridMeanVariables GMV, option)
-    cpdef compute_wstar(self, CasesBase Case)
 
 

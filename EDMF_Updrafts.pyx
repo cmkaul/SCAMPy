@@ -1,5 +1,5 @@
 #!python
-#cython: boundscheck=True
+#cython: boundscheck=False
 #cython: wraparound=False
 #cython: initializedcheck=True
 #cython: cdivision=False
@@ -39,25 +39,25 @@ cdef class UpdraftVariable:
         self.units = units
 
     cpdef set_bcs(self,Grid.Grid Gr):
-        # cdef:
-        #     Py_ssize_t i,k
-        #     Py_ssize_t start_low = Gr.gw - 1
-        #     Py_ssize_t start_high = Gr.nzg - Gr.gw - 1
-        #
-        # n_updrafts = np.shape(self.values)[0]
-        #
-        # if self.name == 'w':
-        #     for i in xrange(n_updrafts):
-        #         self.values[i,start_high] = 0.0
-        #         self.values[i,start_low] = 0.0
-        #         for k in xrange(1,Gr.gw):
-        #             self.values[i,start_high+ k] = -self.values[i,start_high - k ]
-        #             self.values[i,start_low- k] = -self.values[i,start_low + k  ]
-        # else:
-        #     for k in xrange(Gr.gw):
-        #         for i in xrange(n_updrafts):
-        #             self.values[i,start_high + k +1] = self.values[i,start_high  - k]
-        #             self.values[i,start_low - k] = self.values[i,start_low + 1 + k]
+        cdef:
+            Py_ssize_t i,k
+            Py_ssize_t start_low = Gr.gw - 1
+            Py_ssize_t start_high = Gr.nzg - Gr.gw - 1
+
+        n_updrafts = np.shape(self.values)[0]
+
+        if self.name == 'w':
+            for i in xrange(n_updrafts):
+                self.values[i,start_high] = 0.0
+                self.values[i,start_low] = 0.0
+                for k in xrange(1,Gr.gw):
+                    self.values[i,start_high+ k] = -self.values[i,start_high - k ]
+                    self.values[i,start_low- k] = -self.values[i,start_low + k  ]
+        else:
+            for k in xrange(Gr.gw):
+                for i in xrange(n_updrafts):
+                    self.values[i,start_high + k +1] = self.values[i,start_high  - k]
+                    self.values[i,start_low - k] = self.values[i,start_low + 1 + k]
 
         return
 
@@ -105,9 +105,12 @@ cdef class UpdraftVariables:
     cpdef initialize(self, GridMeanVariables GMV):
         cdef:
             Py_ssize_t i,k
+            Py_ssize_t gw = self.Gr.gw
+            double dz = self.Gr.dz
             double res_fac, gaussian_std
             double limpart_tot = 0.0, limpart_low = 0.0, limpart_upp = 0.0
             double lower_lim, upper_lim, init_a_u
+            double entr
 
 
         if self.prognostic:
@@ -128,6 +131,8 @@ cdef class UpdraftVariables:
                         self.H.values[i,k] = GMV.H.values[k]
                         self.T.values[i,k] = GMV.T.values[k]
                         self.B.values[i,k] = GMV.B.values[k]
+
+
         else:
             with nogil:
                 for k in xrange(self.Gr.nzg):
@@ -139,6 +144,10 @@ cdef class UpdraftVariables:
                         self.H.values[i,k] = GMV.H.values[k]
                         self.T.values[i,k] = GMV.T.values[k]
                         self.B.values[i,k] = GMV.B.values[k]
+
+
+        self.QT.set_bcs(self.Gr)
+        self.H.set_bcs(self.Gr)
 
         return
 
