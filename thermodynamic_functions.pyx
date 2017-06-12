@@ -116,7 +116,7 @@ cdef double eos_first_guess_entropy(double H, double pd, double pv, double qt ) 
 
 cdef eos_struct eos( double (*t_to_prog)(double, double,double,double, double) nogil,
                      double (*prog_to_t)(double,double, double, double) nogil,
-                     double p0, double qt, double prog) nogil:
+                     double p0, double qt, double prog):
     cdef double qv = qt
     cdef double ql = 0.0
 
@@ -150,7 +150,11 @@ cdef eos_struct eos( double (*t_to_prog)(double, double,double,double, double) n
             ql_2 = qt - qv_star_2
             prog_2 =  t_to_prog(p0,T_2,qt, ql_2, 0.0   )
             f_2 = prog - prog_2
-            T_n = T_2 - f_2*(T_2 - T_1)/(f_2 - f_1)
+            try:
+                T_n = T_2 - f_2*(T_2 - T_1)/(f_2 - f_1)
+            except ZeroDivisionError:
+                print(T_2, T_1, qt * 1e3, prog)
+                T_n = T_2
             T_1 = T_2
             T_2 = T_n
             f_1 = f_2

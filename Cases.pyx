@@ -75,8 +75,18 @@ cdef class Soares(CasesBase):
                 theta[k] = 300.0 + 2.0 * (Gr.z_half[k]-1350.0)/1000.0
             GMV.U.values[k] = 0.01
 
+        if GMV.use_tke:
+            for k in xrange(Gr.gw, Gr.nzg-Gr.gw):
+                if Gr.z_half[k] <= 1350.0:
+                    GMV.TKE.values[k] = 0.5 - 0.5/1350.0 * Gr.z_half[k]
+                else:
+                    GMV.TKE.values[k] = 0.0
+            GMV.TKE.set_bcs(Gr)
+
         GMV.U.set_bcs(Gr)
         GMV.QT.set_bcs(Gr)
+
+
 
         if GMV.H.name == 'thetal':
             for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
@@ -94,10 +104,6 @@ cdef class Soares(CasesBase):
         GMV.H.set_bcs(Gr)
         GMV.T.set_bcs(Gr)
         GMV.satadjust()
-
-        plt.figure(1)
-        plt.plot(GMV.QT.values, Gr.z_half)
-        plt.show()
 
         return
 
@@ -197,12 +203,6 @@ cdef class Bomex(CasesBase):
         GMV.T.set_bcs(Gr)
         GMV.satadjust()
 
-        plt.figure(1)
-        plt.plot(GMV.QT.values, Gr.z_half)
-        plt.figure(2)
-        plt.plot(GMV.H.values, Gr.z_half)
-        plt.show()
-
         return
     cpdef initialize_surface(self, Grid Gr, ReferenceState Ref):
         self.Sur.zrough = 1.0e-4 # not actually used, but initialized to reasonable value
@@ -257,11 +257,3 @@ cdef class Bomex(CasesBase):
     cpdef update_forcing(self, GridMeanVariables GMV):
         self.Fo.update(GMV)
         return
-
-
-
-
-
-
-
-

@@ -50,6 +50,7 @@ def Soares():
     namelist['turbulence']['EDMF_BulkSteady']['updraft_number'] = 1
     namelist['turbulence']['EDMF_BulkSteady']['constant_area'] = True
     namelist['turbulence']['EDMF_BulkSteady']['surface_area'] = 0.1
+    namelist['turbulence']['EDMF_BulkSteady']['entrainment'] = 'dry'
 
 
     namelist['output'] = {}

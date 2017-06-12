@@ -69,7 +69,7 @@ cpdef double compute_ustar(double windspeed, double buoyancy_flux, double z0, do
             f1 = windspeed - ustar1 / vkb * (logz - psi_m_stable(zeta, zeta0))
             ustar = ustar1
             delta_ustar = ustar1 -ustar0
-            while np.abs(delta_ustar) > 1e-10:
+            while np.abs(delta_ustar) > 1e-3:
                 ustar_new = ustar1 - f1 * delta_ustar / (f1-f0)
                 f0 = f1
                 ustar0 = ustar1
@@ -88,7 +88,7 @@ cpdef double compute_ustar(double windspeed, double buoyancy_flux, double z0, do
             f1 = windspeed - ustar1 / vkb * (logz - psi_m_unstable(zeta, zeta0))
             ustar = ustar1
             delta_ustar = ustar1 - ustar0
-            while np.abs(delta_ustar) > 1e-10:
+            while np.abs(delta_ustar) > 1e-3:
                 ustar_new = ustar1 - f1 * delta_ustar / (f1 - f0)
                 f0 = f1
                 ustar0 = ustar1

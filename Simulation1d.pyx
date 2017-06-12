@@ -33,7 +33,6 @@ class Simulation1d:
         self.initialize_io()
         self.io()
 
-
         return
 
     def run(self):

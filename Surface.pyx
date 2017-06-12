@@ -43,7 +43,6 @@ cdef class SurfaceFixedFlux(SurfaceBase):
             double zi, wstar, qv
             double [:] theta_rho = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
 
-
         self.rho_qtflux = self.lhf/(latent_heat(self.Tsurface))
 
         if GMV.H.name == 'thetal':
@@ -52,7 +51,7 @@ cdef class SurfaceFixedFlux(SurfaceBase):
             self.rho_hflux = entropy_flux(rho_tflux/self.Ref.rho0[gw-1],self.rho_qtflux/self.Ref.rho0[gw-1],
                                           self.Ref.p0_half[gw], GMV.T.values[gw], GMV.QT.values[gw])
 
-        self.bflux = buoyancy_flux(self.shf, self.lhf, GMV.T.values[gw], GMV.QT.values[gw],self.Ref.alpha0[gw-1]  )
+        # self.bflux = buoyancy_flux(self.shf, self.lhf, GMV.T.values[gw], GMV.QT.values[gw],self.Ref.alpha0[gw-1]  )
 
 
         if not self.ustar_fixed:
@@ -71,10 +70,10 @@ cdef class SurfaceFixedFlux(SurfaceBase):
                     windspeed = np.sqrt(windspeed*windspeed  + (1.2 *wstar)*(1.2 * wstar) )
                 else:
                     print('WARNING: Low windspeed + stable conditions, need to check ustar computation')
+
             self.ustar = compute_ustar(windspeed, self.bflux, self.zrough, self.Gr.z_half[gw])
 
         self.obukhov_length = -self.ustar *self.ustar *self.ustar /self.bflux /vkb
-
         self.rho_uflux = - self.Ref.rho0[gw-1] *  self.ustar * self.ustar / windspeed * GMV.U.values[gw]
         self.rho_vflux = - self.Ref.rho0[gw-1] *  self.ustar * self.ustar / windspeed * GMV.V.values[gw]
         return

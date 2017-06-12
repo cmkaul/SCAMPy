@@ -41,6 +41,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         bint const_area
         bint use_local_micro
         bint similarity_diffusivity
+        double prognostic_rescale
         double surface_area
         double [:,:] entr_w
         double [:,:] entr_sc
@@ -72,6 +73,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double [:] tke_detr_loss
         double [:] tke_shear
         Py_ssize_t wu_option
+        double surface_scalar_coeff
         double updraft_fraction
         double updraft_exponent
         double wu_min
@@ -96,8 +98,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef compute_mixing_length(self, double obukhov_length)
     cpdef compute_eddy_diffusivities_tke(self, GridMeanVariables GMV, CasesBase Case)
     cpdef reset_surface_tke(self, GridMeanVariables GMV, CasesBase Case)
+    cpdef set_updraft_surface_bc(self, GridMeanVariables GMV, CasesBase Case)
     cpdef decompose_environment(self, GridMeanVariables GMV, whichvals)
-    cpdef compute_entrainment_detrainment(self)
+    cpdef compute_entrainment_detrainment(self, GridMeanVariables GMV, CasesBase Case)
     cpdef solve_updraft_velocity(self,  TimeStepping TS)
     cpdef solve_area_fraction(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef solve_updraft_scalars(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
@@ -161,11 +164,12 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
     cpdef update(self,GridMeanVariables GMV, CasesBase Case, TimeStepping TS )
     cpdef update_inversion(self, GridMeanVariables GMV, option)
     cpdef decompose_environment(self, GridMeanVariables GMV, whichvals)
-    cpdef compute_entrainment_detrainment(self)
+    cpdef compute_entrainment_detrainment(self, GridMeanVariables GMV, CasesBase Case)
     cpdef set_updraft_surface_bc(self, GridMeanVariables GMV, CasesBase Case)
     cpdef solve_updraft_velocity(self)
     cpdef solve_area_fraction(self, GridMeanVariables GMV)
     cpdef solve_updraft_scalars(self, GridMeanVariables GMV)
+    cpdef apply_updraft_microphysics(self)
     cpdef update_GMV_MF(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef update_GMV_ED(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
 

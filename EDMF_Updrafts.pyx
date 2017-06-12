@@ -273,14 +273,14 @@ cdef class UpdraftThermodynamics:
         cdef:
             Py_ssize_t k, i
             eos_struct sa
-
-        with nogil:
-            for i in xrange(self.n_updraft):
-                for k in xrange(self.Gr.nzg):
-                    sa = eos(self.t_to_prog_fp,self.prog_to_t_fp, self.Ref.p0_half[k],
-                             UpdVar.QT.values[i,k], UpdVar.H.values[i,k])
-                    UpdVar.QL.values[i,k] = sa.ql
-                    UpdVar.T.values[i,k] = sa.T
+        print('UpdThermo.satadjust')
+        # with nogil:
+        for i in xrange(self.n_updraft):
+            for k in xrange(self.Gr.nzg):
+                sa = eos(self.t_to_prog_fp,self.prog_to_t_fp, self.Ref.p0_half[k],
+                         UpdVar.QT.values[i,k], UpdVar.H.values[i,k])
+                UpdVar.QL.values[i,k] = sa.ql
+                UpdVar.T.values[i,k] = sa.T
         return
 
     cpdef buoyancy(self,  UpdraftVariables UpdVar, GridMeanVariables GMV):
@@ -358,8 +358,5 @@ cdef class UpdraftMicrophysics:
         qt[0] += self.prec_source_qt[i,k]
         ql[0] += self.prec_source_qt[i,k]
         h[0] += self.prec_source_h[i,k]
-
-
-
 
         return

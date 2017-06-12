@@ -41,9 +41,6 @@ cdef class ReferenceState:
         :return:
         '''
 
-
-
-
         self.sg = t_to_entropy_c(self.Pg, self.Tg, self.qtg, 0.0, 0.0)
 
 
