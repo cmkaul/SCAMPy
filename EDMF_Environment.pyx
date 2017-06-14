@@ -265,23 +265,18 @@ cdef class EnvironmentThermodynamics:
         else:
             with nogil:
                 for k in xrange(self.Gr.nzg):
-                    # sa = eos(self.t_to_prog_fp,self.prog_to_t_fp, self.Ref.p0_half[k], EnvVar.QT.values[k], EnvVar.H.values[k])
-                    # EnvVar.QL.values[k] = sa.ql
-                    # EnvVar.T.values[k] = sa.T
-                    # qv = EnvVar.QT.values[k] - EnvVar.QL.values[k]
-                    # alpha = alpha_c(self.Ref.p0_half[k], EnvVar.T.values[k], EnvVar.QT.values[k], qv)
-                    # EnvVar.B.values[k] = buoyancy_c(self.Ref.alpha0_half[k], alpha) - GMV.B.values[k]
-                    # EnvVar.THL.values[k] = t_to_thetali_c(self.Ref.p0_half[k], EnvVar.T.values[k], EnvVar.QT.values[k],
-                    #                                       EnvVar.QL.values[k], 0.0)
-                    # if EnvVar.QL.values[k] > 0.0:
-                    #     EnvVar.CF.values[k] = 1.0
-                    # else:
-                    #     EnvVar.CF.values[k] = 0.0
-                    EnvVar.THL.values[k] = GMV.THL.values[k]
-                    EnvVar.T.values[k] = GMV.T.values[k]
-                    EnvVar.QL.values[k] = 0.0
-                    EnvVar.CF.values[k] = 0.0
-                    EnvVar.B.values[k] = 0.0
+                    sa = eos(self.t_to_prog_fp,self.prog_to_t_fp, self.Ref.p0_half[k], EnvVar.QT.values[k], EnvVar.H.values[k])
+                    EnvVar.QL.values[k] = sa.ql
+                    EnvVar.T.values[k] = sa.T
+                    qv = EnvVar.QT.values[k] - EnvVar.QL.values[k]
+                    alpha = alpha_c(self.Ref.p0_half[k], EnvVar.T.values[k], EnvVar.QT.values[k], qv)
+                    EnvVar.B.values[k] = buoyancy_c(self.Ref.alpha0_half[k], alpha) - GMV.B.values[k]
+                    EnvVar.THL.values[k] = t_to_thetali_c(self.Ref.p0_half[k], EnvVar.T.values[k], EnvVar.QT.values[k],
+                                                          EnvVar.QL.values[k], 0.0)
+                    if EnvVar.QL.values[k] > 0.0:
+                        EnvVar.CF.values[k] = 1.0
+                    else:
+                        EnvVar.CF.values[k] = 0.0
                     self.thl_cloudy[k] = EnvVar.THL.values[k]
                     self.qt_cloudy[k] = EnvVar.QT.values[k]
                     self.t_cloudy[k] = EnvVar.T.values[k]

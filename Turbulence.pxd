@@ -79,11 +79,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double updraft_fraction
         double updraft_exponent
         double wu_min
-        Py_ssize_t au_optL
-        Py_ssize_t au_optB
-        Py_ssize_t au_optB_wu
-        Py_ssize_t au_optB_srf
-        double au_optB1_frac
+        double max_area_factor
         double updraft_surface_height
         double tke_ed_coeff
         double w_entr_coeff
