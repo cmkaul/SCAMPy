@@ -257,6 +257,8 @@ cdef class EnvironmentThermodynamics:
     cpdef satadjust(self, EnvironmentVariables EnvVar, GridMeanVariables GMV):
         cdef:
             Py_ssize_t k
+            Py_ssize_t gw = self.Gr.gw
+
             eos_struct sa
             double qv, alpha
 
@@ -264,7 +266,7 @@ cdef class EnvironmentThermodynamics:
             self.eos_update_SA_sgs(EnvVar, GMV.B)
         else:
             with nogil:
-                for k in xrange(self.Gr.nzg):
+                for k in xrange(gw,self.Gr.nzg-gw):
                     sa = eos(self.t_to_prog_fp,self.prog_to_t_fp, self.Ref.p0_half[k], EnvVar.QT.values[k], EnvVar.H.values[k])
                     EnvVar.QL.values[k] = sa.ql
                     EnvVar.T.values[k] = sa.T

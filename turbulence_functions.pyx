@@ -14,8 +14,8 @@ cdef entr_struct entr_detr_cloudy(double z, double z_half,  double zi) nogil:
     if z_half >= zi :
         _ret.entr_w = 2.0e-3
         _ret.entr_sc = 2.0e-3
-        _ret.detr_w = 3.5e-3
-        _ret.detr_sc= 3.5e-3
+        _ret.detr_w = 3.0e-3
+        _ret.detr_sc= 3.0e-3
     else:
         # I think I just made this up to give a smooth blend
         _ret.entr_sc = 2.0e-3 * (1.0 - log(z_half/zi))
