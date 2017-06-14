@@ -205,38 +205,43 @@ cdef class UpdraftVariables:
         with nogil:
             for i in xrange(self.n_updrafts):
                 for k in xrange(self.Gr.nzg):
-                    self.QT.new[i,k] = self.QT.values[i,k]
-                    self.H.new[i,k] = self.H.values[i,k]
-                    self.QL.new[i,k] = self.QL.values[i,k]
                     self.W.new[i,k] = self.W.values[i,k]
                     self.Area.new[i,k] = self.Area.values[i,k]
-
+                    self.QT.new[i,k] = self.QT.values[i,k]
+                    self.QL.new[i,k] = self.QL.values[i,k]
+                    self.H.new[i,k] = self.H.values[i,k]
+                    self.THL.new[i,k] = self.THL.values[i,k]
+                    self.T.new[i,k] = self.T.values[i,k]
+                    self.B.new[i,k] = self.B.values[i,k]
         return
-
 
     # quick utility to set "new" arrays with values in the "values" arrays
     cpdef set_old_with_values(self):
         with nogil:
             for i in xrange(self.n_updrafts):
                 for k in xrange(self.Gr.nzg):
-                    self.QT.old[i,k] = self.QT.values[i,k]
-                    self.H.old[i,k] = self.H.values[i,k]
-                    self.QL.old[i,k] = self.QL.values[i,k]
                     self.W.old[i,k] = self.W.values[i,k]
                     self.Area.old[i,k] = self.Area.values[i,k]
-
+                    self.QT.old[i,k] = self.QT.values[i,k]
+                    self.QL.old[i,k] = self.QL.values[i,k]
+                    self.H.old[i,k] = self.H.values[i,k]
+                    self.THL.old[i,k] = self.THL.values[i,k]
+                    self.T.old[i,k] = self.T.values[i,k]
+                    self.B.old[i,k] = self.B.values[i,k]
         return
     # quick utility to set "tmp" arrays with values in the "new" arrays
     cpdef set_values_with_new(self):
         with nogil:
             for i in xrange(self.n_updrafts):
                 for k in xrange(self.Gr.nzg):
-                    self.QT.values[i,k] = self.QT.new[i,k]
-                    self.H.values[i,k] = self.H.new[i,k]
-                    self.QL.values[i,k] = self.QL.new[i,k]
                     self.W.values[i,k] = self.W.new[i,k]
                     self.Area.values[i,k] = self.Area.new[i,k]
-
+                    self.QT.values[i,k] = self.QT.new[i,k]
+                    self.QL.values[i,k] = self.QL.new[i,k]
+                    self.H.values[i,k] = self.H.new[i,k]
+                    self.THL.values[i,k] = self.THL.new[i,k]
+                    self.T.values[i,k] = self.T.new[i,k]
+                    self.B.values[i,k] = self.B.new[i,k]
         return
 
 
@@ -273,27 +278,48 @@ cdef class UpdraftThermodynamics:
         cdef:
             Py_ssize_t k, i
             eos_struct sa
-        print('UpdThermo.satadjust')
-        # with nogil:
-        for i in xrange(self.n_updraft):
-            for k in xrange(self.Gr.nzg):
-                sa = eos(self.t_to_prog_fp,self.prog_to_t_fp, self.Ref.p0_half[k],
-                         UpdVar.QT.values[i,k], UpdVar.H.values[i,k])
-                UpdVar.QL.values[i,k] = sa.ql
-                UpdVar.T.values[i,k] = sa.T
-        return
-
-    cpdef buoyancy(self,  UpdraftVariables UpdVar, GridMeanVariables GMV):
-        cdef:
-            Py_ssize_t k, i
-            double alpha, qv
 
         with nogil:
             for i in xrange(self.n_updraft):
                 for k in xrange(self.Gr.nzg):
-                    qv = UpdVar.QT.values[i,k] - UpdVar.QL.values[i,k]
-                    alpha = alpha_c(self.Ref.p0_half[k], UpdVar.T.values[i,k], UpdVar.QT.values[i,k], qv)
-                    UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_half[k], alpha) - GMV.B.values[k]
+                    sa = eos(self.t_to_prog_fp,self.prog_to_t_fp, self.Ref.p0_half[k],
+                             UpdVar.QT.values[i,k], UpdVar.H.values[i,k])
+                    UpdVar.QL.values[i,k] = sa.ql
+                    UpdVar.T.values[i,k] = sa.T
+        return
+
+    cpdef buoyancy(self,  UpdraftVariables UpdVar, GridMeanVariables GMV, bint extrap):
+        cdef:
+            Py_ssize_t k, i
+            double alpha, qv, qt, t, h
+            Py_ssize_t gw = self.Gr.gw
+
+        GMV.satadjust()
+
+        if not extrap:
+            with nogil:
+                for i in xrange(self.n_updraft):
+                    for k in xrange(self.Gr.nzg):
+                        qv = UpdVar.QT.values[i,k] - UpdVar.QL.values[i,k]
+                        alpha = alpha_c(self.Ref.p0_half[k], UpdVar.T.values[i,k], UpdVar.QT.values[i,k], qv)
+                        UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_half[k], alpha) - GMV.B.values[k]
+        else:
+            with nogil:
+                for i in xrange(self.n_updraft):
+                    for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+                        if UpdVar.Area.values[i,k] > 0.0:
+                            qt = UpdVar.QT.values[i,k]
+                            qv = UpdVar.QT.values[i,k] - UpdVar.QL.values[i,k]
+                            h = UpdVar.H.values[i,k]
+                            t = UpdVar.T.values[i,k]
+                        else:
+                            sa = eos(self.t_to_prog_fp, self.prog_to_t_fp, self.Ref.p0_half[k],
+                                     qt, h)
+                            qv = qt - sa.ql
+                            t = sa.T
+
+                        alpha = alpha_c(self.Ref.p0_half[k], t, qt, qv)
+                        UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_half[k], alpha) - GMV.B.values[k]
         return
 
 

@@ -49,7 +49,7 @@ cdef class UpdraftThermodynamics:
         Py_ssize_t n_updraft
 
     cpdef satadjust(self, UpdraftVariables UpdVar)
-    cpdef buoyancy(self, UpdraftVariables UpdVar, GridMeanVariables GMV)
+    cpdef buoyancy(self, UpdraftVariables UpdVar, GridMeanVariables GMV, bint extrap)
 
 cdef class UpdraftMicrophysics:
     cdef:

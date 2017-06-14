@@ -242,6 +242,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         except:
             self.similarity_diffusivity = False
 
+
+        self.extrapolate_buoyancy = True
+        self.implicit_factor = 0.5
+
         # Get values from paramlist
         self.surface_area = paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area']
         self.surface_scalar_coeff = paramlist['turbulence']['EDMF_PrognosticTKE']['surface_scalar_coeff']
@@ -484,7 +488,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         # print('EnvThermo.satadjust')
         self.EnvThermo.satadjust(self.EnvVar, GMV)
         # print('compute_eddy_diffusivities_tke')
-        if TS.nstep > 100:
+        if TS.nstep > 10000000000000:
             self.compute_eddy_diffusivities_tke(GMV, Case)
         else:
             ParameterizationBase.compute_eddy_diffusivities_similarity(self,GMV, Case)
@@ -494,65 +498,80 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.compute_tke(GMV, Case, TS)
 
 
+        # if TS.nstep > 2:
+        #     # PLOTS
+        #     plt.figure('Updated  W')
+        #     plt.plot(self.UpdVar.W.values[0,kmin-1:kmax], self.Gr.z[kmin-1:kmax], label='upd')
+        #     plt.plot(self.EnvVar.W.values[kmin:kmax],self.Gr.z_half[kmin:kmax], label='env')
+        #     plt.grid()
+        #     plt.legend(loc=0)
+        #
+        #     plt.figure('Updated Updraft Area')
+        #     plt.plot(self.UpdVar.Area.values[0,kmin:kmax], self.Gr.z_half[kmin:kmax], label='upd')
+        #     plt.grid()
+        #
+        #     plt.figure('Updated Buoyancy')
+        #     plt.plot(self.UpdVar.B.values[0,kmin:kmax], self.Gr.z_half[kmin:kmax], label='upd')
+        #     plt.plot(self.EnvVar.B.values[kmin:kmax], self.Gr.z_half[kmin:kmax], label='env')
+        #     plt.grid()
+        #
+        #     plt.figure('Updated QT')
+        #     plt.plot(self.UpdVar.QT.values[0,kmin:kmax], self.Gr.z_half[kmin:kmax],label='upd')
+        #     plt.plot(self.EnvVar.QT.values[kmin:kmax],self.Gr.z_half[kmin:kmax],label='env')
+        #     plt.plot(GMV.QT.values[kmin:kmax], self.Gr.z_half[kmin:kmax], label='values')
+        #     plt.plot(GMV.QT.mf_update[kmin:kmax], self.Gr.z_half[kmin:kmax], label='mf')
+        #     plt.plot(GMV.QT.new[kmin:kmax], self.Gr.z_half[kmin:kmax], label='new')
+        #     plt.grid()
+        #     plt.legend(loc=0)
+        #
+        #     # plt.figure('Mixing length')
+        #     # plt.plot(self.mixing_length[kmin:kmax], self.Gr.z_half[kmin:kmax],label='KM')
+        #     # plt.grid()
+        #     # plt.figure('Viscosity')
+        #     # plt.plot(self.KM.values[kmin:kmax], self.Gr.z_half[kmin:kmax],label='KM')
+        #     # plt.plot(self.KH.values[kmin:kmax], self.Gr.z[kmin:kmax],label='KH')
+        #     # plt.grid()
+        #     # plt.legend(loc=0)
+        #
+        #     plt.figure('entrL/B, detrL/B')
+        #     plt.plot(self.entrB[0,kmin:kmax], self.Gr.z_half[kmin:kmax], label='entrB')
+        #     plt.plot(self.entrL[0,kmin:kmax], self.Gr.z_half[kmin:kmax], label='entrL')
+        #     plt.plot(self.detrB[0,kmin:kmax], self.Gr.z_half[kmin:kmax], label='detrB')
+        #     plt.plot(self.detrL[0,kmin:kmax], self.Gr.z_half[kmin:kmax], label='detrL')
+        #     plt.grid()
+        #     plt.legend(loc=0)
+        #
+        #
+        #     # plt.figure('Updated TKE')
+        #     #
+        #     # plt.plot(self.EnvVar.TKE.values[kmin:kmax],self.Gr.z_half[kmin:kmax],label='env')
+        #     # plt.plot(GMV.TKE.values[kmin:kmax], self.Gr.z_half[kmin:kmax], label='values')
+        #     # plt.plot(GMV.TKE.mf_update[kmin:kmax], self.Gr.z_half[kmin:kmax], label='mf')
+        #     # plt.plot(GMV.TKE.new[kmin:kmax], self.Gr.z_half[kmin:kmax], label='new')
+        #     # plt.legend(loc=0)
+        #
+            # plt.figure('Updated H')
+            # plt.plot(self.UpdVar.H.values[0,kmin:kmax], self.Gr.z_half[kmin:kmax],label='upd')
+            # plt.plot(self.EnvVar.H.values[kmin:kmax], self.Gr.z_half[kmin:kmax],label='env')
+            # plt.plot(GMV.H.values[kmin:kmax], self.Gr.z_half[kmin:kmax], label='values')
+            # plt.plot(GMV.H.mf_update[kmin:kmax], self.Gr.z_half[kmin:kmax], label='mf')
+            # plt.plot(GMV.H.new[kmin:kmax], self.Gr.z_half[kmin:kmax], label='new')
+            # plt.legend(loc=0)
+            # plt.grid()
 
-        # PLOTS
-        plt.figure('Updated  W')
-        plt.plot(self.UpdVar.W.values[0,kmin-1:kmax], self.Gr.z[kmin-1:kmax], label='upd')
-        plt.plot(self.EnvVar.W.values[kmin:kmax],self.Gr.z_half[kmin:kmax], label='env')
-        plt.legend(loc=0)
-
-        plt.figure('Updated Updraft Area')
-        plt.plot(self.UpdVar.Area.values[0,kmin:kmax], self.Gr.z_half[kmin:kmax], label='upd')
-
-        plt.figure('Updated QT')
-        plt.plot(self.UpdVar.QT.values[0,kmin:kmax], self.Gr.z_half[kmin:kmax],label='upd')
-        plt.plot(self.EnvVar.QT.values[kmin:kmax],self.Gr.z_half[kmin:kmax],label='env')
-        plt.plot(GMV.QT.values[kmin:kmax], self.Gr.z_half[kmin:kmax], label='values')
-        plt.plot(GMV.QT.mf_update[kmin:kmax], self.Gr.z_half[kmin:kmax], label='mf')
-        plt.plot(GMV.QT.new[kmin:kmax], self.Gr.z_half[kmin:kmax], label='new')
-        plt.legend(loc=0)
-
-        plt.figure('Mixing length')
-        plt.plot(self.mixing_length[kmin:kmax], self.Gr.z_half[kmin:kmax],label='KM')
-
-        plt.figure('Viscosity')
-        plt.plot(self.KM.values[kmin:kmax], self.Gr.z_half[kmin:kmax],label='KM')
-        plt.plot(self.KH.values[kmin:kmax], self.Gr.z[kmin:kmax],label='KH')
-
-        plt.legend(loc=0)
-
-
-        plt.figure('Updated TKE')
-
-        plt.plot(self.EnvVar.TKE.values[kmin:kmax],self.Gr.z_half[kmin:kmax],label='env')
-        plt.plot(GMV.TKE.values[kmin:kmax], self.Gr.z_half[kmin:kmax], label='values')
-        plt.plot(GMV.TKE.mf_update[kmin:kmax], self.Gr.z_half[kmin:kmax], label='mf')
-        plt.plot(GMV.TKE.new[kmin:kmax], self.Gr.z_half[kmin:kmax], label='new')
-        plt.legend(loc=0)
-
-        plt.figure('Updated H')
-        plt.plot(self.UpdVar.H.values[0,kmin:kmax], self.Gr.z_half[kmin:kmax],label='upd')
-        plt.plot(self.EnvVar.H.values[kmin:kmax], self.Gr.z_half[kmin:kmax],label='env')
-        plt.plot(GMV.H.values[kmin:kmax], self.Gr.z_half[kmin:kmax], label='values')
-        plt.plot(GMV.H.mf_update[kmin:kmax], self.Gr.z_half[kmin:kmax], label='mf')
-        plt.plot(GMV.H.new[kmin:kmax], self.Gr.z_half[kmin:kmax], label='new')
-        plt.legend(loc=0)
-
-        plt.figure('Updated U')
-        plt.plot(GMV.U.values[kmin:kmax], self.Gr.z_half[kmin:kmax], label='values')
-        plt.plot(GMV.U.mf_update[kmin:kmax], self.Gr.z_half[kmin:kmax], label='mf')
-        plt.plot(GMV.U.new[kmin:kmax], self.Gr.z_half[kmin:kmax], label='new')
-        plt.legend(loc=0)
-
-        plt.figure('Updated V')
-        plt.plot(GMV.V.values[kmin:kmax], self.Gr.z_half[kmin:kmax], label='values')
-        plt.plot(GMV.V.mf_update[kmin:kmax], self.Gr.z_half[kmin:kmax], label='mf')
-        plt.plot(GMV.V.new[kmin:kmax], self.Gr.z_half[kmin:kmax], label='new')
-        plt.legend(loc=0)
-
-
-
-        plt.show()
+        #     # plt.figure('Updated U')
+        #     # plt.plot(GMV.U.values[kmin:kmax], self.Gr.z_half[kmin:kmax], label='values')
+        #     # plt.plot(GMV.U.mf_update[kmin:kmax], self.Gr.z_half[kmin:kmax], label='mf')
+        #     # plt.plot(GMV.U.new[kmin:kmax], self.Gr.z_half[kmin:kmax], label='new')
+        #     # plt.legend(loc=0)
+        #     #
+        #     # plt.figure('Updated V')
+        #     # plt.plot(GMV.V.values[kmin:kmax], self.Gr.z_half[kmin:kmax], label='values')
+        #     # plt.plot(GMV.V.mf_update[kmin:kmax], self.Gr.z_half[kmin:kmax], label='mf')
+        #     # plt.plot(GMV.V.new[kmin:kmax], self.Gr.z_half[kmin:kmax], label='new')
+        #     # plt.legend(loc=0)
+        #
+            # plt.show()
 
 
 
@@ -562,8 +581,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         return
 
     cpdef compute_prognostic_updrafts(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
-        #Solve updraft equations
-        # self.set_updraft_surface_bc(GMV, Case)
+
         cdef:
             Py_ssize_t iter_
 
@@ -572,12 +590,15 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.set_updraft_surface_bc(GMV, Case)
 
         for iter_ in xrange(self.updraft_iterations):
-            self.UpdVar.set_values_with_new()
-            self.UpdThermo.buoyancy(self.UpdVar, GMV)
+            # self.UpdVar.set_values_with_new()
+            # self.UpdThermo.buoyancy(self.UpdVar, GMV, self.extrapolate_buoyancy)
             self.compute_entrainment_detrainment(GMV,Case)
             self.solve_updraft_velocity(TS)
             self.solve_area_fraction(GMV, TS)
             self.solve_updraft_scalars(GMV, Case, TS)
+            self.UpdVar.set_values_with_new()
+            self.UpdThermo.buoyancy(self.UpdVar, GMV, self.extrapolate_buoyancy)
+
 
 
 
@@ -597,28 +618,28 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         self.compute_entrainment_detrainment(GMV, Case)
 
-        # with nogil:
-        for i in xrange(self.n_updrafts):
-            self.UpdVar.H.values[i,gw] = (GMV.H.values[gw] + 0.3 * Case.Sur.rho_hflux/sqrt(e_srf) * self.Ref.alpha0_half[gw])
-            self.UpdVar.QT.values[i,gw] = (GMV.QT.values[gw] + 0.3 * Case.Sur.rho_qtflux/sqrt(e_srf) * self.Ref.alpha0_half[gw])
-            # Find the cloud liquid content
-            sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[gw],
-                     self.UpdVar.QT.values[i,gw], self.UpdVar.H.values[i,gw])
-            self.UpdVar.QL.values[i,gw] = sa.ql
-            self.UpdVar.T.values[i,gw] = sa.T
-            for k in xrange(gw+1, self.Gr.nzg-gw):
-                denom = 1.0 + self.entr_sc[i,k] * dz
-                self.UpdVar.H.values[i,k] = (self.UpdVar.H.values[i,k-1] + self.entr_sc[i,k] * dz * self.EnvVar.H.values[k])/denom
-                self.UpdVar.QT.values[i,k] = (self.UpdVar.QT.values[i,k-1] + self.entr_sc[i,k] * dz * self.EnvVar.QT.values[k])/denom
+        with nogil:
+            for i in xrange(self.n_updrafts):
+                self.UpdVar.H.values[i,gw] = (GMV.H.values[gw] + 0.3 * Case.Sur.rho_hflux/sqrt(e_srf) * self.Ref.alpha0_half[gw])
+                self.UpdVar.QT.values[i,gw] = (GMV.QT.values[gw] + 0.3 * Case.Sur.rho_qtflux/sqrt(e_srf) * self.Ref.alpha0_half[gw])
+                # Find the cloud liquid content
+                sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[gw],
+                         self.UpdVar.QT.values[i,gw], self.UpdVar.H.values[i,gw])
+                self.UpdVar.QL.values[i,gw] = sa.ql
+                self.UpdVar.T.values[i,gw] = sa.T
+                for k in xrange(gw+1, self.Gr.nzg-gw):
+                    denom = 1.0 + self.entr_sc[i,k] * dz
+                    self.UpdVar.H.values[i,k] = (self.UpdVar.H.values[i,k-1] + self.entr_sc[i,k] * dz * self.EnvVar.H.values[k])/denom
+                    self.UpdVar.QT.values[i,k] = (self.UpdVar.QT.values[i,k-1] + self.entr_sc[i,k] * dz * self.EnvVar.QT.values[k])/denom
 
-                sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[k],
-                         self.UpdVar.QT.values[i,k], self.UpdVar.H.values[i,k])
-                self.UpdVar.QL.values[i,k] = sa.ql
-                self.UpdVar.T.values[i,k] = sa.T
+                    sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[k],
+                             self.UpdVar.QT.values[i,k], self.UpdVar.H.values[i,k])
+                    self.UpdVar.QL.values[i,k] = sa.ql
+                    self.UpdVar.T.values[i,k] = sa.T
 
         self.UpdVar.QT.set_bcs(self.Gr)
         self.UpdVar.H.set_bcs(self.Gr)
-        self.UpdThermo.buoyancy(self.UpdVar, GMV)
+        self.UpdThermo.buoyancy(self.UpdVar, GMV, self.extrapolate_buoyancy)
 
         # Solve updraft velocity equation
         with nogil:
@@ -635,43 +656,43 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         break
         self.UpdVar.W.set_bcs(self.Gr)
         # solve_area_fraction
-        if self.const_area:
-            with nogil:
-                for i in xrange(self.n_updrafts):
-                    self.UpdVar.Area.values[i,gw] = self.area_surface_bc[i]
-                    for k in xrange(gw+1, self.Gr.nzg):
-                        if self.UpdVar.W.values[i,k] > 0.0:
-                            self.UpdVar.Area.values[i,k] = self.area_surface_bc[i]
-                        else:
-                            # the updraft has terminated so set its area fraction to zero at this height and all heights above
-                            self.UpdVar.Area.values[i,k] =  self.area_surface_bc[i]
-                            self.UpdVar.H.values[i,k] = GMV.H.values[k]
-                            self.UpdVar.QT.values[i,k] = GMV.QT.values[k]
-                            self.UpdVar.B.values[i,k] = 0.0
-                            self.UpdVar.QL.values[i,k] = 0.0
-                            self.UpdVar.T.values[i,k] = GMV.T.values[k]
-        else:
-            with nogil:
-                for i in xrange(self.n_updrafts):
-                    self.UpdVar.Area.values[i,gw] = self.area_surface_bc[i]
-                    w_mid = 0.5* (self.UpdVar.W.values[i,gw])
-                    for k in xrange(gw+1, self.Gr.nzg):
-                        w_low = w_mid
-                        w_mid = interp2pt(self.UpdVar.W.values[i,k],self.UpdVar.W.values[i,k-1])
-                        if self.UpdVar.W.values[i,k] > 0.0:
-                            self.UpdVar.Area.values[i,k] = (self.Ref.rho0_half[k-1]*self.UpdVar.Area.values[i,k-1]*w_low/
-                                                            (1.0-(self.entr_sc[i,k-1]-self.detr_sc[i,k-1])*dz)/w_mid/self.Ref.rho0_half[k])
-                            # # Limit the increase in updraft area when the updraft decelerates
-                            if self.UpdVar.Area.values[i,k] >  self.au_optB1_frac * self.area_surface_bc[i]:
-                                self.UpdVar.Area.values[i,k] = self.au_optB1_frac * self.area_surface_bc[i]
-                        else:
-                            # the updraft has terminated so set its area fraction to zero at this height and all heights above
-                            self.UpdVar.Area.values[i,k] = 0.0
-                            self.UpdVar.H.values[i,k] = GMV.H.values[k]
-                            self.UpdVar.QT.values[i,k] = GMV.QT.values[k]
-                            self.UpdVar.B.values[i,k] = 0.0
-                            self.UpdVar.T.values[i,k] = GMV.T.values[k]
-                            self.UpdVar.QL.values[i,k] = 0.0
+        # if self.const_area:
+        #     with nogil:
+        #         for i in xrange(self.n_updrafts):
+        #             self.UpdVar.Area.values[i,gw] = self.area_surface_bc[i]
+        #             for k in xrange(gw+1, self.Gr.nzg):
+        #                 if self.UpdVar.W.values[i,k] > 0.0:
+        #                     self.UpdVar.Area.values[i,k] = self.area_surface_bc[i]
+        #                 else:
+        #                     # the updraft has terminated so set its area fraction to zero at this height and all heights above
+        #                     self.UpdVar.Area.values[i,k] =  self.area_surface_bc[i]
+        #                     self.UpdVar.H.values[i,k] = GMV.H.values[k]
+        #                     self.UpdVar.QT.values[i,k] = GMV.QT.values[k]
+        #                     self.UpdVar.B.values[i,k] = 0.0
+        #                     self.UpdVar.QL.values[i,k] = 0.0
+        #                     self.UpdVar.T.values[i,k] = GMV.T.values[k]
+        # else:
+        with nogil:
+            for i in xrange(self.n_updrafts):
+                self.UpdVar.Area.values[i,gw] = self.area_surface_bc[i]
+                w_mid = 0.5* (self.UpdVar.W.values[i,gw])
+                for k in xrange(gw+1, self.Gr.nzg):
+                    w_low = w_mid
+                    w_mid = interp2pt(self.UpdVar.W.values[i,k],self.UpdVar.W.values[i,k-1])
+                    if self.UpdVar.W.values[i,k] > 0.0:
+                        self.UpdVar.Area.values[i,k] = (self.Ref.rho0_half[k-1]*self.UpdVar.Area.values[i,k-1]*w_low/
+                                                        (1.0-(self.entr_sc[i,k]-self.detr_sc[i,k])*dz)/w_mid/self.Ref.rho0_half[k])
+                        # # Limit the increase in updraft area when the updraft decelerates
+                        if self.UpdVar.Area.values[i,k] >  self.au_optB1_frac * self.area_surface_bc[i]:
+                            self.UpdVar.Area.values[i,k] = self.au_optB1_frac * self.area_surface_bc[i]
+                    else:
+                        # the updraft has terminated so set its area fraction to zero at this height and all heights above
+                        self.UpdVar.Area.values[i,k] = 0.0
+                        self.UpdVar.H.values[i,k] = GMV.H.values[k]
+                        self.UpdVar.QT.values[i,k] = GMV.QT.values[k]
+                        self.UpdVar.B.values[i,k] = 0.0
+                        self.UpdVar.T.values[i,k] = GMV.T.values[k]
+                        self.UpdVar.QL.values[i,k] = 0.0
 
         self.UpdVar.Area.set_bcs(self.Gr)
 
@@ -683,7 +704,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         cdef:
             Py_ssize_t k
 
-        if TS.nstep > 100:
+        if TS.nstep > 1000000000000000:
             self.compute_tke_buoy(GMV)
             self.compute_tke_dissipation(TS)
             self.compute_tke_entr_detr()
@@ -776,9 +797,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for i in xrange(self.n_updrafts):
                 #area: set in initialize
                 self.w_surface_bc[i] = 0.0
-                self.h_surface_bc[i] = (self.EnvVar.H.values[gw] + self.surface_scalar_coeff * self.init_sc_upd[i]
+                self.h_surface_bc[i] = (GMV.H.values[gw] + self.surface_scalar_coeff * self.init_sc_upd[i]
                                         * Case.Sur.rho_hflux/sqrt(e_srf) * self.Ref.alpha0_half[gw])
-                self.qt_surface_bc[i] = (self.EnvVar.QT.values[gw] + self.surface_scalar_coeff * self.init_sc_upd[i]
+                self.qt_surface_bc[i] = (GMV.QT.values[gw] + self.surface_scalar_coeff * self.init_sc_upd[i]
                                          * Case.Sur.rho_qtflux/sqrt(e_srf) * self.Ref.alpha0_half[gw])
 
         return
@@ -874,10 +895,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     self.UpdVar.W.new[i,self.Gr.gw-1] =  self.w_surface_bc[i]
                     for k in range(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                         #Limit wa to be positive (which may not hold if w_env >> 0, or more specifically, w_env >~ dz/dt)
-                        wa = fmax(dz*(TS.dti - b1*self.EnvVar.W.values[k]*self.entr_w[i,k]), 0.0)
+                        wa = fmax(dz*(TS.dti * self.prognostic_rescale
+                                      - b1*self.EnvVar.W.values[k]*self.entr_w[i,k]), 0.0)
                         wb2 = ((1.0 + 2.0 * b1 * self.entr_w[i,k]*dz) *
-                               (self.UpdVar.W.new[i,k-1]**2. + 2.0 * dz * TS.dti * self.UpdVar.W.values[i,k]
-                               + 2.0 * b2 * self.UpdVar.B.values[i,k]*dz))
+                               (self.UpdVar.W.new[i,k-1]**2.
+                                + 2.0 * dz * TS.dti * self.UpdVar.W.values[i,k] * self.prognostic_rescale
+                               + 2.0 * b2 * interp2pt(self.UpdVar.B.values[i,k],self.UpdVar.B.values[i,k+1])*dz))
 
                         wb2 = fmax(wb2, 0.0)
                         self.UpdVar.W.new[i,k] = (-wa + sqrt(wa*wa + wb2))/(1.0 + 2.0 * b1 * self.entr_w[i,k]*dz)
@@ -914,269 +937,223 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef solve_area_fraction(self, GridMeanVariables GMV, TimeStepping TS):
         cdef:
             Py_ssize_t k, i
-            double dz= self.Gr.dz
             Py_ssize_t gw = self.Gr.gw
-            double net_e
-            double [:,:] ra_new = np.zeros((self.n_updrafts,self.Gr.nzg),dtype=np.double, order='c')
-            double [:,:] ra_old = np.zeros((self.n_updrafts,self.Gr.nzg),dtype=np.double, order='c')
-            double [:,:] fact = np.zeros((self.n_updrafts,self.Gr.nzg),dtype=np.double, order='c')
-            double [:,:] a_tmp = np.zeros((self.n_updrafts,self.Gr.nzg),dtype=np.double, order='c')
-            Py_ssize_t [:,:] adj_au_flag = np.zeros((self.n_updrafts,self.Gr.nzg), dtype=np.int, order='c')
-            double au_limit
+            double au_lim
+            double dti_pr = TS.dti * self.prognostic_rescale
+            double dzi = self.Gr.dzi
+            double imf = self.implicit_factor
+            double exf = 1.0 - self.implicit_factor
+            double wnew_k, w_k, wnew_km, w_km, rhof
+            double c1, c2, c3, c4, c0
 
         with nogil:
-            # re-set some arrays to zero values
             for i in xrange(self.n_updrafts):
-                for k in xrange(self.Gr.nzg):
-                    ra_old[i,k] = self.UpdVar.Area.old[i,k] * self.Ref.rho0_half[k]
-                    self.UpdVar.Area.new[i,k] = 0.0
-                    self.entrL[i,k] = 0.0
-                    self.entrB[i,k] = 0.0
-                    self.detrL[i,k] = 0.0
-                    self.detrB[i,k] = 0.0
-
-        if self.au_optL == 1:
-            with nogil:
-                for i in xrange(self.n_updrafts):
-                    ra_new[i, gw] = ra_old[i, gw]
-                    self.entrB[i,gw-1] = ra_new[i, gw] * self.UpdVar.W.new[i, gw]
-                    for k in xrange(gw+1,self.Gr.nzg-gw):
-                        net_e = self.entr_sc[i,k-1] - self.detr_sc[i,k-1]
-                        ra_new[i,k] = ra_old[i,k] * dz * TS.dti + ra_new[i,k-1] * self.UpdVar.W.new[i,k-1] * exp(dz * net_e)
-                        ra_new[i,k] = ra_new[i,k] / (dz * TS.dti + self.UpdVar.W.new[i,k])
-
-                        if net_e == 0.0:
-                            fact[i,k] = dz
-                        else:
-                            fact[i,k] = (exp(dz * net_e) - 1.0)/net_e
-                        self.entrL[i,k-1] = self.entr_sc[i,k-1] * ra_new[i,k] * self.UpdVar.W.new[i,k-1] * fact[i,k]
-                        self.detrL[i,k-1] = self.detr_sc[i,k-1] * ra_new[i,k] * self.UpdVar.W.new[i,k-1] * fact[i,k]
-
-
-
-        elif self.au_optL == 2:
-            with nogil:
-                for i in xrange(self.n_updrafts):
-                    ra_new[i,gw] = ra_old[i,gw]
-                    net_e = self.entr_sc[i,gw-1] - self.detr_sc[i,gw-1]
-                    if net_e == 0.0:
-                        fact[i,gw] = dz
+                self.UpdVar.Area.new[i,gw] = self.area_surface_bc[i]
+                au_lim = self.area_surface_bc[i] * self.au_optB1_frac
+                for k in xrange(gw+1, self.Gr.nzg-gw):
+                    wnew_k = interp2pt(self.UpdVar.W.new[i,k-1], self.UpdVar.W.new[i,k])
+                    if wnew_k > 0.0:
+                        w_k = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
+                        wnew_km = interp2pt(self.UpdVar.W.new[i,k-2], self.UpdVar.W.new[i,k-1])
+                        w_km = interp2pt(self.UpdVar.W.values[i,k-2], self.UpdVar.W.values[i,k-1])
+                        rhof = self.Ref.rho0_half[k-1]/self.Ref.rho0_half[k]
+                        c1 = dti_pr + imf * wnew_k * (dzi - self.entr_sc[i,k] + self.detr_sc[i,k])
+                        c2 = dti_pr + exf * w_k * (self.entr_sc[i,k] - self.detr_sc[i,k] - dzi)
+                        c3 = rhof * imf * wnew_km * dzi
+                        c4 = rhof * exf * w_km * dzi
+                        self.UpdVar.Area.new[i,k] = (c2/c1 * self.UpdVar.Area.values[i,k]
+                                                     + c3/c1 * self.UpdVar.Area.new[i,k-1]
+                                                     + c4/c1 * self.UpdVar.Area.values[i,k-1])
+                        if self.UpdVar.Area.new[i,k] > au_lim:
+                            c0 = imf * wnew_k * au_lim + exf * w_k * self.UpdVar.Area.values[i,k]
+                            c1 = dti_pr + imf * wnew_k * (dzi - self.entr_sc[i,k] )
+                            c2 = dti_pr + exf * w_k * (self.entr_sc[i,k] - dzi)
+                            self.detr_sc[i,k] = (-c1/c0 * au_lim + c2/c0 * self.UpdVar.Area.values[i,k]
+                                                     + c3/c0 * self.UpdVar.Area.new[i,k-1]
+                                                     + c4/c0 * self.UpdVar.Area.values[i,k-1] )
+                            self.UpdVar.Area.new[i,k] = au_lim
                     else:
-                        fact[i,gw] = (1.0 - exp(-dz * net_e))/net_e
-                    self.entrL[i,gw-1] = self.entr_sc[i,gw-1] * ra_new[i,gw] * self.UpdVar.W.new[i,gw-1] * fact[i,gw]
-                    self.detrL[i,gw-1] = self.detr_sc[i,gw-1] * ra_new[i,gw] * self.UpdVar.W.new[i,gw-1] * fact[i,gw]
-                    self.entrB[i,gw-1] = ra_new[i,gw] * self.UpdVar.W.new[i,gw-1] * exp(-dz * net_e)
-                    for k in xrange(gw+1, self.Gr.nzg-gw):
-                        net_e = self.entr_sc[i,k-1] - self.detr_sc[i,k-1]
-                        ra_new[i,k] = ra_old[i,k] * dz * TS.dti + ra_new[i,k-1] * self.UpdVar.W.new[i,k-1]
-                        ra_new[i,k] = ra_new[i,k]/ (dz * TS.dti + self.UpdVar.W.new[i,k] * exp(-dz * net_e))
-                        if net_e == 0.0:
-                            fact[i,k] = dz
-                        else:
-                            fact[i,k] = 1.0 - exp(-dz * net_e)/net_e
-                        self.entrL[i,k-1] = self.entr_sc[i,k-1] * ra_new[i,k] * self.UpdVar.W.new[i,k-1] * fact[i,k]
-                        self.detrL[i,k-1] = self.detr_sc[i,k-1] * ra_new[i,k] * self.UpdVar.W.new[i,k-1] * fact[i,k]
-
-        with nogil:
-            for i in xrange(self.n_updrafts):
-                for k in xrange(self.Gr.nzg):
-                    self.UpdVar.Area.new[i,k] = ra_new[i,k]/self.Ref.rho0_half[k]
-                    a_tmp[i,k] = self.UpdVar.Area.new[i,k]
-
-        if self.au_optB == 1:
-            with nogil:
-                for i in xrange(self.n_updrafts):
-                    au_limit = self.UpdVar.Area.new[i,gw]* self.au_optB1_frac
-                    for k in xrange(gw+1, self.Gr.nzg-gw):
-                        if self.UpdVar.Area.new[i,k] > au_limit:
-                            a_tmp[i,k] = au_limit
-                            adj_au_flag[i,k] = 1
-        elif self.au_optB == 2:
-            with nogil:
-                for i in xrange(self.n_updrafts):
-                    for k in xrange(gw+1, self.Gr.nzg-gw):
-                        if self.UpdVar.Area.new[i,k] > self.UpdVar.Area.new[i,k-1]:
-                            a_tmp[i,k] = self.UpdVar.Area.new[i,k-1]
-                            adj_au_flag[i,k] = 1
-        elif self.au_optB == 10:
-            with nogil:
-                for i in xrange(self.n_updrafts):
-                    for k in xrange(gw+1, self.Gr.nzg-gw):
-                        a_tmp[i,k] = self.UpdVar.Area.new[i,gw]
-                        adj_au_flag[i,k] = 1
+                        self.UpdVar.Area.new[i,k] = 0.0
 
 
-        if self.au_optL == 2:
-            with nogil:
-                for i in xrange(self.n_updrafts):
-                    for k in xrange(gw+1, self.Gr.nzg-gw):
-                        self.entrL[i,k-1] = a_tmp[i,k]/self.UpdVar.Area.new[i,k] * self.entrL[i,k-1]
-                        self.detrL[i,k-1] = a_tmp[i,k]/self.UpdVar.Area.new[i,k] * self.detrL[i,k-1]
-
-        if self.au_optB_wu == 1:
-            with nogil:
-                for i in xrange(self.n_updrafts):
-                    if self.UpdVar.W.new[i,gw] <= self.wu_min:
-                        a_tmp[i,gw] = self.UpdVar.Area.new[i,gw]
-                        self.entrB[i,gw-1] = self.entrB[i,gw-1] + ra_old[i,gw] * dz * TS.dti
-                        adj_au_flag[i,gw] = 1
-
-                    for k in xrange(gw+1,self.Gr.nzg-gw):
-                        if self.UpdVar.W.new[i,k] <= self.wu_min:
-                            a_tmp[i,k] = 0.0
-                            adj_au_flag[i,k] = 1
-        elif self.au_optB_wu == 2:
-            with nogil:
-                for i in xrange(self.n_updrafts):
-                    for k in xrange(gw, self.Gr.nzg-gw):
-                        if self.UpdVar.W.new[i,gw] <= self.wu_min:
-                            a_tmp[i,k] = self.UpdVar.Area.new[i,k]
-                            self.entrB[i,k-1] = self.entrB[i,k-1] + ra_old[i,k] * dz * TS.dti
-                            adj_au_flag[i,k] = 1
-        if self.au_optB_srf == 1:
-            with nogil:
-                for i in xrange(self.n_updrafts):
-                    if adj_au_flag[i,gw] == 0:
-                        a_tmp[i,gw] = self.UpdVar.Area.new[i,gw]
-                        self.entrB[i,gw-1] = self.entrB[i,gw-1] + ra_old[i,gw] * dz * TS.dti
-                        adj_au_flag[i,gw] = 1
-
-        # Diagnose detrB that meets the requirements of a_tmp
-        with nogil:
-            for i in xrange(self.n_updrafts):
-                if adj_au_flag[i,gw] == 1:
-                    self.UpdVar.Area.new[i,gw] = a_tmp[i,gw]
-                    self.detrB[i,gw-1] = (-self.Ref.rho0_half[gw] * a_tmp[i,gw] * (dz * TS.dti + self.UpdVar.W.new[i,gw])
-                                          + ra_old[i,gw] * dz * TS.dti + (self.entrL[i,gw-1] - self.detrL[i,gw-1] + self.entrB[i,gw-1]))
-                    if self.detrB[i,gw-1] < 0.0:
-                        self.entrB[i,gw-1] = self.entrB[i,gw-1] - self.detrB[i,gw-1]
-                        self.detrB[i,gw-1] = 0.0
-                    for k in xrange(gw+1,self.Gr.nzg-gw):
-                        if adj_au_flag[i,k] == 1:
-                            self.UpdVar.Area.new[i,k] = a_tmp[i,k]
-                            self.detrB[i,k-1] = (-self.Ref.rho0_half[k]*a_tmp[i,k] *(dz * TS.dti + self.UpdVar.W.new[i,k])
-                                                 + ra_old[i,k] *dz*TS.dti + ra_new[i,k-1] * self.UpdVar.W.new[i,k-1]
-                                                 + (self.entrL[i,k-1] - self.detrL[i,k-1] + self.entrB[i,k-1]))
-
-                            if self.detrB[i,k-1] < 0.0:
-                                self.entrB[i,k-1] = self.entrB[i,k-1] - self.detrB[i,k-1]
-                                self.detrB[i,k-1] = 0.0
 
         self.UpdVar.Area.set_bcs(self.Gr)
+
         return
 
-    cpdef solve_updraft_scalars(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
-        cdef:
-            Py_ssize_t k, i
-            double dz = self.Gr.dz
-            Py_ssize_t gw = self.Gr.gw
-            double dH_entr, dQT_entr, H_entr, QT_entr
-            double c_n, c_c, c_nm, c_e
-            eos_struct sa
-            double sqrt_e_srf =sqrt(3.75 * Case.Sur.ustar * Case.Sur.ustar + 0.2 * self.wstar * self.wstar)
 
 
-        if self.use_local_micro:
-            # with nogil:
-            for i in xrange(self.n_updrafts):
-                dH_entr = 1.8 * Case.Sur.rho_hflux/sqrt_e_srf * self.init_sc_upd[i] * self.Ref.alpha0_half[gw]
-                dQT_entr = 1.8 * Case.Sur.rho_qtflux/sqrt_e_srf * self.init_sc_upd[i] * self.Ref.alpha0_half[gw]
-                self.UpdVar.H.new[i,gw] = self.h_surface_bc[i]
-                self.UpdVar.QT.new[i,gw] = self.qt_surface_bc[i]
-                print(gw,self.UpdVar.H.new[i,gw], self.UpdVar.QT.new[i,gw] *1e3)
-                sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[gw],
-                         self.UpdVar.QT.new[i,gw], self.UpdVar.H.new[i,gw])
-                self.UpdVar.QL.new[i,gw] = sa.ql
-                self.UpdVar.T.new[i,gw] = sa.T
-                self.UpdMicro.compute_update_combined_local_thetal(self.Ref.p0_half[gw], self.UpdVar.T.new[i,gw],
-                                                                   &self.UpdVar.QT.new[i,gw], &self.UpdVar.QL.new[i,gw],
-                                                                   &self.UpdVar.H.new[i,gw], i, gw)
-                # Conservative form scalar equation: n:new, c: current, m: minus (ie k - 1), e: env
-                #c_n * upd.phi.new(i,k) = c_c * upd.phi.values(i,k) + c_nm * upd.phi.new(i,k-1) + c_e env.phi(k)
-                for k in xrange(gw+1, self.Gr.nzg-gw):
-                    if self.Gr.z_half[k] < self.updraft_surface_height:
-                        H_entr = self.EnvVar.H.values[k] + dH_entr
-                        QT_entr = self.EnvVar.QT.values[k] + dQT_entr
-                    else:
-                        H_entr = self.EnvVar.H.values[k]
-                        QT_entr = self.EnvVar.QT.values[k]
 
-                    c_n = (self.Ref.rho0_half[k] * self.UpdVar.Area.new[i,k] * (TS.dti * self.prognostic_rescale
-                           +  interp2pt(self.UpdVar.W.new[i,k],self.UpdVar.W.new[i,k-1]) * self.Gr.dzi)
-                           + (self.detrB[i,k-1] + self.detrL[i,k-1]) * self.Gr.dzi )
-                    c_c = self.Ref.rho0_half[k]  * self.UpdVar.Area.values[i,k] * TS.dti * self.prognostic_rescale
-                    c_nm = (self.Ref.rho0_half[k-1] * self.UpdVar.Area.new[i,k-1]
-                            * interp2pt(self.UpdVar.W.new[i,k-1], self.UpdVar.W.new[i,k-2]) * self.Gr.dzi)
-                    c_e = (self.entrL[i,k-1] + self.entrB[i,k-1]) * self.Gr.dzi
-                    if c_n > 0.0:
-                        c_c = c_c/c_n
-                        c_nm = c_nm/c_n
-                        c_e = c_e/c_n
-                        self.UpdVar.H.new[i,k] = c_c * self.UpdVar.H.values[i,k] + c_nm * self.UpdVar.H.new[i,k-1] + c_e * H_entr
-                        self.UpdVar.QT.new[i,k] = c_c * self.UpdVar.QT.values[i,k] + c_nm * self.UpdVar.QT.new[i,k-1] + c_e * QT_entr
-                    else:
-                        self.UpdVar.H.new[i,k] = GMV.H.values[k]
-                        self.UpdVar.QT.new[i,k] = GMV.QT.values[k]
-                    # if self.Gr.z_half[k] > 1350:
-                    #     print(self.Gr.z_half[k], c1,c2,c3, ct)
-                    #     print(self.UpdVar.H.new[i,k],self.UpdVar.H.values[i,k],self.EnvVar.H.values[k]  )
-                    #     print('*****')
-                    sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[k],
-                             self.UpdVar.QT.new[i,k], self.UpdVar.H.new[i,k])
-                    self.UpdVar.QL.new[i,k] = sa.ql
-                    self.UpdVar.T.new[i,k] = sa.T
-                    self.UpdMicro.compute_update_combined_local_thetal(self.Ref.p0_half[k], self.UpdVar.T.new[i,k],
-                                                                   &self.UpdVar.QT.new[i,k], &self.UpdVar.QL.new[i,k],
-                                                                   &self.UpdVar.H.new[i,k], i, k)
-        else:
-            # with nogil:
-            for i in xrange(self.n_updrafts):
-                dH_entr = 1.8 * Case.Sur.rho_hflux/sqrt_e_srf * self.init_sc_upd[i] * self.Ref.alpha0_half[gw]
-                dQT_entr = 1.8 * Case.Sur.rho_qtflux/sqrt_e_srf * self.init_sc_upd[i] * self.Ref.alpha0_half[gw]
-                self.UpdVar.H.new[i,gw] = self.h_surface_bc[i]
-                self.UpdVar.QT.new[i,gw] = self.qt_surface_bc[i]
-                sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[gw],
-                         self.UpdVar.QT.new[i,gw], self.UpdVar.H.new[i,gw])
-                self.UpdVar.QL.new[i,gw] = sa.ql
-                self.UpdVar.T.new[i,gw] = sa.T
 
-                # Conservative form scalar equation: n:new, c: current, m: minus (ie k - 1), e: env
-                #c_n * upd.phi.new(i,k) = c_c * upd.phi.values(i,k) + c_nm * upd.phi.new(i,k-1) + c_e env.phi(k)
-                for k in xrange(gw+1, self.Gr.nzg-gw):
-                    if self.Gr.z_half[k] < self.updraft_surface_height:
-                        H_entr = self.EnvVar.H.values[k] + dH_entr
-                        QT_entr = self.EnvVar.QT.values[k] + dQT_entr
-                    else:
-                        H_entr = self.EnvVar.H.values[k]
-                        QT_entr = self.EnvVar.QT.values[k]
-
-                    c_n = (self.Ref.rho0_half[k] * self.UpdVar.Area.new[i,k] * (TS.dti * self.prognostic_rescale
-                           +  interp2pt(self.UpdVar.W.new[i,k],self.UpdVar.W.new[i,k-1]) * self.Gr.dzi)
-                           + (self.detrB[i,k] + self.detrL[i,k]) * self.Gr.dzi )
-                    c_c = self.Ref.rho0_half[k]  * self.UpdVar.Area.values[i,k] * TS.dti * self.prognostic_rescale
-                    c_nm = (self.Ref.rho0_half[k-1] * self.UpdVar.Area.new[i,k-1]
-                            * interp2pt(self.UpdVar.W.new[i,k-1], self.UpdVar.W.new[i,k-2]) * self.Gr.dzi)
-                    c_e = (self.entrL[i,k] + self.entrB[i,k]) * self.Gr.dzi
-                    if c_n > 0.0:
-                        c_c = c_c/c_n
-                        c_nm = c_nm/c_n
-                        c_e = c_e/c_n
-                        self.UpdVar.H.new[i,k] = c_c * self.UpdVar.H.values[i,k] + c_nm * self.UpdVar.H.new[i,k-1] + c_e * H_entr
-                        self.UpdVar.QT.new[i,k] = c_c * self.UpdVar.QT.values[i,k] + c_nm * self.UpdVar.QT.new[i,k-1] + c_e * QT_entr
-                    else:
-                        self.UpdVar.H.new[i,k] = GMV.H.values[k]
-                        self.UpdVar.QT.new[i,k] = GMV.QT.values[k]
-
-                    sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[k],
-                             self.UpdVar.QT.new[i,k], self.UpdVar.H.new[i,k])
-                    self.UpdVar.QL.new[i,k] = sa.ql
-                    self.UpdVar.T.new[i,k] = sa.T
-            self.UpdMicro.compute_sources(self.UpdVar)
-            self.UpdMicro.update_updraftvars(self.UpdVar)
-
-        self.UpdVar.H.set_bcs(self.Gr)
-        self.UpdVar.QT.set_bcs(self.Gr)
-        return
+    # cpdef solve_area_fraction(self, GridMeanVariables GMV, TimeStepping TS):
+    #     cdef:
+    #         Py_ssize_t k, i
+    #         double dz= self.Gr.dz
+    #         Py_ssize_t gw = self.Gr.gw
+    #         double net_e
+    #         double [:,:] ra_new = np.zeros((self.n_updrafts,self.Gr.nzg),dtype=np.double, order='c')
+    #         double [:,:] ra_old = np.zeros((self.n_updrafts,self.Gr.nzg),dtype=np.double, order='c')
+    #         double [:,:] fact = np.zeros((self.n_updrafts,self.Gr.nzg),dtype=np.double, order='c')
+    #         double [:,:] a_tmp = np.zeros((self.n_updrafts,self.Gr.nzg),dtype=np.double, order='c')
+    #         Py_ssize_t [:,:] adj_au_flag = np.zeros((self.n_updrafts,self.Gr.nzg), dtype=np.int, order='c')
+    #         double au_limit
+    #
+    #     with nogil:
+    #         # re-set some arrays to zero values
+    #         for i in xrange(self.n_updrafts):
+    #             for k in xrange(self.Gr.nzg):
+    #                 ra_old[i,k] = self.UpdVar.Area.old[i,k] * self.Ref.rho0_half[k]
+    #                 self.UpdVar.Area.new[i,k] = 0.0
+    #                 self.entrL[i,k] = 0.0
+    #                 self.entrB[i,k] = 0.0
+    #                 self.detrL[i,k] = 0.0
+    #                 self.detrB[i,k] = 0.0
+    #     # plt.figure('Ra_Old')
+    #     # plt.plot(ra_old[0,gw:self.Gr.nzg-gw], self.Gr.z_half[gw:self.Gr.nzg-gw])
+    #     # plt.plot(self.UpdVar.Area.values[0,gw:self.Gr.nzg-gw], self.Gr.z_half[gw:self.Gr.nzg-gw])
+    #     # plt.show()
+    #
+    #     if self.au_optL == 1:
+    #         with nogil:
+    #             for i in xrange(self.n_updrafts):
+    #                 ra_new[i, gw] = ra_old[i, gw]
+    #                 self.entrL[i,gw] = (self.entr_sc[i,k] * ra_new[i,gw]
+    #                                        * interp2pt(self.UpdVar.W.new[i,gw-1],self.UpdVar.W.new[i,gw])  * dz)
+    #                 self.entrB[i,gw] = fmax(ra_new[i, gw] * interp2pt(self.UpdVar.W.new[i,gw-1],self.UpdVar.W.new[i, gw]) - self.entrL[i,gw],0.0)
+    #                 for k in xrange(gw+1,self.Gr.nzg-gw):
+    #                     net_e = self.entr_sc[i,k] - self.detr_sc[i,k]
+    #                     ra_new[i,k] = (ra_old[i,k] * dz * TS.dti * self.prognostic_rescale + ra_new[i,k-1]
+    #                                    * interp2pt(self.UpdVar.W.new[i,k-2],self.UpdVar.W.new[i,k-1]) * exp(dz * net_e))
+    #                     ra_new[i,k] /= (dz * TS.dti *self.prognostic_rescale
+    #                                     + interp2pt(self.UpdVar.W.new[i,k-1], self.UpdVar.W.new[i,k]))
+    #
+    #                     if net_e == 0.0:
+    #                         fact[i,k] = dz
+    #                     else:
+    #                         fact[i,k] = (exp(dz * net_e) - 1.0)/net_e
+    #                     self.entrL[i,k] = (self.entr_sc[i,k] * ra_new[i,k]
+    #                                        * interp2pt(self.UpdVar.W.new[i,k-1],self.UpdVar.W.new[i,k])  * fact[i,k])
+    #                     self.detrL[i,k] = (self.detr_sc[i,k] * ra_new[i,k]
+    #                                        * interp2pt(self.UpdVar.W.new[i,k-1],self.UpdVar.W.new[i,k])  * fact[i,k])
+    #
+    #
+    #
+    #     elif self.au_optL == 2:
+    #         with nogil:
+    #             for i in xrange(self.n_updrafts):
+    #                 ra_new[i,gw] = ra_old[i,gw]
+    #                 net_e = self.entr_sc[i,gw] - self.detr_sc[i,gw]
+    #                 if net_e == 0.0:
+    #                     fact[i,gw] = dz
+    #                 else:
+    #                     fact[i,gw] = (1.0 - exp(-dz * net_e))/net_e
+    #                 self.entrL[i,gw] = (self.entr_sc[i,gw] * ra_new[i,gw]
+    #                                     * interp2pt( self.UpdVar.W.new[i,gw-1],self.UpdVar.W.new[i,gw]) * fact[i,gw])
+    #                 self.detrL[i,gw] = (self.detr_sc[i,gw] * ra_new[i,gw]
+    #                                     * interp2pt( self.UpdVar.W.new[i,gw-1],self.UpdVar.W.new[i,gw]) * fact[i,gw])
+    #                 self.entrB[i,gw] = (ra_new[i,gw] *  interp2pt( self.UpdVar.W.new[i,gw-1],self.UpdVar.W.new[i,gw])
+    #                                     * exp(-dz * net_e))
+    #                 for k in xrange(gw+1, self.Gr.nzg-gw):
+    #                     net_e = self.entr_sc[i,k] - self.detr_sc[i,k]
+    #                     ra_new[i,k] = (ra_old[i,k] * dz * TS.dti * self.prognostic_rescale + ra_new[i,k-1]
+    #                                    * interp2pt(self.UpdVar.W.new[i,k-2],self.UpdVar.W.new[i,k-1]))
+    #                     ra_new[i,k] /= (dz * TS.dti * self.prognostic_rescale
+    #                                     + interp2pt(self.UpdVar.W.new[i,k-1],self.UpdVar.W.new[i,k]) * exp(-dz * net_e))
+    #                     if net_e == 0.0:
+    #                         fact[i,k] = dz
+    #                     else:
+    #                         fact[i,k] = 1.0 - exp(-dz * net_e)/net_e
+    #                     self.entrL[i,k] = (self.entr_sc[i,k] * ra_new[i,k]
+    #                                        * interp2pt(self.UpdVar.W.new[i,k-1],self.UpdVar.W.new[i,k]) * fact[i,k])
+    #                     self.detrL[i,k] = (self.detr_sc[i,k] * ra_new[i,k]
+    #                                        * interp2pt(self.UpdVar.W.new[i,k-1],self.UpdVar.W.new[i,k]) * fact[i,k])
+    #
+    #     with nogil:
+    #         for i in xrange(self.n_updrafts):
+    #             for k in xrange(self.Gr.nzg):
+    #                 self.UpdVar.Area.new[i,k] = ra_new[i,k]/self.Ref.rho0_half[k]
+    #                 a_tmp[i,k] = self.UpdVar.Area.new[i,k]
+    #
+    #     if self.au_optB == 1:
+    #         with nogil:
+    #             for i in xrange(self.n_updrafts):
+    #                 au_limit = self.UpdVar.Area.new[i,gw]* self.au_optB1_frac
+    #                 for k in xrange(gw+1, self.Gr.nzg-gw):
+    #                     if self.UpdVar.Area.new[i,k] > au_limit:
+    #                         a_tmp[i,k] = au_limit
+    #                         adj_au_flag[i,k] = 1
+    #     elif self.au_optB == 2:
+    #         with nogil:
+    #             for i in xrange(self.n_updrafts):
+    #                 for k in xrange(gw+1, self.Gr.nzg-gw):
+    #                     if self.UpdVar.Area.new[i,k] > self.UpdVar.Area.new[i,k-1]:
+    #                         a_tmp[i,k] = self.UpdVar.Area.new[i,k-1]
+    #                         adj_au_flag[i,k] = 1
+    #     elif self.au_optB == 10:
+    #         with nogil:
+    #             for i in xrange(self.n_updrafts):
+    #                 for k in xrange(gw+1, self.Gr.nzg-gw):
+    #                     a_tmp[i,k] = self.UpdVar.Area.new[i,gw]
+    #                     adj_au_flag[i,k] = 1
+    #
+    #
+    #     if self.au_optL == 2:
+    #         with nogil:
+    #             for i in xrange(self.n_updrafts):
+    #                 for k in xrange(gw+1, self.Gr.nzg-gw):
+    #                     self.entrL[i,k] = a_tmp[i,k]/self.UpdVar.Area.new[i,k] * self.entrL[i,k]
+    #                     self.detrL[i,k] = a_tmp[i,k]/self.UpdVar.Area.new[i,k] * self.detrL[i,k]
+    #
+    #     if self.au_optB_wu == 1:
+    #         with nogil:
+    #             for i in xrange(self.n_updrafts):
+    #                 if interp2pt(self.UpdVar.W.new[i,gw-1],self.UpdVar.W.new[i,gw]) <= self.wu_min:
+    #                     a_tmp[i,gw] = self.UpdVar.Area.new[i,gw]
+    #                     self.entrB[i,gw] = self.entrB[i,gw] + ra_old[i,gw] * dz * TS.dti * self.prognostic_rescale
+    #                     adj_au_flag[i,gw] = 1
+    #
+    #                 for k in xrange(gw+1,self.Gr.nzg-gw):
+    #                     if interp2pt(self.UpdVar.W.new[i,k-1],self.UpdVar.W.new[i,k]) <= self.wu_min:
+    #                         a_tmp[i,k] = 0.0
+    #                         adj_au_flag[i,k] = 1
+    #
+    #     if self.au_optB_srf == 1:
+    #         with nogil:
+    #             for i in xrange(self.n_updrafts):
+    #                 if adj_au_flag[i,gw] == 0:
+    #                     a_tmp[i,gw] = self.UpdVar.Area.new[i,gw]
+    #                     self.entrB[i,gw] = self.entrB[i,gw] + ra_old[i,gw] * dz * TS.dti * self.prognostic_rescale
+    #                     adj_au_flag[i,gw] = 1
+    #
+    #     # Diagnose detrB that meets the requirements of a_tmp
+    #     with nogil:
+    #         for i in xrange(self.n_updrafts):
+    #             if adj_au_flag[i,gw] == 1:
+    #                 self.UpdVar.Area.new[i,gw] = a_tmp[i,gw]
+    #                 self.detrB[i,gw] = (-self.Ref.rho0_half[gw] * a_tmp[i,gw] *
+    #                                     (dz * TS.dti  * self.prognostic_rescale
+    #                                      + interp2pt(self.UpdVar.W.new[i,gw-1],self.UpdVar.W.new[i,gw]))
+    #                                       + ra_old[i,gw] * dz * TS.dti *self.prognostic_rescale + (self.entrL[i,gw] - self.detrL[i,gw] + self.entrB[i,gw]))
+    #                 if self.detrB[i,gw] < 0.0:
+    #                     self.entrB[i,gw] = self.entrB[i,gw] - self.detrB[i,gw]
+    #                     self.detrB[i,gw] = 0.0
+    #                 for k in xrange(gw+1,self.Gr.nzg-gw):
+    #                     if adj_au_flag[i,k] == 1:
+    #                         self.UpdVar.Area.new[i,k] = a_tmp[i,k]
+    #                         self.detrB[i,k] = (-self.Ref.rho0_half[k] * a_tmp[i,k] *
+    #                                            (dz * TS.dti * self.prognostic_rescale
+    #                                             + interp2pt(self.UpdVar.W.new[i,k-1],self.UpdVar.W.new[i,k]))
+    #                                              + ra_old[i,k] *dz * TS.dti * self.prognostic_rescale + ra_new[i,k-1]
+    #                                            * interp2pt(self.UpdVar.W.new[i,k-2],self.UpdVar.W.new[i,k-1])
+    #                                              + (self.entrL[i,k] - self.detrL[i,k] + self.entrB[i,k]))
+    #
+    #                         if self.detrB[i,k] < 0.0:
+    #                             self.entrB[i,k] = self.entrB[i,k] - self.detrB[i,k]
+    #                             self.detrB[i,k] = 0.0
+    #
+    #     self.UpdVar.Area.set_bcs(self.Gr)
+    #
+    #     return
 
     # cpdef solve_updraft_scalars(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
     #     cdef:
@@ -1184,7 +1161,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     #         double dz = self.Gr.dz
     #         Py_ssize_t gw = self.Gr.gw
     #         double dH_entr, dQT_entr, H_entr, QT_entr
-    #         double c1, c2, c3, ct
+    #         double c_n, c_c, c_nm, c_e
     #         eos_struct sa
     #         double sqrt_e_srf =sqrt(3.75 * Case.Sur.ustar * Case.Sur.ustar + 0.2 * self.wstar * self.wstar)
     #
@@ -1194,32 +1171,46 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     #         for i in xrange(self.n_updrafts):
     #             dH_entr = 1.8 * Case.Sur.rho_hflux/sqrt_e_srf * self.init_sc_upd[i] * self.Ref.alpha0_half[gw]
     #             dQT_entr = 1.8 * Case.Sur.rho_qtflux/sqrt_e_srf * self.init_sc_upd[i] * self.Ref.alpha0_half[gw]
-    #
-    #             for k in xrange(gw, self.Gr.nzg-gw):
-    #                 if k ==gw or self.Gr.z_half[k] < self.updraft_surface_height:
+    #             self.UpdVar.H.new[i,gw] = self.h_surface_bc[i]
+    #             self.UpdVar.QT.new[i,gw] = self.qt_surface_bc[i]
+    #             print(gw,self.UpdVar.H.new[i,gw], self.UpdVar.QT.new[i,gw] *1e3)
+    #             sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[gw],
+    #                      self.UpdVar.QT.new[i,gw], self.UpdVar.H.new[i,gw])
+    #             self.UpdVar.QL.new[i,gw] = sa.ql
+    #             self.UpdVar.T.new[i,gw] = sa.T
+    #             self.UpdMicro.compute_update_combined_local_thetal(self.Ref.p0_half[gw], self.UpdVar.T.new[i,gw],
+    #                                                                &self.UpdVar.QT.new[i,gw], &self.UpdVar.QL.new[i,gw],
+    #                                                                &self.UpdVar.H.new[i,gw], i, gw)
+    #             # Conservative form scalar equation: n:new, c: current, m: minus (ie k - 1), e: env
+    #             #c_n * upd.phi.new(i,k) = c_c * upd.phi.values(i,k) + c_nm * upd.phi.new(i,k-1) + c_e env.phi(k)
+    #             for k in xrange(gw+1, self.Gr.nzg-gw):
+    #                 if self.Gr.z_half[k] < self.updraft_surface_height:
     #                     H_entr = self.EnvVar.H.values[k] + dH_entr
     #                     QT_entr = self.EnvVar.QT.values[k] + dQT_entr
     #                 else:
     #                     H_entr = self.EnvVar.H.values[k]
     #                     QT_entr = self.EnvVar.QT.values[k]
     #
-    #                 c1 = self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * dz * TS.dti * self.prognostic_rescale
-    #                 c2 = self.Ref.rho0_half[k-1]  * self.UpdVar.Area.new[i,k-1] * self.UpdVar.W.new[i,k-1]
-    #                 c3 = self.entrL[i,k-1] + self.entrB[i,k-1]
-    #                 ct = c1 + c2 + c3
-    #                 if ct > 0.0:
-    #                     c1 = c1/ct
-    #                     c2 = c2/ct
-    #                     c3 = c3/ct
-    #                     self.UpdVar.H.new[i,k] = c1 * self.UpdVar.H.values[i,k] + c2 * self.UpdVar.H.new[i,k-1] + c3 * H_entr
-    #                     self.UpdVar.QT.new[i,k] = c1 * self.UpdVar.QT.values[i,k] + c2 * self.UpdVar.QT.new[i,k-1] + c3 * QT_entr
+    #                 c_n = (self.Ref.rho0_half[k] * self.UpdVar.Area.new[i,k] * (TS.dti * self.prognostic_rescale
+    #                        +  interp2pt(self.UpdVar.W.new[i,k],self.UpdVar.W.new[i,k-1]) * self.Gr.dzi)
+    #                        + (self.detrB[i,k] + self.detrL[i,k]) * self.Gr.dzi )
+    #                 c_c = self.Ref.rho0_half[k]  * self.UpdVar.Area.values[i,k] * TS.dti * self.prognostic_rescale
+    #                 c_nm = (self.Ref.rho0_half[k-1] * self.UpdVar.Area.new[i,k-1]
+    #                         * interp2pt(self.UpdVar.W.new[i,k-1], self.UpdVar.W.new[i,k-2]) * self.Gr.dzi)
+    #                 c_e = (self.entrL[i,k] + self.entrB[i,k]) * self.Gr.dzi
+    #                 if c_n > 0.0:
+    #                     c_c = c_c/c_n
+    #                     c_nm = c_nm/c_n
+    #                     c_e = c_e/c_n
+    #                     self.UpdVar.H.new[i,k] = c_c * self.UpdVar.H.values[i,k] + c_nm * self.UpdVar.H.new[i,k-1] + c_e * H_entr
+    #                     self.UpdVar.QT.new[i,k] = c_c * self.UpdVar.QT.values[i,k] + c_nm * self.UpdVar.QT.new[i,k-1] + c_e * QT_entr
     #                 else:
-    #                     self.UpdVar.H.new[i,k] = self.EnvVar.H.values[k]
-    #                     self.UpdVar.QT.new[i,k] = self.EnvVar.QT.values[k]
-    #                 if self.Gr.z_half[k] > 1350:
-    #                     print(self.Gr.z_half[k], c1,c2,c3, ct)
-    #                     print(self.UpdVar.H.new[i,k],self.UpdVar.H.values[i,k],self.EnvVar.H.values[k]  )
-    #                     print('*****')
+    #                     self.UpdVar.H.new[i,k] = GMV.H.values[k]
+    #                     self.UpdVar.QT.new[i,k] = GMV.QT.values[k]
+    #                 # if self.Gr.z_half[k] > 1350:
+    #                 #     print(self.Gr.z_half[k], c1,c2,c3, ct)
+    #                 #     print(self.UpdVar.H.new[i,k],self.UpdVar.H.values[i,k],self.EnvVar.H.values[k]  )
+    #                 #     print('*****')
     #                 sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[k],
     #                          self.UpdVar.QT.new[i,k], self.UpdVar.H.new[i,k])
     #                 self.UpdVar.QL.new[i,k] = sa.ql
@@ -1232,27 +1223,40 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     #         for i in xrange(self.n_updrafts):
     #             dH_entr = 1.8 * Case.Sur.rho_hflux/sqrt_e_srf * self.init_sc_upd[i] * self.Ref.alpha0_half[gw]
     #             dQT_entr = 1.8 * Case.Sur.rho_qtflux/sqrt_e_srf * self.init_sc_upd[i] * self.Ref.alpha0_half[gw]
-    #             for k in xrange(gw, self.Gr.nzg-gw):
-    #                 if k ==gw or self.Gr.z_half[k] < self.updraft_surface_height:
+    #             self.UpdVar.H.new[i,gw] = self.h_surface_bc[i]
+    #             self.UpdVar.QT.new[i,gw] = self.qt_surface_bc[i]
+    #             sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[gw],
+    #                      self.UpdVar.QT.new[i,gw], self.UpdVar.H.new[i,gw])
+    #             self.UpdVar.QL.new[i,gw] = sa.ql
+    #             self.UpdVar.T.new[i,gw] = sa.T
+    #
+    #             # Conservative form scalar equation: n:new, c: current, m: minus (ie k - 1), e: env
+    #             #c_n * upd.phi.new(i,k) = c_c * upd.phi.values(i,k) + c_nm * upd.phi.new(i,k-1) + c_e env.phi(k)
+    #             for k in xrange(gw+1, self.Gr.nzg-gw):
+    #                 if self.Gr.z_half[k] < self.updraft_surface_height:
     #                     H_entr = self.EnvVar.H.values[k] + dH_entr
     #                     QT_entr = self.EnvVar.QT.values[k] + dQT_entr
     #                 else:
     #                     H_entr = self.EnvVar.H.values[k]
     #                     QT_entr = self.EnvVar.QT.values[k]
     #
-    #                 c1 = self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * dz * TS.dti
-    #                 c2 = self.Ref.rho0_half[k-1]  * self.UpdVar.Area.new[i,k-1] * self.UpdVar.W.new[i,k-1]
-    #                 c3 = self.entrL[i,k-1] + self.entrB[i,k-1]
-    #                 ct = c1 + c2 + c3
-    #                 if ct > 0.0:
-    #                     c1 = c1/ct
-    #                     c2 = c2/ct
-    #                     c3 = c3/ct
-    #                     self.UpdVar.H.new[i,k] = c1 * self.UpdVar.H.values[i,k] + c2 * self.UpdVar.H.new[i,k-1] + c3 * H_entr
-    #                     self.UpdVar.QT.new[i,k] = c1 * self.UpdVar.QT.values[i,k] + c2 * self.UpdVar.QT.new[i,k-1] + c3 * QT_entr
+    #                 c_n = (self.Ref.rho0_half[k] * self.UpdVar.Area.new[i,k] * (TS.dti * self.prognostic_rescale
+    #                        +  interp2pt(self.UpdVar.W.new[i,k],self.UpdVar.W.new[i,k-1]) * self.Gr.dzi)
+    #                        + (self.detrB[i,k] + self.detrL[i,k]) * self.Gr.dzi )
+    #                 c_c = self.Ref.rho0_half[k]  * self.UpdVar.Area.values[i,k] * TS.dti * self.prognostic_rescale
+    #                 c_nm = (self.Ref.rho0_half[k-1] * self.UpdVar.Area.new[i,k-1]
+    #                         * interp2pt(self.UpdVar.W.new[i,k-1], self.UpdVar.W.new[i,k-2]) * self.Gr.dzi)
+    #                 c_e = (self.entrL[i,k] + self.entrB[i,k]) * self.Gr.dzi
+    #                 if c_n > 0.0:
+    #                     c_c = c_c/c_n
+    #                     c_nm = c_nm/c_n
+    #                     c_e = c_e/c_n
+    #                     self.UpdVar.H.new[i,k] = c_c * self.UpdVar.H.values[i,k] + c_nm * self.UpdVar.H.new[i,k-1] + c_e * H_entr
+    #                     self.UpdVar.QT.new[i,k] = c_c * self.UpdVar.QT.values[i,k] + c_nm * self.UpdVar.QT.new[i,k-1] + c_e * QT_entr
     #                 else:
-    #                     self.UpdVar.H.new[i,k] = self.EnvVar.H.values[k]
-    #                     self.UpdVar.QT.new[i,k] = self.EnvVar.QT.values[k]
+    #                     self.UpdVar.H.new[i,k] = GMV.H.values[k]
+    #                     self.UpdVar.QT.new[i,k] = GMV.QT.values[k]
+    #
     #                 sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[k],
     #                          self.UpdVar.QT.new[i,k], self.UpdVar.H.new[i,k])
     #                 self.UpdVar.QL.new[i,k] = sa.ql
@@ -1263,6 +1267,99 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     #     self.UpdVar.H.set_bcs(self.Gr)
     #     self.UpdVar.QT.set_bcs(self.Gr)
     #     return
+
+    cpdef solve_updraft_scalars(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
+        cdef:
+            Py_ssize_t k, i
+            double dz = self.Gr.dz
+            Py_ssize_t gw = self.Gr.gw
+            double dH_entr, dQT_entr, H_entr, QT_entr
+            double c1, c2, c3, ct
+            eos_struct sa
+            double sqrt_e_srf =sqrt(3.75 * Case.Sur.ustar * Case.Sur.ustar + 0.2 * self.wstar * self.wstar)
+
+
+        if self.use_local_micro:
+            with nogil:
+                for i in xrange(self.n_updrafts):
+                    self.UpdVar.H.new[i,gw] = self.h_surface_bc[i]
+                    self.UpdVar.QT.new[i,gw]  = self.qt_surface_bc[i]
+                    dH_entr = 1.8 * Case.Sur.rho_hflux/sqrt_e_srf * self.init_sc_upd[i] * self.Ref.alpha0_half[gw]
+                    dQT_entr = 1.8 * Case.Sur.rho_qtflux/sqrt_e_srf * self.init_sc_upd[i] * self.Ref.alpha0_half[gw]
+                    sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp,
+                             self.Ref.p0_half[gw], self.UpdVar.QT.new[i,gw], self.UpdVar.H.new[i,gw])
+                    self.UpdVar.QL.new[i,gw] = sa.ql
+                    self.UpdVar.T.new[i,gw] = sa.T
+                    self.UpdMicro.compute_update_combined_local_thetal(self.Ref.p0_half[gw], self.UpdVar.T.new[i,gw],
+                                                                       &self.UpdVar.QT.new[i,gw], &self.UpdVar.QL.new[i,gw],
+                                                                       &self.UpdVar.H.new[i,gw], i, gw)
+                    for k in xrange(gw+1, self.Gr.nzg-gw):
+                        if k ==gw or self.Gr.z_half[k] < self.updraft_surface_height:
+                            H_entr = self.EnvVar.H.values[k] + dH_entr
+                            QT_entr = self.EnvVar.QT.values[k] + dQT_entr
+                        else:
+                            H_entr = self.EnvVar.H.values[k]
+                            QT_entr = self.EnvVar.QT.values[k]
+
+                        c1 = self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * dz * TS.dti * self.prognostic_rescale
+                        c2 = self.Ref.rho0_half[k-1]  * self.UpdVar.Area.new[i,k-1] * interp2pt(self.UpdVar.W.new[i,k-1],self.UpdVar.W.new[i,k-2])
+                        c3 = self.entrL[i,k] + self.entrB[i,k]
+                        ct = c1 + c2 + c3
+                        if ct > 0.0:
+                            c1 = c1/ct
+                            c2 = c2/ct
+                            c3 = c3/ct
+                            self.UpdVar.H.new[i,k] = c1 * self.UpdVar.H.values[i,k] + c2 * self.UpdVar.H.new[i,k-1] + c3 * H_entr
+                            self.UpdVar.QT.new[i,k] = c1 * self.UpdVar.QT.values[i,k] + c2 * self.UpdVar.QT.new[i,k-1] + c3 * QT_entr
+                        else:
+                            self.UpdVar.H.new[i,k] = self.EnvVar.H.values[k]
+                            self.UpdVar.QT.new[i,k] = self.EnvVar.QT.values[k]
+                        sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[k],
+                                 self.UpdVar.QT.new[i,k], self.UpdVar.H.new[i,k])
+                        self.UpdVar.QL.new[i,k] = sa.ql
+                        self.UpdVar.T.new[i,k] = sa.T
+                        self.UpdMicro.compute_update_combined_local_thetal(self.Ref.p0_half[k], self.UpdVar.T.new[i,k],
+                                                                       &self.UpdVar.QT.new[i,k], &self.UpdVar.QL.new[i,k],
+                                                                       &self.UpdVar.H.new[i,k], i, k)
+        else:
+            with nogil:
+                for i in xrange(self.n_updrafts):
+                    self.UpdVar.H.new[i,gw] = self.h_surface_bc[i]
+                    self.UpdVar.QT.new[i,gw]  = self.qt_surface_bc[i]
+
+                    dH_entr = 1.8 * Case.Sur.rho_hflux/sqrt_e_srf * self.init_sc_upd[i] * self.Ref.alpha0_half[gw]
+                    dQT_entr = 1.8 * Case.Sur.rho_qtflux/sqrt_e_srf * self.init_sc_upd[i] * self.Ref.alpha0_half[gw]
+                    for k in xrange(gw+1, self.Gr.nzg-gw):
+                        if k ==gw or self.Gr.z_half[k] < self.updraft_surface_height:
+                            H_entr = self.EnvVar.H.values[k] + dH_entr
+                            QT_entr = self.EnvVar.QT.values[k] + dQT_entr
+                        else:
+                            H_entr = self.EnvVar.H.values[k]
+                            QT_entr = self.EnvVar.QT.values[k]
+
+                        c1 = self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * dz * TS.dti
+                        c2 = self.Ref.rho0_half[k-1]  * self.UpdVar.Area.new[i,k-1] * interp2pt(self.UpdVar.W.new[i,k-1],self.UpdVar.W.new[i,k-2])
+                        c3 = self.entrL[i,k] + self.entrB[i,k]
+                        ct = c1 + c2 + c3
+                        if ct > 0.0:
+                            c1 = c1/ct
+                            c2 = c2/ct
+                            c3 = c3/ct
+                            self.UpdVar.H.new[i,k] = c1 * self.UpdVar.H.values[i,k] + c2 * self.UpdVar.H.new[i,k-1] + c3 * H_entr
+                            self.UpdVar.QT.new[i,k] = c1 * self.UpdVar.QT.values[i,k] + c2 * self.UpdVar.QT.new[i,k-1] + c3 * QT_entr
+                        else:
+                            self.UpdVar.H.new[i,k] = self.EnvVar.H.values[k]
+                            self.UpdVar.QT.new[i,k] = self.EnvVar.QT.values[k]
+                        sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[k],
+                                 self.UpdVar.QT.new[i,k], self.UpdVar.H.new[i,k])
+                        self.UpdVar.QL.new[i,k] = sa.ql
+                        self.UpdVar.T.new[i,k] = sa.T
+            self.UpdMicro.compute_sources(self.UpdVar)
+            self.UpdMicro.update_updraftvars(self.UpdVar)
+
+        self.UpdVar.H.set_bcs(self.Gr)
+        self.UpdVar.QT.set_bcs(self.Gr)
+        return
 
 
 
@@ -1751,6 +1848,11 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
 
             self.entr_detr_fp = entr_detr_cloudy
             print('Turbulence--EDMF_BulkSteady: defaulting to cloudy entrainment formulation')
+
+
+        #
+        self.extrapolate_buoyancy = False
+
         # Get parameters
         self.surface_area = paramlist['turbulence']['EDMF_BulkSteady']['surface_area']
         self.surface_scalar_coeff = paramlist['turbulence']['EDMF_BulkSteady']['surface_scalar_coeff']
@@ -1909,7 +2011,7 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
 
 
         self.solve_updraft_scalars(GMV)
-        self.UpdThermo.buoyancy(self.UpdVar, GMV)
+        self.UpdThermo.buoyancy(self.UpdVar, GMV, self.extrapolate_buoyancy)
 
 
 
@@ -2191,50 +2293,50 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
             eos_struct sa
 
         if self.use_local_micro:
-            # with nogil:
-            for i in xrange(self.n_updrafts):
-                self.UpdVar.H.values[i,gw] = self.h_surface_bc[i]
-                self.UpdVar.QT.values[i,gw] = self.qt_surface_bc[i]
-                # Find the cloud liquid content
-                sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[gw],
-                         self.UpdVar.QT.values[i,gw], self.UpdVar.H.values[i,gw])
-                self.UpdVar.QL.values[i,gw] = sa.ql
-                self.UpdVar.T.values[i,gw] = sa.T
-                self.UpdMicro.compute_update_combined_local_thetal(self.Ref.p0_half[gw], self.UpdVar.T.values[i,gw],
-                                                                   &self.UpdVar.QT.values[i,gw], &self.UpdVar.QL.values[i,gw],
-                                                                   &self.UpdVar.H.values[i,gw], i, gw)
+            with nogil:
+                for i in xrange(self.n_updrafts):
+                    self.UpdVar.H.values[i,gw] = self.h_surface_bc[i]
+                    self.UpdVar.QT.values[i,gw] = self.qt_surface_bc[i]
+                    # Find the cloud liquid content
+                    sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[gw],
+                             self.UpdVar.QT.values[i,gw], self.UpdVar.H.values[i,gw])
+                    self.UpdVar.QL.values[i,gw] = sa.ql
+                    self.UpdVar.T.values[i,gw] = sa.T
+                    self.UpdMicro.compute_update_combined_local_thetal(self.Ref.p0_half[gw], self.UpdVar.T.values[i,gw],
+                                                                       &self.UpdVar.QT.values[i,gw], &self.UpdVar.QL.values[i,gw],
+                                                                       &self.UpdVar.H.values[i,gw], i, gw)
 
-                for k in xrange(gw+1, self.Gr.nzg-gw):
-                    denom = 1.0 + self.entr_sc[i,k] * dz
-                    self.UpdVar.H.values[i,k] = (self.UpdVar.H.values[i,k-1] + self.entr_sc[i,k] * dz * self.EnvVar.H.values[k])/denom
-                    self.UpdVar.QT.values[i,k] = (self.UpdVar.QT.values[i,k-1] + self.entr_sc[i,k] * dz * self.EnvVar.QT.values[k])/denom
-                    sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[k],
-                             self.UpdVar.QT.values[i,k], self.UpdVar.H.values[i,k])
-                    self.UpdVar.QL.values[i,k] = sa.ql
-                    self.UpdVar.T.values[i,k] = sa.T
-                    self.UpdMicro.compute_update_combined_local_thetal(self.Ref.p0_half[k], self.UpdVar.T.values[i,k],
-                                                                       &self.UpdVar.QT.values[i,k], &self.UpdVar.QL.values[i,k],
-                                                                       &self.UpdVar.H.values[i,k], i, k)
+                    for k in xrange(gw+1, self.Gr.nzg-gw):
+                        denom = 1.0 + self.entr_sc[i,k] * dz
+                        self.UpdVar.H.values[i,k] = (self.UpdVar.H.values[i,k-1] + self.entr_sc[i,k] * dz * self.EnvVar.H.values[k])/denom
+                        self.UpdVar.QT.values[i,k] = (self.UpdVar.QT.values[i,k-1] + self.entr_sc[i,k] * dz * self.EnvVar.QT.values[k])/denom
+                        sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[k],
+                                 self.UpdVar.QT.values[i,k], self.UpdVar.H.values[i,k])
+                        self.UpdVar.QL.values[i,k] = sa.ql
+                        self.UpdVar.T.values[i,k] = sa.T
+                        self.UpdMicro.compute_update_combined_local_thetal(self.Ref.p0_half[k], self.UpdVar.T.values[i,k],
+                                                                           &self.UpdVar.QT.values[i,k], &self.UpdVar.QL.values[i,k],
+                                                                           &self.UpdVar.H.values[i,k], i, k)
 
         else:
-            # with nogil:
-            for i in xrange(self.n_updrafts):
-                self.UpdVar.H.values[i,gw] = self.h_surface_bc[i]
-                self.UpdVar.QT.values[i,gw] = self.qt_surface_bc[i]
-                # Find the cloud liquid content
-                sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[gw],
-                         self.UpdVar.QT.values[i,gw], self.UpdVar.H.values[i,gw])
-                self.UpdVar.QL.values[i,gw] = sa.ql
-                self.UpdVar.T.values[i,gw] = sa.T
+            with nogil:
+                for i in xrange(self.n_updrafts):
+                    self.UpdVar.H.values[i,gw] = self.h_surface_bc[i]
+                    self.UpdVar.QT.values[i,gw] = self.qt_surface_bc[i]
+                    # Find the cloud liquid content
+                    sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[gw],
+                             self.UpdVar.QT.values[i,gw], self.UpdVar.H.values[i,gw])
+                    self.UpdVar.QL.values[i,gw] = sa.ql
+                    self.UpdVar.T.values[i,gw] = sa.T
 
-                for k in xrange(gw+1, self.Gr.nzg-gw):
-                    denom = 1.0 + self.entr_sc[i,k] * dz
-                    self.UpdVar.H.values[i,k] = (self.UpdVar.H.values[i,k-1] + self.entr_sc[i,k] * dz * self.EnvVar.H.values[k])/denom
-                    self.UpdVar.QT.values[i,k] = (self.UpdVar.QT.values[i,k-1] + self.entr_sc[i,k] * dz * self.EnvVar.QT.values[k])/denom
-                    sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[k],
-                             self.UpdVar.QT.values[i,k], self.UpdVar.H.values[i,k])
-                    self.UpdVar.QL.values[i,k] = sa.ql
-                    self.UpdVar.T.values[i,k] = sa.T
+                    for k in xrange(gw+1, self.Gr.nzg-gw):
+                        denom = 1.0 + self.entr_sc[i,k] * dz
+                        self.UpdVar.H.values[i,k] = (self.UpdVar.H.values[i,k-1] + self.entr_sc[i,k] * dz * self.EnvVar.H.values[k])/denom
+                        self.UpdVar.QT.values[i,k] = (self.UpdVar.QT.values[i,k-1] + self.entr_sc[i,k] * dz * self.EnvVar.QT.values[k])/denom
+                        sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[k],
+                                 self.UpdVar.QT.values[i,k], self.UpdVar.H.values[i,k])
+                        self.UpdVar.QL.values[i,k] = sa.ql
+                        self.UpdVar.T.values[i,k] = sa.T
 
 
         self.UpdVar.H.set_bcs(self.Gr)
@@ -2519,6 +2621,7 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
 
 cdef class SimilarityED(ParameterizationBase):
     def __init__(self, namelist, Grid Gr, ReferenceState Ref):
+        self.extrapolate_buoyancy = False
         ParameterizationBase.__init__(self, Gr, Ref)
         return
     cpdef initialize(self, GridMeanVariables GMV):

@@ -20,6 +20,7 @@ cdef class ParameterizationBase:
         double wstar
         double prandtl_number
         double Ri_bulk_crit
+        bint extrapolate_buoyancy
     cpdef initialize(self, GridMeanVariables GMV)
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)
@@ -41,6 +42,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         bint const_area
         bint use_local_micro
         bint similarity_diffusivity
+        double implicit_factor
         double prognostic_rescale
         double surface_area
         double [:,:] entr_w

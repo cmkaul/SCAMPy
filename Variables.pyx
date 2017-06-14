@@ -270,20 +270,18 @@ cdef class GridMeanVariables:
             eos_struct sa
             double alpha, qv, qt, h, p0
 
-
-        # with nogil:
-        for k in xrange(self.Gr.nzg):
-            h = self.H.values[k]
-            qt = self.QT.values[k]
-            p0 = self.Ref.p0_half[k]
-            sa = eos(self.t_to_prog_fp,self.prog_to_t_fp, p0, qt, h )
-            self.QL.values[k] = sa.ql
-            self.T.values[k] = sa.T
-            qv = qt - sa.ql
-            self.THL.values[k] = t_to_thetali_c(p0, sa.T, qt, sa.ql,0.0)
-            alpha = alpha_c(p0, sa.T, qt, qv)
-            self.B.values[k] = buoyancy_c(self.Ref.alpha0_half[k], alpha)
-
+        with nogil:
+            for k in xrange(self.Gr.nzg):
+                h = self.H.values[k]
+                qt = self.QT.values[k]
+                p0 = self.Ref.p0_half[k]
+                sa = eos(self.t_to_prog_fp,self.prog_to_t_fp, p0, qt, h )
+                self.QL.values[k] = sa.ql
+                self.T.values[k] = sa.T
+                qv = qt - sa.ql
+                self.THL.values[k] = t_to_thetali_c(p0, sa.T, qt, sa.ql,0.0)
+                alpha = alpha_c(p0, sa.T, qt, qv)
+                self.B.values[k] = buoyancy_c(self.Ref.alpha0_half[k], alpha)
 
         return
 
