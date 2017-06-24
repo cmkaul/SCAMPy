@@ -1,6 +1,7 @@
 import numpy as np
 cimport numpy as np
 from libc.math cimport cbrt, sqrt, log, fabs,atan, exp, fmax, pow
+from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 include "parameters.pxi"
 
 
@@ -20,8 +21,8 @@ cdef entr_struct entr_detr_cloudy(double z, double z_half,  double zi) nogil:
         # I think I just made this up to give a smooth blend
         _ret.entr_sc = 2.0e-3 * (1.0 - log(z_half/zi))
         _ret.entr_w = 2.0e-3 * (1.0 - log(z/zi))
-        _ret.detr_w = (log(fmax(z,20.0)/(zi)) - log(20.0/(zi))) * 1e-3
-        _ret.detr_sc = (log(fmax(z_half,20.0)/(zi)) - log(20.0/(zi))) * 1e-3
+        _ret.detr_w =  0.0#(log(fmax(z,20.0)/(zi)) - log(20.0/(zi))) * 1e-3
+        _ret.detr_sc = 0.0 # (log(fmax(z_half,20.0)/(zi)) - log(20.0/(zi))) * 1e-3
 
     return  _ret
 
@@ -81,6 +82,109 @@ cdef double get_inversion(double *theta_rho, double *u, double *v, double *z_hal
 
     return h
 
+
+
+# Math-y stuff
+cdef void construct_tridiag_diffusion(Py_ssize_t nzg, Py_ssize_t gw, double dzi, double dt,
+                                 double *rho_ae_K_m, double *rho, double *ae, double *a, double *b, double *c):
+    cdef:
+        Py_ssize_t k
+        double X, Y, Z #
+        Py_ssize_t nz = nzg - 2* gw
+    with nogil:
+        for k in xrange(gw,nzg-gw):
+            X = rho[k] * ae[k]/dt
+            Y = rho_ae_K_m[k] * dzi * dzi
+            Z = rho_ae_K_m[k-1] * dzi * dzi
+            if k == gw:
+                Z = 0.0
+            elif k == nzg-gw-1:
+                Y = 0.0
+            a[k-gw] = - Z/X
+            b[k-gw] = 1.0 + Y/X + Z/X
+            c[k-gw] = -Y/X
+
+    return
+
+
+cdef void construct_tridiag_diffusion_implicitMF(Py_ssize_t nzg, Py_ssize_t gw, double dzi, double dt,
+                                 double *rho_ae_K_m, double *massflux, double *rho, double *alpha, double *ae, double *a, double *b, double *c):
+    cdef:
+        Py_ssize_t k
+        double X, Y, Z #
+        Py_ssize_t nz = nzg - 2* gw
+    with nogil:
+        for k in xrange(gw,nzg-gw):
+            X = rho[k] * ae[k]/dt
+            Y = rho_ae_K_m[k] * dzi * dzi
+            Z = rho_ae_K_m[k-1] * dzi * dzi
+            if k == gw:
+                Z = 0.0
+            elif k == nzg-gw-1:
+                Y = 0.0
+            a[k-gw] = - Z/X + 0.5 * massflux[k-1] * dt * dzi/rho[k]
+            b[k-gw] = 1.0 + Y/X + Z/X + 0.5 * dt * dzi * (massflux[k-1]-massflux[k])/rho[k]
+            c[k-gw] = -Y/X - 0.5 * dt * dzi * massflux[k]/rho[k]
+
+    return
+
+
+
+
+cdef void construct_tridiag_diffusion_dirichlet(Py_ssize_t nzg, Py_ssize_t gw, double dzi, double dt,
+                                 double *rho_ae_K_m, double *rho, double *ae, double *a, double *b, double *c):
+    cdef:
+        Py_ssize_t k
+        double X, Y, Z #
+        Py_ssize_t nz = nzg - 2* gw
+    with nogil:
+        for k in xrange(gw,nzg-gw):
+            X = rho[k] * ae[k]/dt
+            Y = rho_ae_K_m[k] * dzi * dzi
+            Z = rho_ae_K_m[k-1] * dzi * dzi
+            if k == gw:
+                Z = 0.0
+                Y = 0.0
+            elif k == nzg-gw-1:
+                Y = 0.0
+            a[k-gw] = - Z/X
+            b[k-gw] = 1.0 + Y/X + Z/X
+            c[k-gw] = -Y/X
+
+    return
+
+
+
+cdef void tridiag_solve(Py_ssize_t nz, double *x, double *a, double *b, double *c):
+    cdef:
+        double * scratch = <double*> PyMem_Malloc(nz * sizeof(double))
+        Py_ssize_t i
+        double m
+
+    scratch[0] = c[0]/b[0]
+    x[0] = x[0]/b[0]
+
+    with nogil:
+        for i in xrange(1,nz):
+            m = 1.0/(b[i] - a[i] * scratch[i-1])
+            scratch[i] = c[i] * m
+            x[i] = (x[i] - a[i] * x[i-1])*m
+
+
+        for i in xrange(nz-2,-1,-1):
+            x[i] = x[i] - scratch[i] * x[i+1]
+
+
+    PyMem_Free(scratch)
+    return
+
+
+
+
+
+
+
+
 # Dustbin
 
 cdef bint set_cloudbase_flag(double ql, bint current_flag) nogil:
@@ -90,3 +194,5 @@ cdef bint set_cloudbase_flag(double ql, bint current_flag) nogil:
     else:
         new_flag = current_flag
     return  new_flag
+
+

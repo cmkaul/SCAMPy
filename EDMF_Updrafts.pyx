@@ -62,8 +62,6 @@ cdef class UpdraftVariable:
         return
 
 
-
-
 cdef class UpdraftVariables:
     def __init__(self, nu, namelist, Grid.Grid Gr):
         self.Gr = Gr
@@ -182,7 +180,7 @@ cdef class UpdraftVariables:
 
         with nogil:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                if self.Area.bulkvalues[k] > 1.0e-3:
+                if self.Area.bulkvalues[k] > 1.0e-20:
                     for i in xrange(self.n_updrafts):
                         self.QT.bulkvalues[k] += self.Area.values[i,k] * self.QT.values[i,k]/self.Area.bulkvalues[k]
                         self.QL.bulkvalues[k] += self.Area.values[i,k] * self.QL.values[i,k]/self.Area.bulkvalues[k]
@@ -307,19 +305,26 @@ cdef class UpdraftThermodynamics:
             with nogil:
                 for i in xrange(self.n_updraft):
                     for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                        if UpdVar.Area.values[i,k] > 0.0:
+                        if UpdVar.Area.values[i,k] > 1e-10:
                             qt = UpdVar.QT.values[i,k]
                             qv = UpdVar.QT.values[i,k] - UpdVar.QL.values[i,k]
                             h = UpdVar.H.values[i,k]
                             t = UpdVar.T.values[i,k]
+                            alpha = alpha_c(self.Ref.p0_half[k], t, qt, qv)
+                            UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_half[k], alpha) - GMV.B.values[k]
+                            # with gil:
+                            #     print(k, 'direct ',  h, qt,UpdVar.QL.values[i,k], UpdVar.B.values[i,k])
                         else:
                             sa = eos(self.t_to_prog_fp, self.prog_to_t_fp, self.Ref.p0_half[k],
                                      qt, h)
-                            qv = qt - sa.ql
+                            qt -= sa.ql
+                            qv = qt
                             t = sa.T
+                            alpha = alpha_c(self.Ref.p0_half[k], t, qt, qv)
+                            UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_half[k], alpha) - GMV.B.values[k]
+                            # with gil:
+                            #     print(k, 'extrap ',  h, qt, sa.ql, UpdVar.B.values[i,k])
 
-                        alpha = alpha_c(self.Ref.p0_half[k], t, qt, qv)
-                        UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_half[k], alpha) - GMV.B.values[k]
         return
 
 

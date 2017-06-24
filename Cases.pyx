@@ -75,13 +75,13 @@ cdef class Soares(CasesBase):
                 theta[k] = 300.0 + 2.0 * (Gr.z_half[k]-1350.0)/1000.0
             GMV.U.values[k] = 0.01
 
-        if GMV.use_tke:
-            for k in xrange(Gr.gw, Gr.nzg-Gr.gw):
-                if Gr.z_half[k] <= 1350.0:
-                    GMV.TKE.values[k] = 0.5 - 0.5/1350.0 * Gr.z_half[k]
-                else:
-                    GMV.TKE.values[k] = 0.0
-            GMV.TKE.set_bcs(Gr)
+        # if GMV.use_tke:
+        #     for k in xrange(Gr.gw, Gr.nzg-Gr.gw):
+        #         if Gr.z_half[k] <= 1350.0:
+        #             GMV.TKE.values[k] = 0.5 - 0.5/1350.0 * Gr.z_half[k]
+        #         else:
+        #             GMV.TKE.values[k] = 0.0
+        #     GMV.TKE.set_bcs(Gr)
 
         GMV.U.set_bcs(Gr)
         GMV.QT.set_bcs(Gr)

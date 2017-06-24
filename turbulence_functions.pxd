@@ -13,3 +13,15 @@ cdef double get_inversion(double *theta_rho, double *u, double *v, double *z_hal
                           Py_ssize_t kmin, Py_ssize_t kmax, double Ri_bulk_crit)
 cdef bint set_cloudbase_flag(double ql, bint current_flag) nogil
 
+cdef void construct_tridiag_diffusion(Py_ssize_t nzg, Py_ssize_t gw, double dzi, double dt,
+                                 double *rho_ae_K_m, double *rho, double *ae, double *a,
+                                 double *b, double *c)
+cdef void construct_tridiag_diffusion_implicitMF(Py_ssize_t nzg, Py_ssize_t gw,
+                                            double dzi, double dt, double *rho_ae_K_m, double *massflux,
+                                            double *rho, double *alpha, double *ae, double *a, double *b,
+                                            double *c)
+cdef void construct_tridiag_diffusion_dirichlet(Py_ssize_t nzg, Py_ssize_t gw, double dzi, double dt,
+                                           double *rho_ae_K_m, double *rho, double *ae, double *a,
+                                           double *b, double *c)
+
+cdef void tridiag_solve(Py_ssize_t nz, double *x, double *a, double *b, double *c)

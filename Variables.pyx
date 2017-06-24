@@ -245,6 +245,8 @@ cdef class GridMeanVariables:
         Stats.add_profile('temperature_mean')
         Stats.add_profile('buoyancy_mean')
         Stats.add_profile('ql_mean')
+        if self.use_tke:
+            Stats.add_profile('tke_mean')
         return
 
     cpdef io(self, NetCDFIO_Stats Stats):
@@ -260,6 +262,9 @@ cdef class GridMeanVariables:
             Stats.write_profile('thetal_mean',self.THL.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         elif self.H.name == 'thetal':
             Stats.write_profile('thetal_mean',self.H.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        if self.use_tke:
+            Stats.write_profile('tke_mean',self.TKE.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+
 
 
         return
