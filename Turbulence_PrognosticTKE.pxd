@@ -27,6 +27,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double implicit_factor
         double prognostic_rescale
         double surface_area
+        double minimum_area
         double [:,:] entr_w
         double [:,:] entr_sc
         double [:,:] detr_w

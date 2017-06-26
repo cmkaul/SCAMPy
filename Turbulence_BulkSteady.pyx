@@ -79,6 +79,9 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
         self.w_entr_coeff = paramlist['turbulence']['EDMF_BulkSteady']['w_entr_coeff']
         self.w_buoy_coeff = paramlist['turbulence']['EDMF_BulkSteady']['w_buoy_coeff']
         self.max_area_factor = paramlist['turbulence']['EDMF_BulkSteady']['max_area_factor']
+        self.entrainment_factor = paramlist['turbulence']['EDMF_BulkSteady']['entrainment_factor']
+        self.detrainment_factor = paramlist['turbulence']['EDMF_BulkSteady']['detrainment_factor']
+
 
         # Create the updraft variable class (major diagnostic and prognostic variables)
         self.UpdVar = EDMF_Updrafts.UpdraftVariables(self.n_updrafts, namelist, Gr)
@@ -365,10 +368,10 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
             for i in xrange(self.n_updrafts):
                 for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                     ret = self.entr_detr_fp(self.Gr.z[k], self.Gr.z_half[k], self.zi)
-                    self.entr_w[i,k] = ret.entr_w
-                    self.entr_sc[i,k] = ret.entr_sc
-                    self.detr_w[i,k] = ret.detr_w
-                    self.detr_sc[i,k] = ret.detr_sc
+                    self.entr_w[i,k] = ret.entr_w * self.entrainment_factor
+                    self.entr_sc[i,k] = ret.entr_sc * self.entrainment_factor
+                    self.detr_w[i,k] = ret.detr_w * self.detrainment_factor
+                    self.detr_sc[i,k] = ret.detr_sc * self.detrainment_factor
 
         return
 

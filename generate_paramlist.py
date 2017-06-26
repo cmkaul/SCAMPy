@@ -42,7 +42,9 @@ def defaults():
     paramlist['turbulence']['EDMF_BulkSteady']['surface_scalar_coeff'] = 0.3
     paramlist['turbulence']['EDMF_BulkSteady']['w_entr_coeff'] = 2.0  #"w_b"
     paramlist['turbulence']['EDMF_BulkSteady']['w_buoy_coeff'] = 1.0
-    paramlist['turbulence']['EDMF_BulkSteady']['max_area_factor'] = 2.0
+    paramlist['turbulence']['EDMF_BulkSteady']['max_area_factor'] = 1.0
+    paramlist['turbulence']['EDMF_BulkSteady']['entrainment_factor'] = 1.0
+    paramlist['turbulence']['EDMF_BulkSteady']['detrainment_factor'] = 1.0
 
     paramlist['turbulence']['updraft_microphysics'] = {}
     paramlist['turbulence']['updraft_microphysics']['max_supersaturation'] = 0.1

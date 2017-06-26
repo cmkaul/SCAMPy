@@ -23,6 +23,8 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
         bint const_area
         bint use_local_micro
         double surface_area
+        double entrainment_factor
+        double detrainment_factor
         double [:,:] entr_w
         double [:,:] entr_sc
         double [:,:] detr_w
