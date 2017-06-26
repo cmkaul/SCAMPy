@@ -408,19 +408,6 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
             double w2, w, B_k, entr_w
 
 
-
-        # with nogil:
-        #     for i in xrange(self.n_updrafts):
-        #         self.UpdVar.W.values[i, self.Gr.gw-1] = self.w_surface_bc[i]
-        #         for k in range(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-        #             w = self.UpdVar.W.values[i,k-1]
-        #             w2 = (w * w + 2.0 * dz *(self.w_buoy_coeff *self.UpdVar.B.values[i,k]
-        #                                      + self.w_entr_coeff *self.entr_w[i,k] * w * (self.EnvVar.W.values[k-1] - w)))
-        #             if w2 > 0.0:
-        #                 self.UpdVar.W.values[i,k] = sqrt(w2)
-        #             else:
-        #                 self.UpdVar.W.values[i,k:] = 0
-        #                 break
         with nogil:
             for i in xrange(self.n_updrafts):
                 self.UpdVar.W.values[i, self.Gr.gw-1] = self.w_surface_bc[i]
@@ -442,9 +429,9 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
     cpdef solve_area_fraction(self, GridMeanVariables GMV):
         cdef:
             Py_ssize_t k, i
-            double dz= self.Gr.dz
+            double dzi= self.Gr.dzi
             Py_ssize_t gw = self.Gr.gw
-            double w_mid, w_low
+            double w_k, w_km, m_km, a_lim
 
         if self.const_area:
             with nogil:
@@ -469,20 +456,20 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
             with nogil:
                 for i in xrange(self.n_updrafts):
                     self.UpdVar.Area.values[i,gw] = self.area_surface_bc[i]
-                    # w_mid = 0.5* (self.UpdVar.W.values[i,gw] + self.UpdVar.W.values[i,gw-1])
-                    w_mid = 0.5* (self.UpdVar.W.values[i,gw])
+                    a_lim = self.max_area_factor*self.area_surface_bc[i]
+                    w_k =interp2pt(self.UpdVar.W.values[i,gw], self.UpdVar.W.values[i,gw-1])
+
                     for k in xrange(gw+1, self.Gr.nzg):
-                        w_low = w_mid
-                        w_mid = 0.5*(self.UpdVar.W.values[i,k]+self.UpdVar.W.values[i,k-1])
-                        if self.UpdVar.W.values[i,k] > 0.0:
-                            self.UpdVar.Area.values[i,k] = (self.Ref.rho0_half[k-1]*self.UpdVar.Area.values[i,k-1]*w_low/
-                                                            (1.0-(self.entr_sc[i,k-1]-self.detr_sc[i,k-1])*dz)/w_mid/self.Ref.rho0_half[k])
+                        w_km = w_k
+                        w_k = interp2pt(self.UpdVar.W.values[i,k],self.UpdVar.W.values[i,k-1])
+                        if w_k > 0.0:
+                            m_km = self.Ref.rho0_half[k-1] * self.UpdVar.Area.values[i,k-1] * w_km
+                            self.UpdVar.Area.values[i,k] =( m_km * dzi / (self.Ref.rho0_half[k] * w_k
+                                                                          * (dzi-self.entr_sc[i,k]+ self.detr_sc[i,k])))
                             # # Limit the increase in updraft area when the updraft decelerates
-                            if self.UpdVar.Area.values[i,k] >  self.max_area_factor*self.area_surface_bc[i]:
-                                self.detr_sc[i,k-1] = (self.Ref.rho0_half[k-1] * self.UpdVar.Area.values[i,k-1]*w_low/
-                                                   (dz * self.max_area_factor*self.area_surface_bc[i] * w_mid * self.Ref.rho0_half[k]) + self.entr_sc[i,k-1] -1.0/dz)
-                                self.detr_w[i,k-1] = self.detr_sc[i,k-1]
-                                self.UpdVar.Area.values[i,k] = self.max_area_factor*self.area_surface_bc[i]
+                            if self.UpdVar.Area.values[i,k] >  a_lim:
+                                self.detr_sc[i,k-1] = m_km * dzi /self.Ref.rho0_half[k]/w_k/a_lim + self.entr_sc[i,k] - dzi
+                                self.UpdVar.Area.values[i,k] = a_lim
                         else:
                             # the updraft has terminated so set its area fraction to zero at this height and all heights above
                             self.UpdVar.Area.values[i,k] = 0.0
@@ -522,8 +509,8 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
 
                     for k in xrange(gw+1, self.Gr.nzg-gw):
                         denom = 1.0 + self.entr_sc[i,k] * dz
-                        self.UpdVar.H.values[i,k] = (self.UpdVar.H.values[i,k-1] + self.entr_sc[i,k] * dz * self.EnvVar.H.values[k])/denom
-                        self.UpdVar.QT.values[i,k] = (self.UpdVar.QT.values[i,k-1] + self.entr_sc[i,k] * dz * self.EnvVar.QT.values[k])/denom
+                        self.UpdVar.H.values[i,k] = (self.UpdVar.H.values[i,k-1] + self.entr_sc[i,k] * dz * GMV.H.values[k])/denom
+                        self.UpdVar.QT.values[i,k] = (self.UpdVar.QT.values[i,k-1] + self.entr_sc[i,k] * dz * GMV.QT.values[k])/denom
                         sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[k],
                                  self.UpdVar.QT.values[i,k], self.UpdVar.H.values[i,k])
                         self.UpdVar.QL.values[i,k] = sa.ql
@@ -545,8 +532,8 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
 
                     for k in xrange(gw+1, self.Gr.nzg-gw):
                         denom = 1.0 + self.entr_sc[i,k] * dz
-                        self.UpdVar.H.values[i,k] = (self.UpdVar.H.values[i,k-1] + self.entr_sc[i,k] * dz * self.EnvVar.H.values[k])/denom
-                        self.UpdVar.QT.values[i,k] = (self.UpdVar.QT.values[i,k-1] + self.entr_sc[i,k] * dz * self.EnvVar.QT.values[k])/denom
+                        self.UpdVar.H.values[i,k] = (self.UpdVar.H.values[i,k-1] + self.entr_sc[i,k] * dz * GMV.H.values[k])/denom
+                        self.UpdVar.QT.values[i,k] = (self.UpdVar.QT.values[i,k-1] + self.entr_sc[i,k] * dz * GMV.QT.values[k])/denom
                         sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[k],
                                  self.UpdVar.QT.values[i,k], self.UpdVar.H.values[i,k])
                         self.UpdVar.QL.values[i,k] = sa.ql
