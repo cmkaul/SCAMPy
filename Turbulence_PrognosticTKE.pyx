@@ -881,6 +881,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         cdef:
             Py_ssize_t k, i
             double dzi = self.Gr.dzi
+            double dz = self.Gr.dz
+            double dti = TS.dti
             double dti_ = TS.dti * self.prognostic_rescale
             Py_ssize_t gw = self.Gr.gw
             double dH_entr, dQT_entr, H_entr, QT_entr
@@ -910,6 +912,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         else:
                             H_entr = self.EnvVar.H.values[k]
                             QT_entr = self.EnvVar.QT.values[k]
+
+                        c1 = self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * dz * TS.dti
+                        c2 = self.Ref.rho0_half[k-1]  * self.UpdVar.Area.new[i,k-1] * interp2pt(self.UpdVar.W.new[i,k-1],self.UpdVar.W.new[i,k-2])
+                        c3 = self.entr_sc[i,k] * self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * interp2pt(self.UpdVar.W.new[i,k-1],self.UpdVar.W.new[i,k])
+                        ct = c1 + c2 +c3
 
 
                         if ct > 0.0:
