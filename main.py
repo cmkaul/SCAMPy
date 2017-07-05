@@ -26,6 +26,7 @@ def main1d(namelist, paramlist):
     Simulation = Simulation1d.Simulation1d(namelist, paramlist)
     Simulation.initialize(namelist)
     Simulation.run()
+    print('The simulation has completed.')
 
     return
 

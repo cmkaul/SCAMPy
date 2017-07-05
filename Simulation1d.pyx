@@ -48,6 +48,7 @@ class Simulation1d:
             if np.mod(self.TS.t, self.Stats.frequency) == 0:
                 self.io()
 
+
         return
 
     def initialize_io(self):

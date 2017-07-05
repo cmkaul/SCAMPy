@@ -19,8 +19,8 @@ from TimeStepping cimport TimeStepping
 from NetCDFIO cimport NetCDFIO_Stats
 from thermodynamic_functions cimport  *
 from turbulence_functions cimport *
-from utility_functions cimport interp2pt, gaussian_mean
-from libc.math cimport fmax, sqrt, exp, pow, cbrt
+from utility_functions cimport interp2pt, gaussian_mean, logistic
+from libc.math cimport fmax, sqrt, exp, pow, cbrt, fmin
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 from Turbulence_BulkSteady cimport EDMF_BulkSteady
 
@@ -61,10 +61,13 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         try:
             if namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] == 'inverse_z':
                 self.entr_detr_fp = entr_detr_inverse_z
+                print('Inverse Z Entrainment')
             elif namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] == 'cloudy':
                 self.entr_detr_fp = entr_detr_cloudy
+                print('Cloudy Entrainment')
             elif namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] == 'dry':
                 self.entr_detr_fp = entr_detr_dry
+                print('Dry Entrainment')
             else:
                 print('Turbulence--EDMF_PrognosticTKE: Entrainment rate namelist option is not recognized')
         except:
@@ -80,11 +83,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         except:
             self.wu_min = 0.0
             print('Turbulence--EDMF_PrognosticTKE: defaulting to 0 for updraft velocity minimum value.')
-        try:
-            self.max_area_factor = namelist['turbulence']['EDMF_PrognosticTKE']['max_area_factor']
-        except:
-            self.max_area_factor = 1.0
-            print('Turbulence--EDMF_PrognosticTKE: defaulting to unity ratio of max updraft fraction to surface updraft fraction')
         try:
             self.updraft_surface_height = namelist['turbulence']['EDMF_PrognosticTKE']['updraft_surface_height']
         except:
@@ -106,6 +104,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.w_entr_coeff = paramlist['turbulence']['EDMF_PrognosticTKE']['w_entr_coeff']
         self.w_buoy_coeff = paramlist['turbulence']['EDMF_PrognosticTKE']['w_buoy_coeff']
         self.tke_diss_coeff = paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff']
+        self.max_area_factor = paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor']
         # Need to code up
         self.minimum_area = 1e-3
 
@@ -307,7 +306,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.EnvThermo.satadjust(self.EnvVar, GMV)
 
         # print('compute_eddy_diffusivities_tke')
-        if TS.nstep > 1000000000:
+        if TS.nstep > 10:
             self.compute_eddy_diffusivities_tke(GMV, Case)
         else:
             ParameterizationBase.compute_eddy_diffusivities_similarity(self,GMV, Case)
@@ -316,7 +315,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.compute_tke(GMV, Case, TS)
 
 
-        if TS.nstep > 1000000000000:
+        if TS.nstep > 100000000000:
             # PLOTS
             plt.figure('Updated  W')
             plt.plot(self.UpdVar.W.values[0,kmin-1:kmax], self.Gr.z[kmin-1:kmax], label='upd')
@@ -410,19 +409,28 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         cdef:
             Py_ssize_t iter_
+            double time_elapsed = 0.0
 
         self.UpdVar.set_new_with_values()
         self.UpdVar.set_old_with_values()
         self.set_updraft_surface_bc(GMV, Case)
 
-        for iter_ in xrange(self.updraft_iterations):
+        self.dt_upd = np.minimum(TS.dt, 0.5 * self.Gr.dz/np.max(self.UpdVar.W.values))
+        print('max vel', np.max(self.UpdVar.W.values))
+
+
+        while time_elapsed < TS.dt:
+            print(self.dt_upd)
             self.compute_entrainment_detrainment(GMV,Case)
             # self.solve_updraft_velocity(TS)
             # self.solve_area_fraction(GMV, TS)
             self.solve_updraft_velocity_area(GMV,TS)
             self.solve_updraft_scalars(GMV, Case, TS)
             self.UpdVar.set_values_with_new()
+            time_elapsed += self.dt_upd
+            self.dt_upd = np.minimum(TS.dt-time_elapsed, 0.5 * self.Gr.dz/np.max(self.UpdVar.W.values))
             self.UpdThermo.buoyancy(self.UpdVar, GMV, self.extrapolate_buoyancy)
+
 
 
 
@@ -530,7 +538,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.update_inversion(GMV, Case.inversion_option)
         self.wstar = get_wstar(Case.Sur.bflux, self.zi)
         self.compute_mixing_length(Case.Sur.obukhov_length)
-        if TS.nstep > 3:
+        if TS.nstep > 2:
             self.compute_tke_buoy(GMV)
             self.compute_tke_dissipation(TS)
             self.compute_tke_entr_detr()
@@ -798,19 +806,15 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Py_ssize_t i, k
             Py_ssize_t gw = self.Gr.gw
             double dzi = self.Gr.dzi
-            double dti_ = TS.dti * self.prognostic_rescale
-            double rho_ratio, whalf_kp, whalf_k
+            double dti_ = 1.0/self.dt_upd * self.prognostic_rescale   #TS.dti * self.prognostic_rescale
+            double dt_ = 1.0/dti_
+            double whalf_kp, whalf_k
             double a1, a2 # groupings of terms in area fraction discrete equation
             double au_lim
-            double anew_k, a_k, a_km, entr_w, detr_w, B_k
+            double anew_k, a_k, a_km, entr_w, detr_w, B_k, entr_term, rho_ratio
             double adv, buoy, exch, press # groupings of terms in velocity discrete equation
-        #
-        # plt.figure('entr')
-        # plt.plot(self.entr_sc[0,gw:self.Gr.nzg-gw], self.Gr.z_half[gw:self.Gr.nzg-gw], label = 'begin entr')
-        # plt.plot(self.detr_sc[0,gw:self.Gr.nzg-gw], self.Gr.z_half[gw:self.Gr.nzg-gw], label = 'begin detr')
-        #
-
-
+            double x, mid, slope = 50.0
+            double logfn, rhs
         with nogil:
             for i in xrange(self.n_updrafts):
                 for k in xrange(self.n_updrafts):
@@ -819,31 +823,39 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     self.UpdVar.W.new[i,gw-1] = self.w_surface_bc[i]
                     self.UpdVar.Area.new[i,gw] = self.area_surface_bc[i]
                     au_lim = self.area_surface_bc[i] * self.max_area_factor
+                    mid = -0.5 * au_lim
                     for k in range(gw, self.Gr.nzg-gw):
 
                         # First solve for updated area fraction at k+1
-                        rho_ratio = self.Ref.rho0_half[k]/self.Ref.rho0_half[k+1]
                         whalf_kp = interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k+1])
                         whalf_k = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
-                        a1 = (dti_ + whalf_kp * (self.entr_sc[i,k+1] - self.detr_sc[i,k+1] - dzi))/dti_
-                        a2 = whalf_k * dzi/dti_
-                        self.UpdVar.Area.new[i,k+1] = a1 * self.UpdVar.Area.values[i,k+1] + a2 * self.UpdVar.Area.values[i,k]
+                        adv = -self.Ref.alpha0_half[k+1] * dzi *( self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp
+                                                                  -self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * whalf_k)
+                        entr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * (self.entr_sc[i,k+1] - self.detr_sc[i,k+1])
+                        rhs = adv + entr_term
+                        x = self.UpdVar.Area.values[i,k+1] - au_lim
+                        logfn = logistic(x,slope,mid)
 
-                        if self.UpdVar.Area.new[i,k+1] > au_lim:
-                            if whalf_kp * self.UpdVar.Area.values[i,k+1]  > 0.0:
-                                self.detr_sc[i,k+1] = (dti_/whalf_kp / self.UpdVar.Area.values[i,k+1]
-                                                       * (a1 * self.UpdVar.Area.values[i,k+1]
-                                                          + a2 * self.UpdVar.Area.values[i,k] - au_lim))
 
-                                self.UpdVar.Area.new[i,k+1]= au_lim
-                            else:
-                                self.UpdVar.Area.new[i,k+1]= au_lim
-                                self.detr_sc[i,k+1] = self.detr_sc[i,k]
+
+                        if rhs > 0.0 and self.UpdVar.Area.values[i,k+1] * whalf_kp > 0.0:
+                            entr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * self.entr_sc[i,k+1]
+                            self.detr_sc[i,k+1] = (self.detr_sc[i,k+1] * (1.0 - logfn)
+                                                   + (adv + entr_term) * logfn/(self.UpdVar.Area.values[i,k+1] * whalf_kp))
+                            # if self.detr_sc[i,k+1] < 0.0:
+                            #     self.entr_sc[i,k+1]-= self.detr_sc[i,k+1]
+                            #     self.detr_sc[i,k+1] = 0.0
+                            entr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * (self.entr_sc[i,k+1]-self.detr_sc[i,k+1])
+
+
+
+                        self.UpdVar.Area.new[i,k+1]  = dt_ * (adv + entr_term) + self.UpdVar.Area.values[i,k+1]
+
 
                         # Now solve for updraft velocity at k
                         rho_ratio = self.Ref.rho0[k-1]/self.Ref.rho0[k]
                         anew_k = interp2pt(self.UpdVar.Area.new[i,k], self.UpdVar.Area.new[i,k+1])
-                        if anew_k > self.minimum_area:
+                        if anew_k >= self.minimum_area:
                             a_k = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
                             a_km = interp2pt(self.UpdVar.Area.values[i,k-1], self.UpdVar.Area.values[i,k])
                             entr_w = interp2pt(self.entr_sc[i,k], self.entr_sc[i,k+1])
@@ -862,132 +874,99 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
                             if self.UpdVar.W.new[i,k] <= 0.0:
                                 self.UpdVar.W.new[i,k:] = 0.0
-                                self.UpdVar.Area.new[i,k+2:] = 0.0
+                                self.UpdVar.Area.new[i,k+1:] = 0.0
                                 break
                         else:
                             self.UpdVar.W.new[i,k:] = 0.0
-                            self.UpdVar.Area.new[i,k+2:] = 0.0
+                            self.UpdVar.Area.new[i,k+1:] = 0.0
                             break
-        # plt.plot(self.entr_sc[0,gw:self.Gr.nzg-gw], self.Gr.z_half[gw:self.Gr.nzg-gw], '--',label = 'end entr')
-        # plt.plot(self.detr_sc[0,gw:self.Gr.nzg-gw], self.Gr.z_half[gw:self.Gr.nzg-gw],'--',  label = 'end detr')
-        # plt.legend(loc=0)
-        # plt.show()
 
         return
 
 
 
-    # cpdef solve_updraft_scalars(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
+    #
+    # cpdef solve_updraft_velocity_area(self, GridMeanVariables GMV, TimeStepping TS):
     #     cdef:
-    #         Py_ssize_t k, i
+    #         Py_ssize_t i, k
+    #         Py_ssize_t gw = self.Gr.gw
     #         double dzi = self.Gr.dzi
     #         double dti_ = TS.dti * self.prognostic_rescale
-    #         double m_k, m_km
-    #         Py_ssize_t gw = self.Gr.gw
-    #         double dH_entr, dQT_entr, H_entr, QT_entr
-    #         double c1, c2, c3, c4
-    #         eos_struct sa
-    #         double sqrt_e_srf =sqrt(3.75 * Case.Sur.ustar * Case.Sur.ustar + 0.2 * self.wstar * self.wstar)
+    #         double rho_ratio, whalf_kp, whalf_k
+    #         double a1, a2 # groupings of terms in area fraction discrete equation
+    #         double au_lim
+    #         double anew_k, a_k, a_km, entr_w, detr_w, B_k
+    #         double adv, buoy, exch, press # groupings of terms in velocity discrete equation
+    #         double net_e, e_adj_factor, delta_net_e, delta_entr, delta_detr
     #
-    #     # self.compute_entrainment_detrainment(GMV, Case)
+    #     with nogil:
+    #         for i in xrange(self.n_updrafts):
+    #             for k in xrange(self.n_updrafts):
+    #                 self.entr_sc[i,gw] = 2.0 * dzi
+    #                 self.detr_sc[i,gw] = 0.0
+    #                 self.UpdVar.W.new[i,gw-1] = self.w_surface_bc[i]
+    #                 self.UpdVar.Area.new[i,gw] = self.area_surface_bc[i]
+    #                 au_lim = self.area_surface_bc[i] * self.max_area_factor
+    #                 for k in range(gw, self.Gr.nzg-gw):
+    #
+    #                     # First solve for updated area fraction at k+1
+    #                     rho_ratio = self.Ref.rho0_half[k]/self.Ref.rho0_half[k+1]
+    #                     whalf_kp = interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k+1])
+    #                     whalf_k = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
+    #                     a1 = (dti_ + whalf_kp * (self.entr_sc[i,k+1] - self.detr_sc[i,k+1] - dzi))/dti_
+    #                     a2 = rho_ratio * whalf_k * dzi/dti_
+    #                     self.UpdVar.Area.new[i,k+1] = a1 * self.UpdVar.Area.values[i,k+1] + a2 * self.UpdVar.Area.values[i,k]
+    #
+    #                     if self.UpdVar.Area.new[i,k+1] > au_lim:
+    #                         if whalf_kp * self.UpdVar.Area.values[i,k+1]  > 0.0:
+    #                             a1 =  (dti_ -  whalf_kp * dzi)/dti_
+    #                             net_e = (au_lim - a1 * self.UpdVar.Area.values[i,k+1]  - a2 * self.UpdVar.Area.values[i,k]) * dti_/whalf_kp/self.UpdVar.Area.values[i,k+1]
+    #                             # e_adj_factor = net_e/(self.entr_sc[i,k+1]- self.detr_sc[i,k+1])
+    #                             # self.detr_sc[i,k+1] = self.detr_sc[i,k+1]  * e_adj_factor
+    #                             # self.entr_sc[i,k+1] = self.entr_sc[i,k+1] * e_adj_factor
+    #                             delta_net_e = self.entr_sc[i,k+1] - self.detr_sc[i,k+1] - net_e
+    #                             delta_entr = fmin(0.5 * delta_net_e, self.entr_sc[i,k+1])
+    #                             delta_detr =  delta_net_e - delta_entr
+    #                             self.entr_sc[i,k+1] -= delta_entr
+    #                             self.detr_sc[i,k+1] += delta_detr
+    #
+    #                             self.UpdVar.Area.new[i,k+1]= au_lim
+    #                         else: #Need to think about this one...check what zhihong is doing too...might be the problem!
+    #                             with gil:
+    #                                 print('In uncertain area fraction case')
+    #                             self.UpdVar.Area.new[i,k+1]= au_lim
+    #                             self.detr_sc[i,k+1] = self.detr_sc[i,k]
+    #
+    #                     # Now solve for updraft velocity at k
+    #                     rho_ratio = self.Ref.rho0[k-1]/self.Ref.rho0[k]
+    #                     anew_k = interp2pt(self.UpdVar.Area.new[i,k], self.UpdVar.Area.new[i,k+1])
+    #                     if anew_k >= self.minimum_area:
+    #                         a_k = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
+    #                         a_km = interp2pt(self.UpdVar.Area.values[i,k-1], self.UpdVar.Area.values[i,k])
+    #                         entr_w = interp2pt(self.entr_sc[i,k], self.entr_sc[i,k+1])
+    #                         detr_w = interp2pt(self.detr_sc[i,k], self.detr_sc[i,k+1])
+    #                         B_k = interp2pt(self.UpdVar.B.values[i,k], self.UpdVar.B.values[i,k+1])
+    #                         adv = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * self.UpdVar.W.values[i,k] * dzi
+    #                                - self.Ref.rho0[k-1] * a_km * self.UpdVar.W.values[i,k-1] * self.UpdVar.W.values[i,k-1] * dzi)
+    #                         exch = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k]
+    #                                 * (entr_w * self.EnvVar.W.values[k] - detr_w * self.UpdVar.W.values[i,k] ))
+    #                         buoy = self.Ref.rho0[k] * a_k * B_k
+    #                         press = 0.0*(self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * (entr_w + detr_w)
+    #                                  * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k]))
+    #                         self.UpdVar.W.new[i,k] = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * dti_
+    #                                                   -adv + exch + buoy -press)/(self.Ref.rho0[k] * anew_k * dti_)
     #
     #
-    #     if self.use_local_micro:
-    #         with nogil:
-    #             for i in xrange(self.n_updrafts):
-    #                 self.UpdVar.H.new[i,gw] = self.h_surface_bc[i]
-    #                 self.UpdVar.QT.new[i,gw]  = self.qt_surface_bc[i]
-    #                 dH_entr = 1.8 * Case.Sur.rho_hflux/sqrt_e_srf * self.init_sc_upd[i] * self.Ref.alpha0_half[gw]
-    #                 dQT_entr = 1.8 * Case.Sur.rho_qtflux/sqrt_e_srf * self.init_sc_upd[i] * self.Ref.alpha0_half[gw]
-    #                 sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp,
-    #                          self.Ref.p0_half[gw], self.UpdVar.QT.new[i,gw], self.UpdVar.H.new[i,gw])
-    #                 self.UpdVar.QL.new[i,gw] = sa.ql
-    #                 self.UpdVar.T.new[i,gw] = sa.T
-    #                 self.UpdMicro.compute_update_combined_local_thetal(self.Ref.p0_half[gw], self.UpdVar.T.new[i,gw],
-    #                                                                    &self.UpdVar.QT.new[i,gw], &self.UpdVar.QL.new[i,gw],
-    #                                                                    &self.UpdVar.H.new[i,gw], i, gw)
-    #                 for k in xrange(gw+1, self.Gr.nzg-gw):
-    #                     if k ==gw or self.Gr.z_half[k] < self.updraft_surface_height:
-    #                         H_entr = self.EnvVar.H.values[k] + dH_entr
-    #                         QT_entr = self.EnvVar.QT.values[k] + dQT_entr
+    #                         if self.UpdVar.W.new[i,k] <= 0.0:
+    #                             self.UpdVar.W.new[i,k:] = 0.0
+    #                             self.UpdVar.Area.new[i,k+2:] = 0.0
+    #                             break
     #                     else:
-    #                         H_entr = self.EnvVar.H.values[k]
-    #                         QT_entr = self.EnvVar.QT.values[k]
-    #                     # write the discrete equations in form:
-    #                     # c1 * phi_new[k] = c2 * phi[k] + c3 * phi[k-1] + c4 * phi_entr
-    #                     if self.UpdVar.Area.new[i,k] >= self.minimum_area:
-    #                         m_k = (self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k]
-    #                                * interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k]))
-    #                         m_km = (self.Ref.rho0_half[k-1] * self.UpdVar.Area.values[i,k-1]
-    #                                * interp2pt(self.UpdVar.W.values[i,k-2], self.UpdVar.W.values[i,k-1]))
-    #                         c1 = self.Ref.rho0_half[k] * self.UpdVar.Area.new[i,k] * dti_
-    #                         c2 = (self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * dti_
-    #                               - m_k * (dzi + self.detr_sc[i,k]))
-    #                         c3 = m_km * dzi
-    #                         c4 = m_k * self.entr_sc[i,k]
+    #                         self.UpdVar.W.new[i,k:] = 0.0
+    #                         self.UpdVar.Area.new[i,k+2:] = 0.0
+    #                         break
     #
-    #                         self.UpdVar.H.new[i,k] =  (c2 * self.UpdVar.H.values[i,k]  + c3 * self.UpdVar.H.values[i,k-1]
-    #                                                    + c4 * H_entr)/c1
-    #                         self.UpdVar.QT.new[i,k] = (c2 * self.UpdVar.QT.values[i,k] + c3 * self.UpdVar.QT.values[i,k-1]
-    #                                                    + c4* QT_entr)/c1
-    #                     else:
-    #                         self.UpdVar.H.new[i,k] = GMV.H.values[k]
-    #                         self.UpdVar.QT.new[i,k] = GMV.QT.values[k]
-    #                     sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[k],
-    #                              self.UpdVar.QT.new[i,k], self.UpdVar.H.new[i,k])
-    #                     self.UpdVar.QL.new[i,k] = sa.ql
-    #                     self.UpdVar.T.new[i,k] = sa.T
-    #                     self.UpdMicro.compute_update_combined_local_thetal(self.Ref.p0_half[k], self.UpdVar.T.new[i,k],
-    #                                                                    &self.UpdVar.QT.new[i,k], &self.UpdVar.QL.new[i,k],
-    #                                                                    &self.UpdVar.H.new[i,k], i, k)
-    #     else:
-    #         with nogil:
-    #             for i in xrange(self.n_updrafts):
-    #                 self.UpdVar.H.new[i,gw] = self.h_surface_bc[i]
-    #                 self.UpdVar.QT.new[i,gw]  = self.qt_surface_bc[i]
-    #
-    #                 dH_entr = 1.8 * Case.Sur.rho_hflux/sqrt_e_srf * self.init_sc_upd[i] * self.Ref.alpha0_half[gw]
-    #                 dQT_entr = 1.8 * Case.Sur.rho_qtflux/sqrt_e_srf * self.init_sc_upd[i] * self.Ref.alpha0_half[gw]
-    #                 for k in xrange(gw+1, self.Gr.nzg-gw):
-    #                     if self.Gr.z_half[k] < self.updraft_surface_height:
-    #                         H_entr = self.EnvVar.H.values[k] + dH_entr
-    #                         QT_entr = self.EnvVar.QT.values[k] + dQT_entr
-    #                     else:
-    #                         H_entr = self.EnvVar.H.values[k]
-    #                         QT_entr = self.EnvVar.QT.values[k]
-    #
-    #                     # write the discrete equations in form:
-    #                     # c1 * phi_new[k] = c2 * phi[k] + c3 * phi[k-1] + c4 * phi_entr
-    #                     if self.UpdVar.Area.new[i,k] >= self.minimum_area:
-    #                         m_k = (self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k]
-    #                                * interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k]))
-    #                         m_km = (self.Ref.rho0_half[k-1] * self.UpdVar.Area.values[i,k-1]
-    #                                * interp2pt(self.UpdVar.W.values[i,k-2], self.UpdVar.W.values[i,k-1]))
-    #                         c1 = self.Ref.rho0_half[k] * self.UpdVar.Area.new[i,k] * dti_
-    #                         c2 = (self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * dti_
-    #                               - m_k * (dzi + self.detr_sc[i,k]))
-    #                         c3 = m_km * dzi
-    #                         c4 = m_k * self.entr_sc[i,k]
-    #
-    #                         self.UpdVar.H.new[i,k] =  (c2 * self.UpdVar.H.values[i,k]  + c3 * self.UpdVar.H.values[i,k-1]
-    #                                                    + c4 * H_entr)/c1
-    #                         self.UpdVar.QT.new[i,k] = (c2 * self.UpdVar.QT.values[i,k] + c3 * self.UpdVar.QT.values[i,k-1]
-    #                                                    + c4* QT_entr)/c1
-    #                     else:
-    #                         self.UpdVar.H.new[i,k] = GMV.H.values[k]
-    #                         self.UpdVar.QT.new[i,k] = GMV.QT.values[k]
-    #                     sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[k],
-    #                              self.UpdVar.QT.new[i,k], self.UpdVar.H.new[i,k])
-    #                     self.UpdVar.QL.new[i,k] = sa.ql
-    #                     self.UpdVar.T.new[i,k] = sa.T
-    #         self.UpdMicro.compute_sources(self.UpdVar)
-    #         self.UpdMicro.update_updraftvars(self.UpdVar)
-    #
-    #     self.UpdVar.H.set_bcs(self.Gr)
-    #     self.UpdVar.QT.set_bcs(self.Gr)
     #     return
-    #
-
 
 
 
@@ -995,14 +974,15 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         cdef:
             Py_ssize_t k, i
             double dzi = self.Gr.dzi
-            double dz = self.Gr.dz
-            double dti = TS.dti
-            double dti_ = TS.dti * self.prognostic_rescale
+            double dti_ = 1.0/self.dt_upd * self.prognostic_rescale  #TS.dti * self.prognostic_rescale
+            double m_k, m_km
             Py_ssize_t gw = self.Gr.gw
             double dH_entr, dQT_entr, H_entr, QT_entr
-            double c1, c2, c3, ct
+            double c1, c2, c3, c4
             eos_struct sa
             double sqrt_e_srf =sqrt(3.75 * Case.Sur.ustar * Case.Sur.ustar + 0.2 * self.wstar * self.wstar)
+
+        # self.compute_entrainment_detrainment(GMV, Case)
 
 
         if self.use_local_micro:
@@ -1026,21 +1006,25 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         else:
                             H_entr = self.EnvVar.H.values[k]
                             QT_entr = self.EnvVar.QT.values[k]
+                        # write the discrete equations in form:
+                        # c1 * phi_new[k] = c2 * phi[k] + c3 * phi[k-1] + c4 * phi_entr
+                        if self.UpdVar.Area.new[i,k] >= self.minimum_area:
+                            m_k = (self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k]
+                                   * interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k]))
+                            m_km = (self.Ref.rho0_half[k-1] * self.UpdVar.Area.values[i,k-1]
+                                   * interp2pt(self.UpdVar.W.values[i,k-2], self.UpdVar.W.values[i,k-1]))
+                            c1 = self.Ref.rho0_half[k] * self.UpdVar.Area.new[i,k] * dti_
+                            c2 = (self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * dti_
+                                  - m_k * (dzi + self.detr_sc[i,k]))
+                            c3 = m_km * dzi
+                            c4 = m_k * self.entr_sc[i,k]
 
-                        c1 = self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * dz * TS.dti
-                        c2 = self.Ref.rho0_half[k-1]  * self.UpdVar.Area.new[i,k-1] * interp2pt(self.UpdVar.W.new[i,k-1],self.UpdVar.W.new[i,k-2])
-                        c3 = self.entr_sc[i,k] * self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * interp2pt(self.UpdVar.W.new[i,k-1],self.UpdVar.W.new[i,k])
-                        ct = c1 + c2 +c3
-
-
-                        if ct > 0.0:
-                            c1 = c1/ct
-                            c2 = c2/ct
-                            c3 = c3/ct
-                            self.UpdVar.H.new[i,k] = c1 * self.UpdVar.H.values[i,k] + c2 * self.UpdVar.H.new[i,k-1] + c3 * H_entr
-                            self.UpdVar.QT.new[i,k] = c1 * self.UpdVar.QT.values[i,k] + c2 * self.UpdVar.QT.new[i,k-1] + c3 * QT_entr
+                            self.UpdVar.H.new[i,k] =  (c2 * self.UpdVar.H.values[i,k]  + c3 * self.UpdVar.H.values[i,k-1]
+                                                       + c4 * H_entr)/c1
+                            self.UpdVar.QT.new[i,k] = (c2 * self.UpdVar.QT.values[i,k] + c3 * self.UpdVar.QT.values[i,k-1]
+                                                       + c4* QT_entr)/c1
                         else:
-                            self.UpdVar.H.new[i,k] =GMV.H.values[k]
+                            self.UpdVar.H.new[i,k] = GMV.H.values[k]
                             self.UpdVar.QT.new[i,k] = GMV.QT.values[k]
                         sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[k],
                                  self.UpdVar.QT.new[i,k], self.UpdVar.H.new[i,k])
@@ -1058,27 +1042,33 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     dH_entr = 1.8 * Case.Sur.rho_hflux/sqrt_e_srf * self.init_sc_upd[i] * self.Ref.alpha0_half[gw]
                     dQT_entr = 1.8 * Case.Sur.rho_qtflux/sqrt_e_srf * self.init_sc_upd[i] * self.Ref.alpha0_half[gw]
                     for k in xrange(gw+1, self.Gr.nzg-gw):
-                        if k ==gw or self.Gr.z_half[k] < self.updraft_surface_height:
+                        if self.Gr.z_half[k] < self.updraft_surface_height:
                             H_entr = self.EnvVar.H.values[k] + dH_entr
                             QT_entr = self.EnvVar.QT.values[k] + dQT_entr
                         else:
                             H_entr = self.EnvVar.H.values[k]
                             QT_entr = self.EnvVar.QT.values[k]
 
-                        c1 = self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * dz * TS.dti
-                        c2 = self.Ref.rho0_half[k-1]  * self.UpdVar.Area.new[i,k-1] * interp2pt(self.UpdVar.W.new[i,k-1],self.UpdVar.W.new[i,k-2])
-                        c3 = self.entr_sc[i,k] * self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * interp2pt(self.UpdVar.W.new[i,k-1],self.UpdVar.W.new[i,k])
+                        # write the discrete equations in form:
+                        # c1 * phi_new[k] = c2 * phi[k] + c3 * phi[k-1] + c4 * phi_entr
+                        if self.UpdVar.Area.new[i,k] >= self.minimum_area:
+                            m_k = (self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k]
+                                   * interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k]))
+                            m_km = (self.Ref.rho0_half[k-1] * self.UpdVar.Area.values[i,k-1]
+                                   * interp2pt(self.UpdVar.W.values[i,k-2], self.UpdVar.W.values[i,k-1]))
+                            c1 = self.Ref.rho0_half[k] * self.UpdVar.Area.new[i,k] * dti_
+                            c2 = (self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * dti_
+                                  - m_k * (dzi + self.detr_sc[i,k]))
+                            c3 = m_km * dzi
+                            c4 = m_k * self.entr_sc[i,k]
 
-                        ct = c1 + c2 + c3
-                        if ct > 0.0:
-                            c1 = c1/ct
-                            c2 = c2/ct
-                            c3 = c3/ct
-                            self.UpdVar.H.new[i,k] = c1 * self.UpdVar.H.values[i,k] + c2 * self.UpdVar.H.new[i,k-1] + c3 * H_entr
-                            self.UpdVar.QT.new[i,k] = c1 * self.UpdVar.QT.values[i,k] + c2 * self.UpdVar.QT.new[i,k-1] + c3 * QT_entr
+                            self.UpdVar.H.new[i,k] =  (c2 * self.UpdVar.H.values[i,k]  + c3 * self.UpdVar.H.values[i,k-1]
+                                                       + c4 * H_entr)/c1
+                            self.UpdVar.QT.new[i,k] = (c2 * self.UpdVar.QT.values[i,k] + c3 * self.UpdVar.QT.values[i,k-1]
+                                                       + c4* QT_entr)/c1
                         else:
-                            self.UpdVar.H.new[i,k] = self.EnvVar.H.values[k]
-                            self.UpdVar.QT.new[i,k] = self.EnvVar.QT.values[k]
+                            self.UpdVar.H.new[i,k] = GMV.H.values[k]
+                            self.UpdVar.QT.new[i,k] = GMV.QT.values[k]
                         sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[k],
                                  self.UpdVar.QT.new[i,k], self.UpdVar.H.new[i,k])
                         self.UpdVar.QL.new[i,k] = sa.ql
@@ -1090,6 +1080,109 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.UpdVar.QT.set_bcs(self.Gr)
         return
 
+
+
+
+    #
+    # cpdef solve_updraft_scalars(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
+    #     cdef:
+    #         Py_ssize_t k, i
+    #         double dzi = self.Gr.dzi
+    #         double dz = self.Gr.dz
+    #         double dti = 1.0/self.dt_upd #TS.dti
+    #         double dti_ = 1.0/self.dt_upd * self.prognostic_rescale #TS.dti * self.prognostic_rescale
+    #         Py_ssize_t gw = self.Gr.gw
+    #         double dH_entr, dQT_entr, H_entr, QT_entr
+    #         double c1, c2, c3, ct
+    #         eos_struct sa
+    #         double sqrt_e_srf =sqrt(3.75 * Case.Sur.ustar * Case.Sur.ustar + 0.2 * self.wstar * self.wstar)
+    #
+    #
+    #     if self.use_local_micro:
+    #         with nogil:
+    #             for i in xrange(self.n_updrafts):
+    #                 self.UpdVar.H.new[i,gw] = self.h_surface_bc[i]
+    #                 self.UpdVar.QT.new[i,gw]  = self.qt_surface_bc[i]
+    #                 dH_entr = 1.8 * Case.Sur.rho_hflux/sqrt_e_srf * self.init_sc_upd[i] * self.Ref.alpha0_half[gw]
+    #                 dQT_entr = 1.8 * Case.Sur.rho_qtflux/sqrt_e_srf * self.init_sc_upd[i] * self.Ref.alpha0_half[gw]
+    #                 sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp,
+    #                          self.Ref.p0_half[gw], self.UpdVar.QT.new[i,gw], self.UpdVar.H.new[i,gw])
+    #                 self.UpdVar.QL.new[i,gw] = sa.ql
+    #                 self.UpdVar.T.new[i,gw] = sa.T
+    #                 self.UpdMicro.compute_update_combined_local_thetal(self.Ref.p0_half[gw], self.UpdVar.T.new[i,gw],
+    #                                                                    &self.UpdVar.QT.new[i,gw], &self.UpdVar.QL.new[i,gw],
+    #                                                                    &self.UpdVar.H.new[i,gw], i, gw)
+    #                 for k in xrange(gw+1, self.Gr.nzg-gw):
+    #                     if k ==gw or self.Gr.z_half[k] < self.updraft_surface_height:
+    #                         H_entr = self.EnvVar.H.values[k] + dH_entr
+    #                         QT_entr = self.EnvVar.QT.values[k] + dQT_entr
+    #                     else:
+    #                         H_entr = self.EnvVar.H.values[k]
+    #                         QT_entr = self.EnvVar.QT.values[k]
+    #
+    #                     c1 = self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * dz * dti_
+    #                     c2 = self.Ref.rho0_half[k-1]  * self.UpdVar.Area.new[i,k-1] * interp2pt(self.UpdVar.W.new[i,k-1],self.UpdVar.W.new[i,k-2])
+    #                     c3 = self.entr_sc[i,k] * self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * interp2pt(self.UpdVar.W.new[i,k-1],self.UpdVar.W.new[i,k]) * dz
+    #                     ct = c1 + c2 +c3
+    #
+    #
+    #                     if ct > 0.0:
+    #                         c1 = c1/ct
+    #                         c2 = c2/ct
+    #                         c3 = c3/ct
+    #                         self.UpdVar.H.new[i,k] = c1 * self.UpdVar.H.values[i,k] + c2 * self.UpdVar.H.new[i,k-1] + c3 * H_entr
+    #                         self.UpdVar.QT.new[i,k] = c1 * self.UpdVar.QT.values[i,k] + c2 * self.UpdVar.QT.new[i,k-1] + c3 * QT_entr
+    #                     else:
+    #                         self.UpdVar.H.new[i,k] =GMV.H.values[k]
+    #                         self.UpdVar.QT.new[i,k] = GMV.QT.values[k]
+    #                     sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[k],
+    #                              self.UpdVar.QT.new[i,k], self.UpdVar.H.new[i,k])
+    #                     self.UpdVar.QL.new[i,k] = sa.ql
+    #                     self.UpdVar.T.new[i,k] = sa.T
+    #                     self.UpdMicro.compute_update_combined_local_thetal(self.Ref.p0_half[k], self.UpdVar.T.new[i,k],
+    #                                                                    &self.UpdVar.QT.new[i,k], &self.UpdVar.QL.new[i,k],
+    #                                                                    &self.UpdVar.H.new[i,k], i, k)
+    #     else:
+    #         with nogil:
+    #             for i in xrange(self.n_updrafts):
+    #                 self.UpdVar.H.new[i,gw] = self.h_surface_bc[i]
+    #                 self.UpdVar.QT.new[i,gw]  = self.qt_surface_bc[i]
+    #
+    #                 dH_entr = 1.8 * Case.Sur.rho_hflux/sqrt_e_srf * self.init_sc_upd[i] * self.Ref.alpha0_half[gw]
+    #                 dQT_entr = 1.8 * Case.Sur.rho_qtflux/sqrt_e_srf * self.init_sc_upd[i] * self.Ref.alpha0_half[gw]
+    #                 for k in xrange(gw+1, self.Gr.nzg-gw):
+    #                     if k ==gw or self.Gr.z_half[k] < self.updraft_surface_height:
+    #                         H_entr = self.EnvVar.H.values[k] + dH_entr
+    #                         QT_entr = self.EnvVar.QT.values[k] + dQT_entr
+    #                     else:
+    #                         H_entr = self.EnvVar.H.values[k]
+    #                         QT_entr = self.EnvVar.QT.values[k]
+    #
+    #                     c1 = self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * dz * TS.dti
+    #                     c2 = self.Ref.rho0_half[k-1]  * self.UpdVar.Area.new[i,k-1] * interp2pt(self.UpdVar.W.new[i,k-1],self.UpdVar.W.new[i,k-2])
+    #                     c3 = self.entr_sc[i,k] * self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * interp2pt(self.UpdVar.W.new[i,k-1],self.UpdVar.W.new[i,k]) * dz
+    #
+    #                     ct = c1 + c2 + c3
+    #                     if ct > 0.0:
+    #                         c1 = c1/ct
+    #                         c2 = c2/ct
+    #                         c3 = c3/ct
+    #                         self.UpdVar.H.new[i,k] = c1 * self.UpdVar.H.values[i,k] + c2 * self.UpdVar.H.new[i,k-1] + c3 * H_entr
+    #                         self.UpdVar.QT.new[i,k] = c1 * self.UpdVar.QT.values[i,k] + c2 * self.UpdVar.QT.new[i,k-1] + c3 * QT_entr
+    #                     else:
+    #                         self.UpdVar.H.new[i,k] = self.EnvVar.H.values[k]
+    #                         self.UpdVar.QT.new[i,k] = self.EnvVar.QT.values[k]
+    #                     sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[k],
+    #                              self.UpdVar.QT.new[i,k], self.UpdVar.H.new[i,k])
+    #                     self.UpdVar.QL.new[i,k] = sa.ql
+    #                     self.UpdVar.T.new[i,k] = sa.T
+    #         self.UpdMicro.compute_sources(self.UpdVar)
+    #         self.UpdMicro.update_updraftvars(self.UpdVar)
+    #
+    #     self.UpdVar.H.set_bcs(self.Gr)
+    #     self.UpdVar.QT.set_bcs(self.Gr)
+    #     return
+    #
 
     # After updating the updraft variables themselves:
     # 1. compute the mass fluxes (currently not stored as class members, probably will want to do this
@@ -1390,6 +1483,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                                                           + self.tke_dissipation[k] + self.tke_entr_gain[k]
                                                                           + self.tke_detr_loss[k] + self.tke_shear[k]), 0.0)
 
+
+
             for k in xrange(self.Gr.nzg-1):
                     val1 = 1.0/(1.0-self.UpdVar.Area.bulkvalues[k])
                     val2 = self.UpdVar.Area.bulkvalues[k] * val1
@@ -1399,6 +1494,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
 
         GMV.TKE.set_bcs(self.Gr)
+
 
 
         return
