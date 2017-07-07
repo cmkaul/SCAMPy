@@ -19,7 +19,7 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
         EDMF_Updrafts.UpdraftMicrophysics UpdMicro
         EDMF_Updrafts.UpdraftThermodynamics UpdThermo
         EDMF_Environment.EnvironmentVariables EnvVar
-        entr_struct (*entr_detr_fp) (double z, double z_half, double zi) nogil
+        entr_struct (*entr_detr_fp) (double z, double z_half, double zi, double wk, double w_halfk) nogil
         bint const_area
         bint use_local_micro
         double surface_area
