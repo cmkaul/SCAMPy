@@ -2,14 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="22c6523f-6a5b-4dfe-bf57-5f2b71f78bb8" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/misc.xml" afterPath="$PROJECT_DIR$/.idea/misc.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Turbulence_BulkSteady.pxd" afterPath="$PROJECT_DIR$/Turbulence_BulkSteady.pxd" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Turbulence_BulkSteady.pyx" afterPath="$PROJECT_DIR$/Turbulence_BulkSteady.pyx" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Turbulence_PrognosticTKE.pxd" afterPath="$PROJECT_DIR$/Turbulence_PrognosticTKE.pxd" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Turbulence_PrognosticTKE.pyx" afterPath="$PROJECT_DIR$/Turbulence_PrognosticTKE.pyx" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/turbulence_functions.pxd" afterPath="$PROJECT_DIR$/turbulence_functions.pxd" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/turbulence_functions.pyx" afterPath="$PROJECT_DIR$/turbulence_functions.pyx" />
     </list>
     <ignored path="PySCM.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -474,6 +467,14 @@
       <option name="presentableId" value="Default" />
       <updated>1456309035164</updated>
     </task>
+    <task id="LOCAL-00001" summary="test">
+      <created>1499449787000</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1499449787000</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -540,6 +541,10 @@
   </component>
   <component name="VcsContentAnnotationSettings">
     <option name="myLimit" value="2678400000" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="test" />
+    <option name="LAST_COMMIT_MESSAGE" value="test" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager />
