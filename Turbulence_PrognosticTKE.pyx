@@ -1202,7 +1202,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef compute_tke_entr_detr(self):
         cdef:
             Py_ssize_t i, k
-            double [:] detr_tot_env = np.sum(np.multiply(self.entr_w, self.m), axis=0.0) # At W points
+            double [:] detr_tot_env = np.sum(np.multiply(self.entr_w, self.m), axis=0) # At W points
             # double [:,:] m_entr_env = np.multiply(self.m, self.detr_w)
             double w_u, w_e
 
