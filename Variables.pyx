@@ -228,7 +228,7 @@ cdef class GridMeanVariables:
         self.zero_tendencies()
         self.satadjust()
 
-        print(TS.nstep, TS.t, TS.dt)
+        # print(TS.nstep, TS.t, TS.dt)
 
         return
 
