@@ -40,11 +40,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             print('Turbulence--EDMF_PrognosticTKE: defaulting to single updraft')
 
         try:
-            self.updraft_iterations = namelist['turbulence']['EDMF_PrognosticTKE']['updraft_iterations']
-        except:
-            self.updraft_iterations = 1
-            print('Turbulence--EDMF_PrognosticTKE: defaulting to single updraft iteration')
-        try:
             self.const_area = namelist['turbulence']['EDMF_PrognosticTKE']['constant_area']
         except:
             self.const_area = True
@@ -74,11 +69,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.entr_detr_fp = entr_detr_inverse_z
             print('Turbulence--EDMF_PrognosticTKE: defaulting to cloudy entrainment formulation')
         try:
-            self.wu_option = namelist['turbulence']['EDMF_PrognosticTKE']['wu_option']
-        except:
-            self.wu_option = 1
-            print('Turbulence--EDMF_PrognosticTKE: defaulting to option 1 for updraft velocity numerics.')
-        try:
             self.wu_min = namelist['turbulence']['EDMF_PrognosticTKE']['wu_min']
         except:
             self.wu_min = 0.0
@@ -103,8 +93,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.tke_ed_coeff = paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff']
         self.w_entr_coeff = paramlist['turbulence']['EDMF_PrognosticTKE']['w_entr_coeff']
         self.w_buoy_coeff = paramlist['turbulence']['EDMF_PrognosticTKE']['w_buoy_coeff']
-        self.tke_diss_coeff = paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff']
+        self.tke_diss_coeff = paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff']
         self.max_area_factor = paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor']
+        self.entrainment_factor = paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor']
+        self.detrainment_factor = paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor']
+        self.vel_pressure_coeff = paramlist['turbulence']['EDMF_PrognosticTKE']['vel_pressure_coeff']
+
         # Need to code up
         self.minimum_area = 1e-3
 
@@ -422,8 +416,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         while time_elapsed < TS.dt:
             print(self.dt_upd)
             self.compute_entrainment_detrainment(GMV,Case)
-            # self.solve_updraft_velocity(TS)
-            # self.solve_area_fraction(GMV, TS)
             self.solve_updraft_velocity_area(GMV,TS)
             self.solve_updraft_scalars(GMV, Case, TS)
             self.UpdVar.set_values_with_new()
@@ -692,10 +684,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for i in xrange(self.n_updrafts):
                 for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                     ret = self.entr_detr_fp(self.Gr.z[k], self.Gr.z_half[k], self.zi)
-                    self.entr_w[i,k] = ret.entr_w
-                    self.entr_sc[i,k] = ret.entr_sc
-                    self.detr_w[i,k] = ret.detr_w
-                    self.detr_sc[i,k] = ret.detr_sc
+                    self.entr_w[i,k] = ret.entr_w * self.entrainment_factor
+                    self.entr_sc[i,k] = ret.entr_sc * self.entrainment_factor
+                    self.detr_w[i,k] = ret.detr_w * self.detrainment_factor
+                    self.detr_sc[i,k] = ret.detr_sc * self.detrainment_factor
 
         return
 
@@ -742,15 +734,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                             entr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * self.entr_sc[i,k+1]
                             self.detr_sc[i,k+1] = (self.detr_sc[i,k+1] * (1.0 - logfn)
                                                    + (adv + entr_term) * logfn/(self.UpdVar.Area.values[i,k+1] * whalf_kp))
-                            # if self.detr_sc[i,k+1] < 0.0:
-                            #     self.entr_sc[i,k+1]-= self.detr_sc[i,k+1]
-                            #     self.detr_sc[i,k+1] = 0.0
+
                             entr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * (self.entr_sc[i,k+1]-self.detr_sc[i,k+1])
 
-
-
                         self.UpdVar.Area.new[i,k+1]  = dt_ * (adv + entr_term) + self.UpdVar.Area.values[i,k+1]
-
 
                         # Now solve for updraft velocity at k
                         rho_ratio = self.Ref.rho0[k-1]/self.Ref.rho0[k]
@@ -766,7 +753,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                             exch = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k]
                                     * (entr_w * self.EnvVar.W.values[k] - detr_w * self.UpdVar.W.values[i,k] ))
                             buoy = self.Ref.rho0[k] * a_k * B_k
-                            press = 0.0*(self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * (entr_w + detr_w)
+                            press = self.vel_pressure_coeff*(self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * (entr_w + detr_w)
                                      * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k]))
                             self.UpdVar.W.new[i,k] = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * dti_
                                                       -adv + exch + buoy -press)/(self.Ref.rho0[k] * anew_k * dti_)
