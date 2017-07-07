@@ -61,6 +61,10 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
                 self.entr_detr_fp = entr_detr_dry
             elif namelist['turbulence']['EDMF_BulkSteady']['entrainment'] == 'inverse_z':
                 self.entr_detr_fp = entr_detr_inverse_z
+            elif namelist['turbulence']['EDMF_BulkSteady']['entrainment'] == 'inverse_w':
+                self.entr_detr_fp = entr_detr_inverse_w
+                #add inverse w
+                #fp function pointer
 
             else:
                 print('Turbulence--EDMF_BulkSteady: Entrainment rate namelist option is not recognized')
@@ -361,13 +365,16 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
         cdef:
             Py_ssize_t k
             entr_struct ret
+            double wk, w_halfk
 
         self.update_inversion(GMV, Case.inversion_option)
 
         with nogil:
             for i in xrange(self.n_updrafts):
                 for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                    ret = self.entr_detr_fp(self.Gr.z[k], self.Gr.z_half[k], self.zi)
+                    wk = self.UpdVar.W.values[i,k]
+                    w_halfk = interp2pt(wk,self.UpdVar.W.values[i,k-1])
+                    ret = self.entr_detr_fp(self.Gr.z[k], self.Gr.z_half[k], self.zi, wk, w_halfk)
                     self.entr_w[i,k] = ret.entr_w * self.entrainment_factor
                     self.entr_sc[i,k] = ret.entr_sc * self.entrainment_factor
                     self.detr_w[i,k] = ret.detr_w * self.detrainment_factor

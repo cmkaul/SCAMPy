@@ -19,7 +19,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         EDMF_Updrafts.UpdraftThermodynamics UpdThermo
         EDMF_Environment.EnvironmentVariables EnvVar
         EDMF_Environment.EnvironmentThermodynamics EnvThermo
-        entr_struct (*entr_detr_fp) (double z, double z_half, double zi) nogil
+        Py_ssize_t updraft_iterations
+        entr_struct (*entr_detr_fp) (double z, double z_half, double zi, double wk, double w_halfk) nogil
         bint const_area
         bint use_local_micro
         bint similarity_diffusivity
