@@ -77,6 +77,10 @@ def Soares():
     paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 0.01
     paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = 1.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['vel_pressure_coeff'] = 1.0
+    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = 1.0
+    paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = 1.0
+
+
 
     paramlist['turbulence']['EDMF_BulkSteady'] = {}
     paramlist['turbulence']['EDMF_BulkSteady']['surface_area'] = 0.1
