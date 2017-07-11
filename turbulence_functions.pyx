@@ -7,7 +7,7 @@ include "parameters.pxi"
 
 # Entrainment Rates
 
-cdef entr_struct entr_detr_cloudy(double z, double z_half,  double zi) nogil:
+cdef entr_struct entr_detr_cloudy(double z, double z_half,  double zi, double wk, double w_halfk) nogil:
     cdef entr_struct _ret
     cdef double eps = 1.0 # to avoid division by zero when z = 0 or z_i
 
@@ -27,7 +27,7 @@ cdef entr_struct entr_detr_cloudy(double z, double z_half,  double zi) nogil:
     return  _ret
 
 
-cdef entr_struct entr_detr_dry(double z, double z_half, double zi) nogil:
+cdef entr_struct entr_detr_dry(double z, double z_half, double zi, double wk, double w_halfk) nogil:
     cdef entr_struct _ret
     cdef double eps = 1.0 # to avoid division by zero when z = 0 or z_i
     # Following Soares 2004
@@ -38,7 +38,7 @@ cdef entr_struct entr_detr_dry(double z, double z_half, double zi) nogil:
 
     return  _ret
 
-cdef entr_struct entr_detr_inverse_z(double z, double z_half,  double zi) nogil:
+cdef entr_struct entr_detr_inverse_z(double z, double z_half,  double zi, double wk, double w_halfk) nogil:
     cdef:
         entr_struct _ret
         double er0_zmin = 10.0 # lower limit for z in computation of entrainment/detrainment rates
@@ -48,8 +48,21 @@ cdef entr_struct entr_detr_inverse_z(double z, double z_half,  double zi) nogil:
     _ret.detr_w = _ret.entr_w
     return _ret
 
+cdef entr_struct entr_detr_inverse_w(double z, double z_half,  double zi, double wk, double w_halfk) nogil:
+    cdef entr_struct _ret
+    cdef double eps = 1.0 # to avoid division by zero when z = 0 or z_i
 
-
+    # in cloud portion from Soares 2004
+    if z_half >= zi :
+        _ret.detr_w = 3.0e-3
+        _ret.detr_sc= 3.0e-3
+    else:
+        # I think I just made this up to give a smooth blend
+        _ret.detr_w =  0.0#(log(fmax(z,20.0)/(zi)) - log(20.0/(zi))) * 1e-3
+        _ret.detr_sc = 0.0 # (log(fmax(z_half,20.0)/(zi)) - log(20.0/(zi))) * 1e-3
+    _ret.entr_w = 1.0/(400.0 * fmax(wk,0.1)) #standard 400
+    _ret.entr_sc = 1.0/(400.0 * fmax(w_halfk,0.1)) #sets baseline to avoid errors
+    return  _ret
 # Other functions
 
 cdef double get_wstar(double bflux, double zi ):

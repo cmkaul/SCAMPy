@@ -62,7 +62,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 print('Cloudy Entrainment')
             elif namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] == 'dry':
                 self.entr_detr_fp = entr_detr_dry
-                print('Dry Entrainment')
+
+            elif namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] == 'inverse_w':
+                self.entr_detr_fp = entr_detr_inverse_w
             else:
                 print('Turbulence--EDMF_PrognosticTKE: Entrainment rate namelist option is not recognized')
         except:
@@ -679,11 +681,16 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         cdef:
             Py_ssize_t k
             entr_struct ret
+            double wk, w_halfk
+
         self.update_inversion(GMV, Case.inversion_option)
+
         with nogil:
             for i in xrange(self.n_updrafts):
                 for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                    ret = self.entr_detr_fp(self.Gr.z[k], self.Gr.z_half[k], self.zi)
+                    wk = self.UpdVar.W.values[i,k]
+                    w_halfk = interp2pt(wk,self.UpdVar.W.values[i,k-1])
+                    ret = self.entr_detr_fp(self.Gr.z[k], self.Gr.z_half[k], self.zi, wk, w_halfk)
                     self.entr_w[i,k] = ret.entr_w * self.entrainment_factor
                     self.entr_sc[i,k] = ret.entr_sc * self.entrainment_factor
                     self.detr_w[i,k] = ret.detr_w * self.detrainment_factor
@@ -770,90 +777,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         return
 
-
-
-    #
-    # cpdef solve_updraft_velocity_area(self, GridMeanVariables GMV, TimeStepping TS):
-    #     cdef:
-    #         Py_ssize_t i, k
-    #         Py_ssize_t gw = self.Gr.gw
-    #         double dzi = self.Gr.dzi
-    #         double dti_ = TS.dti * self.prognostic_rescale
-    #         double rho_ratio, whalf_kp, whalf_k
-    #         double a1, a2 # groupings of terms in area fraction discrete equation
-    #         double au_lim
-    #         double anew_k, a_k, a_km, entr_w, detr_w, B_k
-    #         double adv, buoy, exch, press # groupings of terms in velocity discrete equation
-    #         double net_e, e_adj_factor, delta_net_e, delta_entr, delta_detr
-    #
-    #     with nogil:
-    #         for i in xrange(self.n_updrafts):
-    #             for k in xrange(self.n_updrafts):
-    #                 self.entr_sc[i,gw] = 2.0 * dzi
-    #                 self.detr_sc[i,gw] = 0.0
-    #                 self.UpdVar.W.new[i,gw-1] = self.w_surface_bc[i]
-    #                 self.UpdVar.Area.new[i,gw] = self.area_surface_bc[i]
-    #                 au_lim = self.area_surface_bc[i] * self.max_area_factor
-    #                 for k in range(gw, self.Gr.nzg-gw):
-    #
-    #                     # First solve for updated area fraction at k+1
-    #                     rho_ratio = self.Ref.rho0_half[k]/self.Ref.rho0_half[k+1]
-    #                     whalf_kp = interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k+1])
-    #                     whalf_k = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
-    #                     a1 = (dti_ + whalf_kp * (self.entr_sc[i,k+1] - self.detr_sc[i,k+1] - dzi))/dti_
-    #                     a2 = rho_ratio * whalf_k * dzi/dti_
-    #                     self.UpdVar.Area.new[i,k+1] = a1 * self.UpdVar.Area.values[i,k+1] + a2 * self.UpdVar.Area.values[i,k]
-    #
-    #                     if self.UpdVar.Area.new[i,k+1] > au_lim:
-    #                         if whalf_kp * self.UpdVar.Area.values[i,k+1]  > 0.0:
-    #                             a1 =  (dti_ -  whalf_kp * dzi)/dti_
-    #                             net_e = (au_lim - a1 * self.UpdVar.Area.values[i,k+1]  - a2 * self.UpdVar.Area.values[i,k]) * dti_/whalf_kp/self.UpdVar.Area.values[i,k+1]
-    #                             # e_adj_factor = net_e/(self.entr_sc[i,k+1]- self.detr_sc[i,k+1])
-    #                             # self.detr_sc[i,k+1] = self.detr_sc[i,k+1]  * e_adj_factor
-    #                             # self.entr_sc[i,k+1] = self.entr_sc[i,k+1] * e_adj_factor
-    #                             delta_net_e = self.entr_sc[i,k+1] - self.detr_sc[i,k+1] - net_e
-    #                             delta_entr = fmin(0.5 * delta_net_e, self.entr_sc[i,k+1])
-    #                             delta_detr =  delta_net_e - delta_entr
-    #                             self.entr_sc[i,k+1] -= delta_entr
-    #                             self.detr_sc[i,k+1] += delta_detr
-    #
-    #                             self.UpdVar.Area.new[i,k+1]= au_lim
-    #                         else: #Need to think about this one...check what zhihong is doing too...might be the problem!
-    #                             with gil:
-    #                                 print('In uncertain area fraction case')
-    #                             self.UpdVar.Area.new[i,k+1]= au_lim
-    #                             self.detr_sc[i,k+1] = self.detr_sc[i,k]
-    #
-    #                     # Now solve for updraft velocity at k
-    #                     rho_ratio = self.Ref.rho0[k-1]/self.Ref.rho0[k]
-    #                     anew_k = interp2pt(self.UpdVar.Area.new[i,k], self.UpdVar.Area.new[i,k+1])
-    #                     if anew_k >= self.minimum_area:
-    #                         a_k = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
-    #                         a_km = interp2pt(self.UpdVar.Area.values[i,k-1], self.UpdVar.Area.values[i,k])
-    #                         entr_w = interp2pt(self.entr_sc[i,k], self.entr_sc[i,k+1])
-    #                         detr_w = interp2pt(self.detr_sc[i,k], self.detr_sc[i,k+1])
-    #                         B_k = interp2pt(self.UpdVar.B.values[i,k], self.UpdVar.B.values[i,k+1])
-    #                         adv = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * self.UpdVar.W.values[i,k] * dzi
-    #                                - self.Ref.rho0[k-1] * a_km * self.UpdVar.W.values[i,k-1] * self.UpdVar.W.values[i,k-1] * dzi)
-    #                         exch = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k]
-    #                                 * (entr_w * self.EnvVar.W.values[k] - detr_w * self.UpdVar.W.values[i,k] ))
-    #                         buoy = self.Ref.rho0[k] * a_k * B_k
-    #                         press = 0.0*(self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * (entr_w + detr_w)
-    #                                  * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k]))
-    #                         self.UpdVar.W.new[i,k] = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * dti_
-    #                                                   -adv + exch + buoy -press)/(self.Ref.rho0[k] * anew_k * dti_)
-    #
-    #
-    #                         if self.UpdVar.W.new[i,k] <= 0.0:
-    #                             self.UpdVar.W.new[i,k:] = 0.0
-    #                             self.UpdVar.Area.new[i,k+2:] = 0.0
-    #                             break
-    #                     else:
-    #                         self.UpdVar.W.new[i,k:] = 0.0
-    #                         self.UpdVar.Area.new[i,k+2:] = 0.0
-    #                         break
-    #
-    #     return
 
 
 
