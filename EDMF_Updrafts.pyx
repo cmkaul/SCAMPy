@@ -63,7 +63,7 @@ cdef class UpdraftVariable:
 
 
 cdef class UpdraftVariables:
-    def __init__(self, nu, namelist, Grid.Grid Gr):
+    def __init__(self, nu, namelist, paramlist, Grid.Grid Gr):
         self.Gr = Gr
         self.n_updrafts = nu
         cdef:
@@ -85,10 +85,8 @@ cdef class UpdraftVariables:
 
         if namelist['turbulence']['scheme'] == 'EDMF_PrognosticTKE':
             self.prognostic = True
-            try:
-                self.updraft_fraction = namelist['turbulence']['EDMF_PrognosticTKE']['updraft_fraction']
-            except:
-                self.updraft_fraction = 0.1
+            self.updraft_fraction = paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area']
+
             try:
                 self.updraft_exponent = namelist['turbulence']['EDMF_PrognosticTKE']['updraft_exponent']
             except:

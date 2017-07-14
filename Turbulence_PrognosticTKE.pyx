@@ -78,7 +78,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         try:
             self.updraft_surface_height = namelist['turbulence']['EDMF_PrognosticTKE']['updraft_surface_height']
         except:
-            self.updraft_surface_height = 100.0
+            self.updraft_surface_height = 0.0
             print('Turbulence--EDMF_PrognosticTKE: defaulting to 100 m height for buoyant tail entrainment')
         try:
             self.similarity_diffusivity = namelist['turbulence']['EDMF_PrognosticTKE']['use_similarity_diffusivity']
@@ -106,7 +106,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
 
         # Create the updraft variable class (major diagnostic and prognostic variables)
-        self.UpdVar = EDMF_Updrafts.UpdraftVariables(self.n_updrafts, namelist, Gr)
+        self.UpdVar = EDMF_Updrafts.UpdraftVariables(self.n_updrafts, namelist,paramlist, Gr)
         # Create the class for updraft thermodynamics
         self.UpdThermo = EDMF_Updrafts.UpdraftThermodynamics(self.n_updrafts, Gr, Ref, self.UpdVar)
         # Create the class for updraft microphysics
@@ -810,7 +810,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                                                        &self.UpdVar.QT.new[i,gw], &self.UpdVar.QL.new[i,gw],
                                                                        &self.UpdVar.H.new[i,gw], i, gw)
                     for k in xrange(gw+1, self.Gr.nzg-gw):
-                        if k ==gw or self.Gr.z_half[k] < self.updraft_surface_height:
+                        if self.Gr.z_half[k] < self.updraft_surface_height:
                             H_entr = self.EnvVar.H.values[k] + dH_entr
                             QT_entr = self.EnvVar.QT.values[k] + dQT_entr
                         else:
