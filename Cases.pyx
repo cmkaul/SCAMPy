@@ -121,6 +121,8 @@ cdef class Soares(CasesBase):
 
         return
     cpdef initialize_forcing(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV):
+        self.Fo.Gr = Gr
+        self.Fo.Ref = Ref
         return
 
     cpdef initialize_io(self, NetCDFIO_Stats Stats):

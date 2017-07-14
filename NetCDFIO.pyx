@@ -16,7 +16,7 @@ cimport numpy as np
 import cython
 
 cdef class NetCDFIO_Stats:
-    def __init__(self, namelist, Grid Gr):
+    def __init__(self, namelist, paramlist, Grid Gr):
         self.root_grp = None
         self.profiles_grp = None
         self.ts_grp = None
@@ -59,6 +59,9 @@ cdef class NetCDFIO_Stats:
 
         shutil.copyfile(os.path.join( './', namelist['meta']['simname'] + '.in'),
                         os.path.join( outpath, namelist['meta']['simname'] + '.in'))
+
+        shutil.copyfile(os.path.join( './paramlist_'+paramlist['meta']['casename']+ '.in'),
+                        os.path.join( outpath, 'paramlist_'+paramlist['meta']['casename']+ '.in'))
         self.setup_stats_file()
         return
 

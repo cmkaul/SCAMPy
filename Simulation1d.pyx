@@ -21,7 +21,7 @@ class Simulation1d:
         self.Case = CasesFactory(namelist, paramlist)
         self.Turb = ParameterizationFactory(namelist,paramlist, self.Gr, self.Ref)
         self.TS = TimeStepping.TimeStepping(namelist)
-        self.Stats = NetCDFIO_Stats(namelist, self.Gr)
+        self.Stats = NetCDFIO_Stats(namelist, paramlist, self.Gr)
         return
 
     def initialize(self, namelist):
