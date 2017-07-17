@@ -66,7 +66,7 @@ cdef entr_struct entr_detr_inverse_w(double z, double z_half,  double zi, double
 # Other functions
 
 cdef double get_wstar(double bflux, double zi ):
-    return cbrt(bflux * zi)
+    return cbrt(fmax(bflux * zi, 0.0))
 
 
 cdef double get_inversion(double *theta_rho, double *u, double *v, double *z_half,

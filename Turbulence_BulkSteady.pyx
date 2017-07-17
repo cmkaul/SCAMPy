@@ -88,7 +88,7 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
 
 
         # Create the updraft variable class (major diagnostic and prognostic variables)
-        self.UpdVar = EDMF_Updrafts.UpdraftVariables(self.n_updrafts, namelist, Gr)
+        self.UpdVar = EDMF_Updrafts.UpdraftVariables(self.n_updrafts, namelist, paramlist, Gr)
         # Create the class for updraft thermodynamics
         self.UpdThermo = EDMF_Updrafts.UpdraftThermodynamics(self.n_updrafts, Gr, Ref, self.UpdVar)
         # Create the class for updraft microphysics

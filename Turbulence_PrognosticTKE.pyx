@@ -655,8 +655,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     au_full = 0.5 * (self.UpdVar.Area.bulkvalues[k+1] + self.UpdVar.Area.bulkvalues[k])
                     self.EnvVar.W.values[k] = -au_full/(1.0-au_full) * self.UpdVar.W.bulkvalues[k]
 
-                    # Zhihong's comment: "unsure about TKE decomposition"
-                    self.EnvVar.TKE.values[k] =  val1 * GMV.TKE.values[k]
+                    self.EnvVar.TKE.values[k] =  (val1 * GMV.TKE.values[k] -
+                                                  val2 * 0.5 * self.UpdVar.W.bulkvalues[k] * self.UpdVar.W.bulkvalues[k])
 
         elif whichvals == 'mf_update':
             # same as above but replace GMV.SomeVar.values with GMV.SomeVar.mf_update
@@ -672,8 +672,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     # Assuming GMV.W = 0!
                     au_full = 0.5 * (self.UpdVar.Area.bulkvalues[k+1] + self.UpdVar.Area.bulkvalues[k])
                     self.EnvVar.W.values[k] = -au_full/(1.0-au_full) * self.UpdVar.W.bulkvalues[k]
-                    # Zhihong's comment: "unsure about TKE decomposition"
-                    self.EnvVar.TKE.values[k] =  val1 * GMV.TKE.mf_update[k]
+                    self.EnvVar.TKE.values[k] =  (val1 * GMV.TKE.mf_update[k] -
+                                                  val2 * 0.5 * self.UpdVar.W.bulkvalues[k] * self.UpdVar.W.bulkvalues[k])
 
         return
 
