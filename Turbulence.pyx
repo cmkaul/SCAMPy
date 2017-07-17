@@ -157,6 +157,9 @@ cdef class ParameterizationBase:
         self.KM.set_bcs(self.Gr)
         return
 
+    cpdef update_GMV_diagnostics(self, GridMeanVariables GMV):
+        return
+
 
 #####################################################################################################################
 
@@ -254,10 +257,23 @@ cdef class SimilarityED(ParameterizationBase):
         with nogil:
             for k in xrange(nz):
                 GMV.V.new[k+gw] = x[k]
+
+        self.update_GMV_diagnostic(GMV)
         ParameterizationBase.update(self, GMV,Case, TS)
 
         return
 
     cpdef update_inversion(self, GridMeanVariables GMV, option ):
         ParameterizationBase.update_inversion(self, GMV, option)
+        return
+
+
+    cpdef update_GMV_diagnostics(self, GridMeanVariables GMV):
+        # Ideally would write this to be able to use an SGS condensation closure, but unless the need arises,
+        # we will just do an all-or-nothing treatment as a placeholder
+
+
+        GMV.satadjust()
+
+
         return

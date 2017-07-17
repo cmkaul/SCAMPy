@@ -1244,3 +1244,27 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             # self.diffusive_flux_qt[gw-1] = Case.Sur.rho_qtflux*self.Ref.alpha0_half[gw]
         return
 
+    cpdef update_GMV_diagnostics(self, GridMeanVariables GMV):
+        cdef:
+            Py_ssize_t k
+            double qv, alpha
+
+        with nogil:
+            for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+                GMV.QL.values[k] = (self.UpdVar.Area.bulkvalues[k] * self.UpdVar.QL.bulkvalues[k]
+                                    + (1.0 - self.UpdVar.Area.bulkvalues[k]) * self.EnvVar.QL.values[k])
+
+                GMV.T.values[k] = (self.UpdVar.Area.bulkvalues[k] * self.UpdVar.T.bulkvalues[k]
+                                    + (1.0 - self.UpdVar.Area.bulkvalues[k]) * self.EnvVar.T.values[k])
+                qv = GMV.QT.values[k] - GMV.QL.values[k]
+
+                GMV.THL.values[k] = t_to_thetali_c(self.Ref.p0_half[k], GMV.T.values[k], GMV.QT.values[k],
+                                                   GMV.QL.values[k], 0.0)
+
+                alpha = alpha_c(self.Ref.p0_half[k], GMV.T.values[k], GMV.QT.values[k], qv)
+                GMV.B.values[k] = buoyancy_c(self.Ref.alpha0_half[k], alpha)
+
+        return
+
+
+

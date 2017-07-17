@@ -19,6 +19,7 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
         EDMF_Updrafts.UpdraftMicrophysics UpdMicro
         EDMF_Updrafts.UpdraftThermodynamics UpdThermo
         EDMF_Environment.EnvironmentVariables EnvVar
+        EDMF_Environment.EnvironmentThermodynamics EnvThermo
         entr_struct (*entr_detr_fp) (double z, double z_half, double zi, double wk, double w_halfk) nogil
         bint const_area
         bint use_local_micro
@@ -61,6 +62,4 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
     cpdef apply_updraft_microphysics(self)
     cpdef update_GMV_MF(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef update_GMV_ED(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
-
-    cpdef update_GMV_MF_implicitMF(self, GridMeanVariables GMV, TimeStepping TS)
-    cpdef update_GMV_ED_implicitMF(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
+    cpdef update_GMV_diagnostics(self, GridMeanVariables GMV)

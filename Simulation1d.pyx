@@ -45,6 +45,7 @@ class Simulation1d:
             self.TS.update()
             # Apply the tendencies, also update the BCs and diagnostic thermodynamics
             self.GMV.update(self.TS)
+            self.Turb.update_GMV_diagnostics(self.GMV)
             if np.mod(self.TS.t, self.Stats.frequency) == 0:
                 self.io()
 

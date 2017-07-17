@@ -226,10 +226,6 @@ cdef class GridMeanVariables:
 
 
         self.zero_tendencies()
-        self.satadjust()
-
-        # print(TS.nstep, TS.t, TS.dt)
-
         return
 
     cpdef initialize_io(self, NetCDFIO_Stats Stats):
@@ -289,6 +285,9 @@ cdef class GridMeanVariables:
                 self.B.values[k] = buoyancy_c(self.Ref.alpha0_half[k], alpha)
 
         return
+
+
+
 
 
 
