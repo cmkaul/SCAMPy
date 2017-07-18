@@ -19,7 +19,7 @@ from TimeStepping cimport TimeStepping
 from NetCDFIO cimport NetCDFIO_Stats
 from thermodynamic_functions cimport  *
 from turbulence_functions cimport *
-from utility_functions cimport interp2pt, gaussian_mean
+from utility_functions cimport interp2pt
 from libc.math cimport fmax, sqrt, exp, pow
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 from Turbulence_BulkSteady cimport EDMF_BulkSteady

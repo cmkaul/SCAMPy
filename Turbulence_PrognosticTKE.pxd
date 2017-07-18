@@ -19,12 +19,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         EDMF_Updrafts.UpdraftThermodynamics UpdThermo
         EDMF_Environment.EnvironmentVariables EnvVar
         EDMF_Environment.EnvironmentThermodynamics EnvThermo
-        Py_ssize_t updraft_iterations
         entr_struct (*entr_detr_fp) (double z, double z_half, double zi, double wk, double w_halfk) nogil
         bint const_area
         bint use_local_micro
         bint similarity_diffusivity
-        double implicit_factor
         double prognostic_rescale
         double surface_area
         double minimum_area
@@ -32,11 +30,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double detrainment_factor
         double vel_pressure_coeff
         double dt_upd
-        double [:,:] entr_w
         double [:,:] entr_sc
-        double [:,:] detr_w
         double [:,:] detr_sc
-        double [:] init_sc_upd
         double [:] area_surface_bc
         double [:] h_surface_bc
         double [:] qt_surface_bc
@@ -58,8 +53,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double [:] tke_detr_loss
         double [:] tke_shear
         double surface_scalar_coeff
-        double updraft_fraction
-        double updraft_exponent
         double wu_min
         double max_area_factor
         double updraft_surface_height

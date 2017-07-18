@@ -31,7 +31,6 @@ cdef class UpdraftVariables:
         Py_ssize_t n_updrafts
         bint prognostic
         double updraft_fraction
-        double updraft_exponent
     cpdef initialize(self, GridMeanVariables GMV)
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)

@@ -7,7 +7,6 @@
 import numpy as np
 include "parameters.pxi"
 from thermodynamic_functions cimport  *
-from utility_functions cimport gaussian_mean
 # eos_struct, eos, t_to_entropy_c, t_to_thetali_c, eos_first_guess_thetal, \
 # eos_first_guess_entropy, alpha_c, buoyancy_c, latent_heat
 
@@ -86,15 +85,10 @@ cdef class UpdraftVariables:
         if namelist['turbulence']['scheme'] == 'EDMF_PrognosticTKE':
             self.prognostic = True
             self.updraft_fraction = paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area']
-
-            try:
-                self.updraft_exponent = namelist['turbulence']['EDMF_PrognosticTKE']['updraft_exponent']
-            except:
-                self.updraft_exponent = 1.0
         else:
             self.prognostic = False
-            self.updraft_fraction = 0.1
-            self.updraft_exponent = 1.0
+            self.updraft_fraction = paramlist['turbulence']['EDMF_BulkSteady']['surface_area']
+
 
         return
 
@@ -103,43 +97,19 @@ cdef class UpdraftVariables:
             Py_ssize_t i,k
             Py_ssize_t gw = self.Gr.gw
             double dz = self.Gr.dz
-            double res_fac, gaussian_std
-            double limpart_tot = 0.0, limpart_low = 0.0, limpart_upp = 0.0
-            double lower_lim, upper_lim, init_a_u
-            double entr
 
-
-        if self.prognostic:
-            res_fac = gaussian_mean(0.9, 1.0)
-            with nogil:
+        with nogil:
+            for k in xrange(self.Gr.nzg):
                 for i in xrange(self.n_updrafts):
-                    limpart_tot += self.updraft_exponent ** i
-                for i in xrange(self.n_updrafts):
-                    limpart_upp += self.updraft_exponent ** i
-                    lower_lim = 1.0 - self.updraft_fraction * (1.0 - limpart_low/limpart_tot)
-                    upper_lim = 1.0 - self.updraft_fraction * (1.0 - limpart_upp/limpart_tot)
-                    init_a_u  = upper_lim - lower_lim
-                    for k in xrange(self.Gr.nzg):
-                        self.W.values[i,k] = 0.0
-                        self.Area.values[i,k] = init_a_u
-                        self.QT.values[i,k] = GMV.QT.values[k]
-                        self.QL.values[i,k] = GMV.QL.values[k]
-                        self.H.values[i,k] = GMV.H.values[k]
-                        self.T.values[i,k] = GMV.T.values[k]
-                        self.B.values[i,k] = GMV.B.values[k]
-
-
-        else:
-            with nogil:
-                for k in xrange(self.Gr.nzg):
-                    for i in xrange(self.n_updrafts):
-                        self.W.values[i,k] = 0.0
-                        self.Area.values[i,k] = 0.1
-                        self.QT.values[i,k] = GMV.QT.values[k]
-                        self.QL.values[i,k] = GMV.QL.values[k]
-                        self.H.values[i,k] = GMV.H.values[k]
-                        self.T.values[i,k] = GMV.T.values[k]
-                        self.B.values[i,k] = GMV.B.values[k]
+                    self.W.values[i,k] = 0.0
+                    # Simple treatment for now, revise when multiple updraft closures
+                    # become more well defined
+                    self.Area.values[i,k] = self.updraft_fraction/self.n_updrafts
+                    self.QT.values[i,k] = GMV.QT.values[k]
+                    self.QL.values[i,k] = GMV.QL.values[k]
+                    self.H.values[i,k] = GMV.H.values[k]
+                    self.T.values[i,k] = GMV.T.values[k]
+                    self.B.values[i,k] = GMV.B.values[k]
 
 
         self.QT.set_bcs(self.Gr)

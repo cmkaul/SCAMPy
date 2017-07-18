@@ -19,13 +19,10 @@ from TimeStepping cimport TimeStepping
 from NetCDFIO cimport NetCDFIO_Stats
 from thermodynamic_functions cimport  *
 from turbulence_functions cimport *
-from utility_functions cimport interp2pt, gaussian_mean
+from utility_functions cimport interp2pt, percentile_mean_norm
 from libc.math cimport fmax, sqrt, exp, pow
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 from Turbulence_BulkSteady cimport EDMF_BulkSteady
-
-
-
 
 
 
@@ -381,11 +378,12 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
         return
 
 
-
     cpdef set_updraft_surface_bc(self, GridMeanVariables GMV, CasesBase Case):
 
         self.update_inversion(GMV, Case.inversion_option)
         self.wstar = get_wstar(Case.Sur.bflux, self.zi)
+        self.surface_scalar_coeff = percentile_mean_norm(1.0-self.surface_area, 10000)
+        print('surface scalar coeff', self.surface_scalar_coeff)
 
         cdef:
             Py_ssize_t i
@@ -394,11 +392,12 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
 
         with nogil:
             for i in xrange(self.n_updrafts):
+                # Placeholder for multiple updraft closure
                 self.area_surface_bc[i] = self.surface_area/self.n_updrafts
                 self.w_surface_bc[i] = 0.0
-                self.h_surface_bc[i] = (GMV.H.values[gw] + self.surface_scalar_coeff
+                self.h_surface_bc[i] = (self.EnvVar.H.values[gw] + self.surface_scalar_coeff
                                         * Case.Sur.rho_hflux/sqrt(e_srf) * self.Ref.alpha0_half[gw])
-                self.qt_surface_bc[i] = (GMV.QT.values[gw] + self.surface_scalar_coeff
+                self.qt_surface_bc[i] = (self.EnvVar.QT.values[gw] + self.surface_scalar_coeff
                                          * Case.Sur.rho_qtflux/sqrt(e_srf) * self.Ref.alpha0_half[gw])
 
         return
