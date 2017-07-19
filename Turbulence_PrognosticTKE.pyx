@@ -403,7 +403,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Py_ssize_t i, k
             Py_ssize_t gw = self.Gr.gw
             double dz = self.Gr.dz
-            double e_srf = 3.75 * Case.Sur.ustar * Case.Sur.ustar + 0.2 * self.wstar * self.wstar
             eos_struct sa
             entr_struct ret
             double a,b,c, w2, w, w_mid, w_low, denom
@@ -570,29 +569,32 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.update_inversion(GMV, Case.inversion_option)
         self.wstar = get_wstar(Case.Sur.bflux, self.zi)
         self.surface_scalar_coeff = percentile_mean_norm(1.0-self.surface_area, 10000)
-        print('surface scalar coeff', self.surface_scalar_coeff)
 
         cdef:
-            Py_ssize_t i
-            double e_srf = 3.75 * Case.Sur.ustar * Case.Sur.ustar + 0.2 * self.wstar * self.wstar
-            Py_ssize_t gw = self.Gr.gw
-
+            Py_ssize_t i, gw = self.Gr.gw
+            double zLL = self.Gr.z_half[gw]
+            double ustar = Case.Sur.ustar, oblength = Case.Sur.obukhov_length
+            double alpha0LL  = self.Ref.alpha0_half[gw]
+            double qt_var = get_surface_variance(Case.Sur.rho_qtflux*alpha0LL,
+                                                 Case.Sur.rho_qtflux*alpha0LL, ustar, zLL, oblength)
+            double h_var = get_surface_variance(Case.Sur.rho_hflux*alpha0LL,
+                                                 Case.Sur.rho_hflux*alpha0LL, ustar, zLL, oblength)
         with nogil:
             for i in xrange(self.n_updrafts):
                 # Placeholder for multiple updraft closure
                 self.area_surface_bc[i] = self.surface_area/self.n_updrafts
                 self.w_surface_bc[i] = 0.0
-                self.h_surface_bc[i] = (self.EnvVar.H.values[gw] + self.surface_scalar_coeff
-                                        * Case.Sur.rho_hflux/sqrt(e_srf) * self.Ref.alpha0_half[gw])
-                self.qt_surface_bc[i] = (self.EnvVar.QT.values[gw] + self.surface_scalar_coeff
-                                         * Case.Sur.rho_qtflux/sqrt(e_srf) * self.Ref.alpha0_half[gw])
-
+                self.h_surface_bc[i] = (GMV.H.values[gw] + self.surface_scalar_coeff * sqrt(h_var))
+                self.qt_surface_bc[i] = (GMV.QT.values[gw] + self.surface_scalar_coeff * sqrt(qt_var))
         return
 
 
 
     cpdef reset_surface_tke(self, GridMeanVariables GMV, CasesBase Case):
-        cdef double tke_surface = 3.75 * Case.Sur.ustar * Case.Sur.ustar + 0.2 * self.wstar * self.wstar
+        cdef:
+            double zLL = self.Gr.z_half[self.Gr.gw]
+            double ustar = Case.Sur.ustar, oblength = Case.Sur.obukhov_length
+            double tke_surface = get_surface_tke(ustar, self.wstar, zLL, oblength)
 
         GMV.TKE.values[self.Gr.gw] = tke_surface
         GMV.TKE.mf_update[self.Gr.gw] = tke_surface
@@ -759,7 +761,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double dH_entr, dQT_entr, H_entr, QT_entr
             double c1, c2, c3, c4
             eos_struct sa
-            double sqrt_e_srf =sqrt(3.75 * Case.Sur.ustar * Case.Sur.ustar + 0.2 * self.wstar * self.wstar)
+            double ustar = Case.Sur.ustar, oblength = Case.Sur.obukhov_length
+            double alpha0LL  = self.Ref.alpha0_half[gw]
+            double qt_var, h_var
+
 
         # self.compute_entrainment_detrainment(GMV, Case)
 
@@ -769,8 +774,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 for i in xrange(self.n_updrafts):
                     self.UpdVar.H.new[i,gw] = self.h_surface_bc[i]
                     self.UpdVar.QT.new[i,gw]  = self.qt_surface_bc[i]
-                    dH_entr = self.surface_scalar_coeff * Case.Sur.rho_hflux/sqrt_e_srf * self.Ref.alpha0_half[gw]
-                    dQT_entr = self.surface_scalar_coeff * Case.Sur.rho_qtflux/sqrt_e_srf * self.Ref.alpha0_half[gw]
+                    dH_entr = self.surface_scalar_coeff * sqrt(h_var)
+                    dQT_entr = self.surface_scalar_coeff * sqrt(qt_var)
                     sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp,
                              self.Ref.p0_half[gw], self.UpdVar.QT.new[i,gw], self.UpdVar.H.new[i,gw])
                     self.UpdVar.QL.new[i,gw] = sa.ql
@@ -780,8 +785,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                                                        &self.UpdVar.H.new[i,gw], i, gw)
                     for k in xrange(gw+1, self.Gr.nzg-gw):
                         if self.Gr.z_half[k] < self.updraft_surface_height:
-                            H_entr = self.EnvVar.H.values[k] + dH_entr
-                            QT_entr = self.EnvVar.QT.values[k] + dQT_entr
+                            h_var = get_surface_variance(Case.Sur.rho_hflux * alpha0LL,  Case.Sur.rho_hflux * alpha0LL,
+                                                         ustar, self.Gr.z_half[k], oblength)
+                            qt_var = get_surface_variance(Case.Sur.rho_qtflux * alpha0LL, Case.Sur.rho_qtflux * alpha0LL,
+                                                          ustar, self.Gr.z_half[k], oblength)
+                            H_entr = self.EnvVar.H.values[k] + self.surface_scalar_coeff * sqrt(h_var)
+                            QT_entr = self.EnvVar.QT.values[k] + self.surface_scalar_coeff * sqrt(qt_var)
                         else:
                             H_entr = self.EnvVar.H.values[k]
                             QT_entr = self.EnvVar.QT.values[k]
@@ -817,13 +826,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 for i in xrange(self.n_updrafts):
                     self.UpdVar.H.new[i,gw] = self.h_surface_bc[i]
                     self.UpdVar.QT.new[i,gw]  = self.qt_surface_bc[i]
-
-                    dH_entr = self.surface_scalar_coeff * Case.Sur.rho_hflux/sqrt_e_srf * self.Ref.alpha0_half[gw]
-                    dQT_entr = self.surface_scalar_coeff * Case.Sur.rho_qtflux/sqrt_e_srf * self.Ref.alpha0_half[gw]
                     for k in xrange(gw+1, self.Gr.nzg-gw):
                         if self.Gr.z_half[k] < self.updraft_surface_height:
-                            H_entr = self.EnvVar.H.values[k] + dH_entr
-                            QT_entr = self.EnvVar.QT.values[k] + dQT_entr
+                            h_var = get_surface_variance(Case.Sur.rho_hflux * alpha0LL,  Case.Sur.rho_hflux * alpha0LL,
+                                                         ustar, self.Gr.z_half[k], oblength)
+                            qt_var = get_surface_variance(Case.Sur.rho_qtflux * alpha0LL, Case.Sur.rho_qtflux * alpha0LL,
+                                                          ustar, self.Gr.z_half[k], oblength)
+                            H_entr = self.EnvVar.H.values[k] + self.surface_scalar_coeff * sqrt(h_var)
+                            QT_entr = self.EnvVar.QT.values[k] + self.surface_scalar_coeff * sqrt(qt_var)
                         else:
                             H_entr = self.EnvVar.H.values[k]
                             QT_entr = self.EnvVar.QT.values[k]

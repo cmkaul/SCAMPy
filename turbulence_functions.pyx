@@ -63,12 +63,13 @@ cdef entr_struct entr_detr_inverse_w(double z, double z_half,  double zi, double
     _ret.entr_w = 1.0/(400.0 * fmax(wk,0.1)) #standard 400
     _ret.entr_sc = 1.0/(400.0 * fmax(w_halfk,0.1)) #sets baseline to avoid errors
     return  _ret
-# Other functions
 
+
+# convective velocity scale
 cdef double get_wstar(double bflux, double zi ):
     return cbrt(fmax(bflux * zi, 0.0))
 
-
+# BL height
 cdef double get_inversion(double *theta_rho, double *u, double *v, double *z_half,
                           Py_ssize_t kmin, Py_ssize_t kmax, double Ri_bulk_crit):
     cdef:
@@ -94,6 +95,23 @@ cdef double get_inversion(double *theta_rho, double *u, double *v, double *z_hal
         h = (z_half[k] - z_half[k-1])/(Ri_bulk - Ri_bulk_low) * (Ri_bulk_crit - Ri_bulk_low) + z_half[k-1]
 
     return h
+
+# MO scaling of near surface tke and scalar variance
+
+cdef double get_surface_tke(double ustar, double wstar, double zLL, double oblength) nogil:
+    if oblength < 0.0:
+        return (3.75 + cbrt(zLL/oblength * zLL/oblength)) * ustar * ustar + 0.2 * wstar * wstar
+    else:
+        return 3.75 * ustar * ustar
+
+cdef double get_surface_variance(double flux1, double flux2, double ustar, double zLL, double oblength) nogil:
+    cdef:
+        double c_star1 = -flux1/ustar
+        double c_star2 = -flux2/ustar
+    if oblength < 0.0:
+        return 4.0 * c_star1 * c_star2 * pow(1.0 - 8.3 * zLL/oblength, -2.0/3.0)
+    else:
+        return 4.0 * c_star1 * c_star2
 
 
 
