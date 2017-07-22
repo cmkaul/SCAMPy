@@ -56,19 +56,20 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         try:
             if namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] == 'inverse_z':
                 self.entr_detr_fp = entr_detr_inverse_z
-                print('Inverse Z Entrainment')
             elif namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] == 'cloudy':
                 self.entr_detr_fp = entr_detr_cloudy
-                print('Cloudy Entrainment')
             elif namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] == 'dry':
                 self.entr_detr_fp = entr_detr_dry
-
             elif namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] == 'inverse_w':
                 self.entr_detr_fp = entr_detr_inverse_w
+            elif namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] == 'b_w2':
+                self.entr_detr_fp = entr_detr_b_w2
+            elif namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] == 'tke':
+                self.entr_detr_fp = entr_detr_tke
             else:
                 print('Turbulence--EDMF_PrognosticTKE: Entrainment rate namelist option is not recognized')
         except:
-            self.entr_detr_fp = entr_detr_inverse_z
+            self.entr_detr_fp = entr_detr_cloudy
             print('Turbulence--EDMF_PrognosticTKE: defaulting to cloudy entrainment formulation')
         try:
             self.wu_min = namelist['turbulence']['EDMF_PrognosticTKE']['wu_min']
@@ -270,17 +271,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.decompose_environment(GMV, 'mf_update')
         self.EnvThermo.satadjust(self.EnvVar, GMV)
 
-        # print('compute_eddy_diffusivities_tke')
-        if TS.nstep > 10:
-            self.compute_eddy_diffusivities_tke(GMV, Case)
-        else:
-            ParameterizationBase.compute_eddy_diffusivities_similarity(self,GMV, Case)
+
+        self.compute_eddy_diffusivities_tke(GMV, Case)
 
         self.update_GMV_ED(GMV, Case, TS)
         self.compute_tke(GMV, Case, TS)
 
 
-        if TS.nstep > 100000000000:
+        if TS.nstep > 1000000000:
             print(TS.nstep)
             # PLOTS
             plt.figure('Updated  W')
@@ -405,9 +403,27 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double dz = self.Gr.dz
             eos_struct sa
             entr_struct ret
+            entr_in_struct input
             double a,b,c, w2, w, w_mid, w_low, denom
 
-        self.compute_entrainment_detrainment(GMV, Case)
+        self.update_inversion(GMV, Case.inversion_option)
+        input.zi = self.zi
+
+        with nogil:
+            for i in xrange(self.n_updrafts):
+                for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+                    input.b = self.UpdVar.B.values[i,k]
+                    input.w = interp2pt(self.UpdVar.W.values[i,k],self.UpdVar.W.values[i,k-1])
+                    input.z = self.Gr.z_half[k]
+                    input.af = self.UpdVar.Area.values[i,k]
+                    input.tke = self.EnvVar.TKE.values[k]
+                    input.ml = self.mixing_length[k]
+                    ret = entr_detr_cloudy(input)
+                    self.entr_sc[i,k] = ret.entr_sc * self.entrainment_factor
+                    self.detr_sc[i,k] = ret.detr_sc * self.detrainment_factor
+
+
+        # self.compute_entrainment_detrainment(GMV, Case)
         self.set_updraft_surface_bc(GMV, Case)
 
         with nogil:
@@ -526,6 +542,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         return
 
     cpdef compute_mixing_length(self, double obukhov_length):
+        print('zi, wstar ', self.zi, self.wstar)
         cdef:
             Py_ssize_t k
             Py_ssize_t gw = self.Gr.gw
@@ -654,16 +671,21 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         cdef:
             Py_ssize_t k
             entr_struct ret
-            double wk, w_halfk
+            entr_in_struct input
 
         self.update_inversion(GMV, Case.inversion_option)
+        input.zi = self.zi
 
         with nogil:
             for i in xrange(self.n_updrafts):
                 for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                    wk = self.UpdVar.W.values[i,k]
-                    w_halfk = interp2pt(wk,self.UpdVar.W.values[i,k-1])
-                    ret = self.entr_detr_fp(self.Gr.z[k], self.Gr.z_half[k], self.zi, wk, w_halfk)
+                    input.b = self.UpdVar.B.values[i,k]
+                    input.w = interp2pt(self.UpdVar.W.values[i,k],self.UpdVar.W.values[i,k-1])
+                    input.z = self.Gr.z_half[k]
+                    input.af = self.UpdVar.Area.values[i,k]
+                    input.tke = self.EnvVar.TKE.values[k]
+                    input.ml = self.mixing_length[k]
+                    ret = self.entr_detr_fp(input)
                     self.entr_sc[i,k] = ret.entr_sc * self.entrainment_factor
                     self.detr_sc[i,k] = ret.detr_sc * self.detrainment_factor
 

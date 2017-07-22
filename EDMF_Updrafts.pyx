@@ -109,7 +109,7 @@ cdef class UpdraftVariables:
                     self.QL.values[i,k] = GMV.QL.values[k]
                     self.H.values[i,k] = GMV.H.values[k]
                     self.T.values[i,k] = GMV.T.values[k]
-                    self.B.values[i,k] = GMV.B.values[k]
+                    self.B.values[i,k] = 1e-4
 
 
         self.QT.set_bcs(self.Gr)

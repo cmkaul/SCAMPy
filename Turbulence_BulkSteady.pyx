@@ -60,8 +60,8 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
                 self.entr_detr_fp = entr_detr_inverse_z
             elif namelist['turbulence']['EDMF_BulkSteady']['entrainment'] == 'inverse_w':
                 self.entr_detr_fp = entr_detr_inverse_w
-                #add inverse w
-                #fp function pointer
+            elif namelist['turbulence']['EDMF_BulkSteady']['entrainment'] == 'b_w2':
+                self.entr_detr_fp = entr_detr_b_w2
 
             else:
                 print('Turbulence--EDMF_BulkSteady: Entrainment rate namelist option is not recognized')
@@ -97,11 +97,9 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
         self.EnvThermo = EDMF_Environment.EnvironmentThermodynamics(namelist, Gr, Ref, self.EnvVar)
 
         # Entrainment rates
-        self.entr_w = np.zeros((self.n_updrafts, Gr.nzg),dtype=np.double,order='c')
         self.entr_sc = np.zeros((self.n_updrafts, Gr.nzg),dtype=np.double,order='c')
 
         # Detrainment rates
-        self.detr_w = np.zeros((self.n_updrafts,Gr.nzg),dtype=np.double,order='c')
         self.detr_sc = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
 
         # Mass flux
@@ -144,7 +142,6 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
         Stats.add_profile('eddy_viscosity')
         Stats.add_profile('eddy_diffusivity')
 
-        Stats.add_profile('entrainment_w')
         Stats.add_profile('entrainment_sc')
         Stats.add_profile('detrainment_sc')
 
@@ -173,7 +170,6 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
 
         cdef:
             Py_ssize_t k, i
-            double [:] mean_entr_w = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
             double [:] mean_entr_sc = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
             double [:] mean_detr_sc = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
 
@@ -189,12 +185,10 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                 if self.UpdVar.Area.bulkvalues[k] > 0.0:
                     for i in xrange(self.n_updrafts):
-                        mean_entr_w[k] += self.UpdVar.Area.values[i,k] * self.entr_w[i,k]/self.UpdVar.Area.bulkvalues[k]
                         mean_entr_sc[k] += self.UpdVar.Area.values[i,k] * self.entr_sc[i,k]/self.UpdVar.Area.bulkvalues[k]
                         mean_detr_sc[k] += self.UpdVar.Area.values[i,k] * self.detr_sc[i,k]/self.UpdVar.Area.bulkvalues[k]
 
 
-        Stats.write_profile('entrainment_w', mean_entr_w[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('entrainment_sc', mean_entr_sc[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('detrainment_sc', mean_detr_sc[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
 
@@ -360,19 +354,22 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
         cdef:
             Py_ssize_t k
             entr_struct ret
-            double wk, w_halfk
+            entr_in_struct input
 
         self.update_inversion(GMV, Case.inversion_option)
+        input.zi = self.zi
+        input.tke = 0.0
+        input.ml = 0.0
 
         with nogil:
             for i in xrange(self.n_updrafts):
                 for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                    wk = self.UpdVar.W.values[i,k]
-                    w_halfk = interp2pt(wk,self.UpdVar.W.values[i,k-1])
-                    ret = self.entr_detr_fp(self.Gr.z[k], self.Gr.z_half[k], self.zi, wk, w_halfk)
-                    self.entr_w[i,k] = ret.entr_w * self.entrainment_factor
+                    input.b = self.UpdVar.B.values[i,k]
+                    input.w = interp2pt(self.UpdVar.W.values[i,k],self.UpdVar.W.values[i,k-1])
+                    input.z = self.Gr.z_half[k]
+                    input.af = self.UpdVar.Area.values[i,k]
+                    ret = self.entr_detr_fp(input)
                     self.entr_sc[i,k] = ret.entr_sc * self.entrainment_factor
-                    self.detr_w[i,k] = ret.detr_w * self.detrainment_factor
                     self.detr_sc[i,k] = ret.detr_sc * self.detrainment_factor
 
         return

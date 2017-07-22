@@ -7,62 +7,78 @@ include "parameters.pxi"
 
 # Entrainment Rates
 
-cdef entr_struct entr_detr_cloudy(double z, double z_half,  double zi, double wk, double w_halfk) nogil:
+cdef entr_struct entr_detr_cloudy(entr_in_struct entr_in) nogil:
     cdef entr_struct _ret
-    cdef double eps = 1.0 # to avoid division by zero when z = 0 or z_i
 
     # in cloud portion from Soares 2004
-    if z_half >= zi :
-        _ret.entr_w = 1.5e-3 #2e-3
-        _ret.entr_sc = 1.5e-3
-        _ret.detr_w = 3.0e-3
+    if entr_in.z >= entr_in.zi :
+        _ret.entr_sc = 2.0e-3
         _ret.detr_sc= 3.0e-3
     else:
-        # I think I just made this up to give a smooth blend
-        _ret.entr_sc = 1.5e-3 * (1.0 - log(z_half/zi))
-        _ret.entr_w = 1.5e-3 * (1.0 - log(z/zi))
-        _ret.detr_w =  0.0#(log(fmax(z,20.0)/(zi)) - log(20.0/(zi))) * 1e-3
-        _ret.detr_sc = 0.0 # (log(fmax(z_half,20.0)/(zi)) - log(20.0/(zi))) * 1e-3
+        _ret.entr_sc = 2.0e-3 * (1.0 - log(entr_in.z/entr_in.zi))
+        _ret.detr_sc = 0.0
 
     return  _ret
 
 
-cdef entr_struct entr_detr_dry(double z, double z_half, double zi, double wk, double w_halfk) nogil:
+cdef entr_struct entr_detr_dry(entr_in_struct entr_in)nogil:
     cdef entr_struct _ret
     cdef double eps = 1.0 # to avoid division by zero when z = 0 or z_i
     # Following Soares 2004
-    _ret.entr_sc = 0.5*(1.0/fmax(z_half,10.0)+ 1.0/fmax(zi-z_half,10.0)) #vkb/(z + 1.0e-3)
-    _ret.entr_w = 0.5*(1.0/fmax(z,10.0)+ 1.0/fmax(zi-z,10.0)) #vkb/z_half
-    _ret.detr_w = 0.0
+    _ret.entr_sc = 0.5*(1.0/entr_in.z + 1.0/fmax(entr_in.zi - entr_in.z, 10.0)) #vkb/(z + 1.0e-3)
     _ret.detr_sc = 0.0
 
     return  _ret
 
-cdef entr_struct entr_detr_inverse_z(double z, double z_half,  double zi, double wk, double w_halfk) nogil:
+cdef entr_struct entr_detr_inverse_z(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
-        double er0_zmin = 10.0 # lower limit for z in computation of entrainment/detrainment rates
-    _ret.entr_sc = vkb/fmax(z_half, er0_zmin)
-    _ret.entr_w = vkb/fmax(z, er0_zmin)
-    _ret.detr_sc= _ret.entr_sc
-    _ret.detr_w = _ret.entr_w
+
+    _ret.entr_sc = vkb/entr_in.z
+    _ret.detr_sc= 0.0
+
     return _ret
 
-cdef entr_struct entr_detr_inverse_w(double z, double z_half,  double zi, double wk, double w_halfk) nogil:
+cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
     cdef entr_struct _ret
-    cdef double eps = 1.0 # to avoid division by zero when z = 0 or z_i
-
     # in cloud portion from Soares 2004
-    if z_half >= zi :
-        _ret.detr_w = 3.0e-3
+    if entr_in.z >= entr_in.zi :
         _ret.detr_sc= 3.0e-3
     else:
-        # I think I just made this up to give a smooth blend
-        _ret.detr_w =  0.0#(log(fmax(z,20.0)/(zi)) - log(20.0/(zi))) * 1e-3
-        _ret.detr_sc = 0.0 # (log(fmax(z_half,20.0)/(zi)) - log(20.0/(zi))) * 1e-3
-    _ret.entr_w = 1.0/(400.0 * fmax(wk,0.1)) #standard 400
-    _ret.entr_sc = 1.0/(400.0 * fmax(w_halfk,0.1)) #sets baseline to avoid errors
+        _ret.detr_sc = 0.0
+
+    _ret.entr_sc = 1.0/(400.0 * fmax(entr_in.w,0.1)) #sets baseline to avoid errors
     return  _ret
+
+
+cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil:
+    cdef entr_struct _ret
+    # in cloud portion from Soares 2004
+    if entr_in.z >= entr_in.zi :
+        _ret.detr_sc= 3.0e-3
+    else:
+        _ret.detr_sc = 0.0
+
+    # _ret.entr_sc = (0.002 * sqrt(entr_in.tke) / fmax(entr_in.w, 0.01) /
+    #                 fmax(entr_in.af, 0.001) / fmax(entr_in.ml, 1.0))
+    _ret.entr_sc = (0.05 * sqrt(entr_in.tke) / fmax(entr_in.w, 0.01) / fmax(entr_in.af, 0.001) / fmax(entr_in.z, 1.0))
+    return  _ret
+
+
+
+cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil:
+    cdef entr_struct _ret
+    # in cloud portion from Soares 2004
+    if entr_in.z >= entr_in.zi :
+        _ret.detr_sc= 3.0e-3
+    else:
+        _ret.detr_sc = 0.0
+
+    _ret.entr_sc = 0.5 * fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-4)
+    # or add to detrainment when buoyancy is negative
+    return  _ret
+
+
 
 
 # convective velocity scale

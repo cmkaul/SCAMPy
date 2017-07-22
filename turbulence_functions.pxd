@@ -1,13 +1,24 @@
 cdef struct entr_struct:
     double entr_sc
-    double entr_w
     double detr_sc
-    double detr_w
 
-cdef entr_struct entr_detr_cloudy(double z, double z_half,  double zi, double wk, double w_halfk) nogil
-cdef entr_struct entr_detr_dry(double z, double z_half,  double zi, double wk, double w_halfk) nogil
-cdef entr_struct entr_detr_inverse_z(double z, double z_half,  double zi, double wk, double w_halfk) nogil
-cdef entr_struct entr_detr_inverse_w(double z, double z_half,  double zi, double wk, double w_halfk) nogil
+cdef struct entr_in_struct:
+    double zi
+    double z
+    double w
+    double b
+    double af
+    double tke
+    double ml
+
+
+cdef entr_struct entr_detr_cloudy(entr_in_struct entr_in) nogil
+cdef entr_struct entr_detr_dry(entr_in_struct entr_in) nogil
+cdef entr_struct entr_detr_inverse_z(entr_in_struct entr_in) nogil
+cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil
+cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil
+cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil
+
 
 cdef double get_wstar(double bflux, double zi )
 cdef double get_inversion(double *theta_rho, double *u, double *v, double *z_half,

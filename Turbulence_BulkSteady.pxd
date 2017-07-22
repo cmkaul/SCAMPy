@@ -7,7 +7,7 @@ from ReferenceState cimport  ReferenceState
 from Cases cimport CasesBase
 from TimeStepping cimport  TimeStepping
 from NetCDFIO cimport NetCDFIO_Stats
-from turbulence_functions cimport entr_struct
+from turbulence_functions cimport entr_struct, entr_in_struct
 from Turbulence cimport ParameterizationBase
 
 
@@ -20,15 +20,13 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
         EDMF_Updrafts.UpdraftThermodynamics UpdThermo
         EDMF_Environment.EnvironmentVariables EnvVar
         EDMF_Environment.EnvironmentThermodynamics EnvThermo
-        entr_struct (*entr_detr_fp) (double z, double z_half, double zi, double wk, double w_halfk) nogil
+        entr_struct (*entr_detr_fp) (entr_in_struct entr_in) nogil
         bint const_area
         bint use_local_micro
         double surface_area
         double entrainment_factor
         double detrainment_factor
-        double [:,:] entr_w
         double [:,:] entr_sc
-        double [:,:] detr_w
         double [:,:] detr_sc
         double [:] area_surface_bc
         double [:] h_surface_bc
