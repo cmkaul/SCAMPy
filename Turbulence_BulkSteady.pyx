@@ -356,10 +356,11 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
             entr_struct ret
             entr_in_struct input
 
-        self.update_inversion(GMV, Case.inversion_option)
         input.zi = self.zi
+        input.wstar = self.wstar
         input.tke = 0.0
         input.ml = 0.0
+
 
         with nogil:
             for i in xrange(self.n_updrafts):

@@ -4,6 +4,7 @@ cdef struct entr_struct:
 
 cdef struct entr_in_struct:
     double zi
+    double wstar
     double z
     double w
     double b
@@ -23,6 +24,7 @@ cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil
 cdef double get_wstar(double bflux, double zi )
 cdef double get_inversion(double *theta_rho, double *u, double *v, double *z_half,
                           Py_ssize_t kmin, Py_ssize_t kmax, double Ri_bulk_crit)
+cdef double get_mixing_tau(double zi, double wstar) nogil
 
 cdef double get_surface_tke(double ustar, double wstar, double zLL, double oblength) nogil
 cdef double get_surface_variance(double flux1, double flux2, double ustar, double zLL, double oblength) nogil

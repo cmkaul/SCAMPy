@@ -40,14 +40,16 @@ cdef entr_struct entr_detr_inverse_z(entr_in_struct entr_in) nogil:
     return _ret
 
 cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
-    cdef entr_struct _ret
+    cdef:
+        entr_struct _ret
+        double tau = get_mixing_tau(entr_in.zi, entr_in.wstar)
     # in cloud portion from Soares 2004
     if entr_in.z >= entr_in.zi :
         _ret.detr_sc= 3.0e-3
     else:
         _ret.detr_sc = 0.0
 
-    _ret.entr_sc = 1.0/(400.0 * fmax(entr_in.w,0.1)) #sets baseline to avoid errors
+    _ret.entr_sc = 1.0/(tau * fmax(entr_in.w,0.1)) #sets baseline to avoid errors
     return  _ret
 
 
@@ -111,6 +113,14 @@ cdef double get_inversion(double *theta_rho, double *u, double *v, double *z_hal
         h = (z_half[k] - z_half[k-1])/(Ri_bulk - Ri_bulk_low) * (Ri_bulk_crit - Ri_bulk_low) + z_half[k-1]
 
     return h
+
+
+cdef double get_mixing_tau(double zi, double wstar) nogil:
+    # return 0.5 * zi / wstar
+    return zi / (wstar + 0.001)
+
+
+
 
 # MO scaling of near surface tke and scalar variance
 

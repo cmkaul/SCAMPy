@@ -48,10 +48,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.use_local_micro = namelist['turbulence']['EDMF_PrognosticTKE']['use_local_micro']
         except:
             self.use_local_micro = True
-        try:
-            self.prognostic_rescale = namelist['turbulence']['EDMF_PrognosticTKE']['prognostic_rescale']
-        except:
-            self.prognostic_rescale = 1.0
 
         try:
             if namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] == 'inverse_z':
@@ -542,11 +538,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         return
 
     cpdef compute_mixing_length(self, double obukhov_length):
-        print('zi, wstar ', self.zi, self.wstar)
+
         cdef:
             Py_ssize_t k
             Py_ssize_t gw = self.Gr.gw
-            double tau = 0.5 * self.zi / self.wstar
+            double tau =  get_mixing_tau(self.zi, self.wstar)
             double l1, l2, z_
 
         with nogil:
@@ -673,8 +669,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             entr_struct ret
             entr_in_struct input
 
-        self.update_inversion(GMV, Case.inversion_option)
         input.zi = self.zi
+        input.wstar = self.wstar
 
         with nogil:
             for i in xrange(self.n_updrafts):
@@ -698,7 +694,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Py_ssize_t i, k
             Py_ssize_t gw = self.Gr.gw
             double dzi = self.Gr.dzi
-            double dti_ = 1.0/self.dt_upd * self.prognostic_rescale   #TS.dti * self.prognostic_rescale
+            double dti_ = 1.0/self.dt_upd
             double dt_ = 1.0/dti_
             double whalf_kp, whalf_k
             double a1, a2 # groupings of terms in area fraction discrete equation
@@ -777,7 +773,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         cdef:
             Py_ssize_t k, i
             double dzi = self.Gr.dzi
-            double dti_ = 1.0/self.dt_upd * self.prognostic_rescale  #TS.dti * self.prognostic_rescale
+            double dti_ = 1.0/self.dt_upd
             double m_k, m_km
             Py_ssize_t gw = self.Gr.gw
             double dH_entr, dQT_entr, H_entr, QT_entr
