@@ -254,10 +254,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         self.update_inversion(GMV, Case.inversion_option)
         self.wstar = get_wstar(Case.Sur.bflux, self.zi)
+        if TS.nstep == 0:
+            self.initialize_tke(GMV, Case)
         self.reset_surface_tke(GMV, Case)
         self.decompose_environment(GMV, 'values')
 
-        if TS.nstep > 2:
+        if TS.nstep > 100000000000000000:
             self.compute_prognostic_updrafts(GMV, Case, TS)
         else:
             self.compute_diagnostic_updrafts(GMV, Case)
@@ -402,25 +404,30 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             entr_in_struct input
             double a,b,c, w2, w, w_mid, w_low, denom
 
-        self.update_inversion(GMV, Case.inversion_option)
-        input.zi = self.zi
-
-        with nogil:
-            for i in xrange(self.n_updrafts):
-                for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                    input.b = self.UpdVar.B.values[i,k]
-                    input.w = interp2pt(self.UpdVar.W.values[i,k],self.UpdVar.W.values[i,k-1])
-                    input.z = self.Gr.z_half[k]
-                    input.af = self.UpdVar.Area.values[i,k]
-                    input.tke = self.EnvVar.TKE.values[k]
-                    input.ml = self.mixing_length[k]
-                    ret = entr_detr_cloudy(input)
-                    self.entr_sc[i,k] = ret.entr_sc * self.entrainment_factor
-                    self.detr_sc[i,k] = ret.detr_sc * self.detrainment_factor
-
-
-        # self.compute_entrainment_detrainment(GMV, Case)
         self.set_updraft_surface_bc(GMV, Case)
+
+        # input.zi = self.zi
+        # input.wstar = self.wstar
+        # print('zi', self.zi)
+        #
+        # with nogil:
+        #     for i in xrange(self.n_updrafts):
+        #         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+        #             with gil:
+        #                 print('k,input.zi',k, input.zi )
+        #             input.b = self.UpdVar.B.values[i,k]
+        #             input.w = interp2pt(self.UpdVar.W.values[i,k],self.UpdVar.W.values[i,k-1])
+        #             input.z = self.Gr.z_half[k]
+        #             input.af = self.UpdVar.Area.values[i,k]
+        #             input.tke = self.EnvVar.TKE.values[k]
+        #             input.ml = self.mixing_length[k]
+        #             ret = self.entr_detr_fp(input)
+        #             self.entr_sc[i,k] = ret.entr_sc * self.entrainment_factor
+        #             self.detr_sc[i,k] = ret.detr_sc * self.detrainment_factor
+
+
+        self.compute_entrainment_detrainment(GMV, Case)
+
 
         with nogil:
             for i in xrange(self.n_updrafts):
@@ -449,6 +456,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         with nogil:
             for i in xrange(self.n_updrafts):
                 self.UpdVar.W.values[i, self.Gr.gw-1] = 0.0  #self.w_surface_bc[i]
+                self.entr_sc[i,gw] = 2.0 /dz
+                self.detr_sc[i,gw] = 0.0
                 for k in range(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                     w = self.UpdVar.W.values[i,k-1]
                     w2 = (w * w + 2.0 * dz *(self.w_buoy_coeff *self.UpdVar.B.values[i,k]
@@ -477,8 +486,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         #                     self.UpdVar.QL.values[i,k] = 0.0
         #                     self.UpdVar.T.values[i,k] = GMV.T.values[k]
         # else:
+        cdef double au_lim
         with nogil:
             for i in xrange(self.n_updrafts):
+                au_lim = self.max_area_factor * self.area_surface_bc[i]
                 self.UpdVar.Area.values[i,gw] = self.area_surface_bc[i]
                 w_mid = 0.5* (self.UpdVar.W.values[i,gw])
                 for k in xrange(gw+1, self.Gr.nzg):
@@ -488,8 +499,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         self.UpdVar.Area.values[i,k] = (self.Ref.rho0_half[k-1]*self.UpdVar.Area.values[i,k-1]*w_low/
                                                         (1.0-(self.entr_sc[i,k]-self.detr_sc[i,k])*dz)/w_mid/self.Ref.rho0_half[k])
                         # # Limit the increase in updraft area when the updraft decelerates
-                        if self.UpdVar.Area.values[i,k] >  self.max_area_factor * self.area_surface_bc[i]:
-                            self.UpdVar.Area.values[i,k] = self.max_area_factor * self.area_surface_bc[i]
+                        if self.UpdVar.Area.values[i,k] >  au_lim:
+                            self.UpdVar.Area.values[i,k] = au_lim
+                            self.detr_sc[i,k] =(self.Ref.rho0_half[k-1] * self.UpdVar.Area.values[i,k-1]
+                                                * w_low / au_lim / w_mid / self.Ref.rho0_half[k] + self.entr_sc[i,k] * dz -1.0)/dz
                     else:
                         # the updraft has terminated so set its area fraction to zero at this height and all heights above
                         self.UpdVar.Area.values[i,k] = 0.0
@@ -506,14 +519,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
 
     cpdef compute_tke(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
-        cdef:
-            Py_ssize_t k
-            double ws= self.wstar, us = Case.Sur.ustar, zs = self.zi, z
-
-        self.update_inversion(GMV, Case.inversion_option)
-        self.wstar = get_wstar(Case.Sur.bflux, self.zi)
-        self.compute_mixing_length(Case.Sur.obukhov_length)
         if TS.nstep > 2:
+            if self.similarity_diffusivity: # otherwise, we computed mixing length when we computed
+                self.compute_mixing_length(Case.Sur.obukhov_length)
+
             self.compute_tke_buoy(GMV)
             self.compute_tke_dissipation(TS)
             self.compute_tke_entr_detr()
@@ -524,13 +533,23 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.update_tke_ED(GMV, Case, TS)
             self.reset_surface_tke(GMV, Case)
         else:
-            with nogil:
-                for k in xrange(self.Gr.nzg):
-                    z = self.Gr.z_half[k]
-                    GMV.TKE.values[k] = ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
-                    GMV.TKE.new[k] = GMV.TKE.values[k]
-                    GMV.TKE.mf_update[k] = GMV.TKE.values[k]
+            self.initialize_tke(GMV, Case)
 
+        return
+
+    cpdef initialize_tke(self, GridMeanVariables GMV, CasesBase Case):
+        cdef:
+            Py_ssize_t k
+            double ws= self.wstar, us = Case.Sur.ustar, zs = self.zi, z
+
+        with nogil:
+            for k in xrange(self.Gr.nzg):
+                z = self.Gr.z_half[k]
+                GMV.TKE.values[k] = ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
+                GMV.TKE.new[k] = GMV.TKE.values[k]
+                GMV.TKE.mf_update[k] = GMV.TKE.values[k]
+        self.reset_surface_tke(GMV, Case)
+        self.compute_mixing_length(Case.Sur.obukhov_length)
         return
 
     cpdef update_inversion(self,GridMeanVariables GMV, option):
