@@ -253,6 +253,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
 
         self.update_inversion(GMV, Case.inversion_option)
+
+        print('zi, ', self.zi)
         self.wstar = get_wstar(Case.Sur.bflux, self.zi)
         if TS.nstep == 0:
             self.initialize_tke(GMV, Case)
@@ -402,7 +404,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             eos_struct sa
             entr_struct ret
             entr_in_struct input
-            double a,b,c, w2, w, w_mid, w_low, denom
+            double a,b,c, w, w_km,  w_mid, w_low, denom
+            double entr_w, detr_w, B_k
 
         self.set_updraft_surface_bc(GMV, Case)
 
@@ -459,10 +462,15 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.entr_sc[i,gw] = 2.0 /dz
                 self.detr_sc[i,gw] = 0.0
                 for k in range(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                    w = self.UpdVar.W.values[i,k-1]
-                    w2 = (w * w + 2.0 * dz *(self.w_buoy_coeff *self.UpdVar.B.values[i,k]
-                                             + self.w_entr_coeff *interp2pt(self.entr_sc[i,k], self.entr_sc[i,k+1])
-                                             * w * (self.EnvVar.W.values[k-1] - w)))
+                    w_km = self.UpdVar.W.values[i,k-1]
+                    entr_w = interp2pt(self.entr_sc[i,k], self.entr_sc[i,k+1])
+                    detr_w = interp2pt(self.detr_sc[i,k], self.detr_sc[i,k+1])
+                    B_k = interp2pt(self.UpdVar.B.values[i,k], self.UpdVar.B.values[i,k+1])
+                    a = 1.0 + 2.0 * dz * (2.0 * entr_w + detr_w)
+                    b = -2.0 * dz * (2.0 * entr_w + detr_w) * self.EnvVar.W.values[k]
+                    c = -2.0 * dz * B_k - w_km * w_km
+                    # B has to be
+                    w = (-b + sqrt(fmax(b*b - 4.0 * a *c,0.0)))/(2.0 * a)
                     if w2 > 0.0:
                         self.UpdVar.W.values[i,k] = sqrt(w2)
                     else:
@@ -858,6 +866,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         self.UpdMicro.compute_update_combined_local_thetal(self.Ref.p0_half[k], self.UpdVar.T.new[i,k],
                                                                        &self.UpdVar.QT.new[i,k], &self.UpdVar.QL.new[i,k],
                                                                        &self.UpdVar.H.new[i,k], i, k)
+            self.UpdMicro.prec_source_h_tot = np.sum(np.multiply(self.UpdMicro.prec_source_h,
+                                                                 self.UpdVar.Area.values), axis=0)
+            self.UpdMicro.prec_source_qt_tot = np.sum(np.multiply(self.UpdMicro.prec_source_qt,
+                                                                  self.UpdVar.Area.values), axis=0)
+
         else:
             with nogil:
                 for i in xrange(self.n_updrafts):
