@@ -839,6 +839,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         self.UpdMicro.compute_update_combined_local_thetal(self.Ref.p0_half[k], self.UpdVar.T.new[i,k],
                                                                        &self.UpdVar.QT.new[i,k], &self.UpdVar.QL.new[i,k],
                                                                        &self.UpdVar.H.new[i,k], i, k)
+            self.UpdMicro.prec_source_h_tot = np.sum(np.multiply(self.UpdMicro.prec_source_h,
+                                                                 self.UpdVar.Area.values), axis=0)
+            self.UpdMicro.prec_source_qt_tot = np.sum(np.multiply(self.UpdMicro.prec_source_qt,
+                                                                  self.UpdVar.Area.values), axis=0)
         else:
             with nogil:
                 for i in xrange(self.n_updrafts):
