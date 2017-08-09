@@ -108,6 +108,213 @@ def Bomex():
 
     return namelist
 
+def Rico():
+
+    namelist = {}
+
+    namelist['grid'] = {}
+    namelist['grid']['dims'] = 1
+    namelist['grid']['nz'] = 75
+    namelist['grid']['gw'] = 2
+    namelist['grid']['dz'] = 100 / 2.5
+
+
+    namelist['thermodynamics'] = {}
+    namelist['thermodynamics']['thermal_variable'] = 'thetal'
+
+    namelist['time_stepping'] = {}
+    namelist['time_stepping']['dt'] = 10.0
+    namelist['time_stepping']['t_max'] = 28800.0
+
+
+    namelist['turbulence'] = {}
+    namelist['turbulence']['scheme'] = 'EDMF_BulkSteady'
+    namelist['turbulence']['EDMF_BulkSteady'] = {}
+    namelist['turbulence']['EDMF_BulkSteady']['updraft_number'] = 1
+    namelist['turbulence']['EDMF_BulkSteady']['constant_area'] = False
+    namelist['turbulence']['EDMF_BulkSteady']['surface_area'] = 0.1
+
+
+    namelist['output'] = {}
+    namelist['output']['output_root'] = './'
+
+    namelist['stats_io'] = {}
+    namelist['stats_io']['stats_dir'] = 'stats'
+    namelist['stats_io']['frequency'] = 60.0
+
+    namelist['meta'] = {}
+    namelist['meta']['simname'] = 'Bomex'
+    namelist['meta']['casename'] = 'Bomex'
+
+
+    return namelist
+
+def TRMM_LBA():
+
+    namelist = {}
+
+    namelist['grid'] = {}
+    namelist['grid']['dims'] = 1
+    namelist['grid']['nz'] = 75
+    namelist['grid']['gw'] = 2
+    namelist['grid']['dz'] = 100 / 2.5
+
+
+    namelist['thermodynamics'] = {}
+    namelist['thermodynamics']['thermal_variable'] = 'thetal'
+
+    namelist['time_stepping'] = {}
+    namelist['time_stepping']['dt'] = 10.0
+    namelist['time_stepping']['t_max'] = 28800.0
+
+
+    namelist['turbulence'] = {}
+    namelist['turbulence']['scheme'] = 'EDMF_BulkSteady'
+    namelist['turbulence']['EDMF_BulkSteady'] = {}
+    namelist['turbulence']['EDMF_BulkSteady']['updraft_number'] = 1
+    namelist['turbulence']['EDMF_BulkSteady']['constant_area'] = False
+    namelist['turbulence']['EDMF_BulkSteady']['surface_area'] = 0.1
+
+
+    namelist['output'] = {}
+    namelist['output']['output_root'] = './'
+
+    namelist['stats_io'] = {}
+    namelist['stats_io']['stats_dir'] = 'stats'
+    namelist['stats_io']['frequency'] = 60.0
+
+    namelist['meta'] = {}
+    namelist['meta']['simname'] = 'Bomex'
+    namelist['meta']['casename'] = 'Bomex'
+
+
+    return namelist
+
+def ARM_SGP():
+
+    namelist = {}
+
+    namelist['grid'] = {}
+    namelist['grid']['dims'] = 1
+    namelist['grid']['nz'] = 75
+    namelist['grid']['gw'] = 2
+    namelist['grid']['dz'] = 100 / 2.5
+
+
+    namelist['thermodynamics'] = {}
+    namelist['thermodynamics']['thermal_variable'] = 'thetal'
+
+    namelist['time_stepping'] = {}
+    namelist['time_stepping']['dt'] = 10.0
+    namelist['time_stepping']['t_max'] = 28800.0
+
+
+    namelist['turbulence'] = {}
+    namelist['turbulence']['scheme'] = 'EDMF_BulkSteady'
+    namelist['turbulence']['EDMF_BulkSteady'] = {}
+    namelist['turbulence']['EDMF_BulkSteady']['updraft_number'] = 1
+    namelist['turbulence']['EDMF_BulkSteady']['constant_area'] = False
+    namelist['turbulence']['EDMF_BulkSteady']['surface_area'] = 0.1
+
+
+    namelist['output'] = {}
+    namelist['output']['output_root'] = './'
+
+    namelist['stats_io'] = {}
+    namelist['stats_io']['stats_dir'] = 'stats'
+    namelist['stats_io']['frequency'] = 60.0
+
+    namelist['meta'] = {}
+    namelist['meta']['simname'] = 'Bomex'
+    namelist['meta']['casename'] = 'Bomex'
+
+
+    return namelist
+
+
+def SCMS():
+
+    namelist = {}
+
+    namelist['grid'] = {}
+    namelist['grid']['dims'] = 1
+    namelist['grid']['nz'] = 75
+    namelist['grid']['gw'] = 2
+    namelist['grid']['dz'] = 100 / 2.5
+
+
+    namelist['thermodynamics'] = {}
+    namelist['thermodynamics']['thermal_variable'] = 'thetal'
+
+    namelist['time_stepping'] = {}
+    namelist['time_stepping']['dt'] = 10.0
+    namelist['time_stepping']['t_max'] = 28800.0
+
+
+    namelist['turbulence'] = {}
+    namelist['turbulence']['scheme'] = 'EDMF_BulkSteady'
+    namelist['turbulence']['EDMF_BulkSteady'] = {}
+    namelist['turbulence']['EDMF_BulkSteady']['updraft_number'] = 1
+    namelist['turbulence']['EDMF_BulkSteady']['constant_area'] = False
+    namelist['turbulence']['EDMF_BulkSteady']['surface_area'] = 0.1
+
+
+    namelist['output'] = {}
+    namelist['output']['output_root'] = './'
+
+    namelist['stats_io'] = {}
+    namelist['stats_io']['stats_dir'] = 'stats'
+    namelist['stats_io']['frequency'] = 60.0
+
+    namelist['meta'] = {}
+    namelist['meta']['simname'] = 'Bomex'
+    namelist['meta']['casename'] = 'Bomex'
+
+
+    return namelist
+
+
+def GATE_III():
+
+    namelist = {}
+
+    namelist['grid'] = {}
+    namelist['grid']['dims'] = 1
+    namelist['grid']['nz'] = 75
+    namelist['grid']['gw'] = 2
+    namelist['grid']['dz'] = 100 / 2.5
+
+
+    namelist['thermodynamics'] = {}
+    namelist['thermodynamics']['thermal_variable'] = 'thetal'
+
+    namelist['time_stepping'] = {}
+    namelist['time_stepping']['dt'] = 10.0
+    namelist['time_stepping']['t_max'] = 28800.0
+
+
+    namelist['turbulence'] = {}
+    namelist['turbulence']['scheme'] = 'EDMF_BulkSteady'
+    namelist['turbulence']['EDMF_BulkSteady'] = {}
+    namelist['turbulence']['EDMF_BulkSteady']['updraft_number'] = 1
+    namelist['turbulence']['EDMF_BulkSteady']['constant_area'] = False
+    namelist['turbulence']['EDMF_BulkSteady']['surface_area'] = 0.1
+
+
+    namelist['output'] = {}
+    namelist['output']['output_root'] = './'
+
+    namelist['stats_io'] = {}
+    namelist['stats_io']['stats_dir'] = 'stats'
+    namelist['stats_io']['frequency'] = 60.0
+
+    namelist['meta'] = {}
+    namelist['meta']['simname'] = 'Bomex'
+    namelist['meta']['casename'] = 'Bomex'
+
+
+    return namelist
+
 
 
 def write_file(namelist):
