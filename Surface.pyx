@@ -51,7 +51,7 @@ cdef class SurfaceFixedFlux(SurfaceBase):
             self.rho_hflux = entropy_flux(rho_tflux/self.Ref.rho0[gw-1],self.rho_qtflux/self.Ref.rho0[gw-1],
                                           self.Ref.p0_half[gw], GMV.T.values[gw], GMV.QT.values[gw])
 
-        # self.bflux = buoyancy_flux(self.shf, self.lhf, GMV.T.values[gw], GMV.QT.values[gw],self.Ref.alpha0[gw-1]  )
+        self.bflux = buoyancy_flux(self.shf, self.lhf, GMV.T.values[gw], GMV.QT.values[gw],self.Ref.alpha0[gw-1]  )
 
 
         if not self.ustar_fixed:

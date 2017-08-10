@@ -18,6 +18,16 @@ def main():
         namelist = Bomex()
     elif case_name == 'Soares':
         namelist = Soares()
+    elif case_name == 'Rico':
+        namelist = Rico()
+    elif case_name == 'TRMM_LBA':
+        namelist = TRMM_LBA()
+    elif case_name == 'ARM_SGP':
+        namelist = ARM_SGP()
+    elif case_name == 'SCMS':
+        namelist = SCMS()
+    elif case_name == 'GATE_III':
+        namelist = GATE_III()
     else:
         print('Not a vaild case name')
         exit()
@@ -114,7 +124,7 @@ def Rico():
 
     namelist['grid'] = {}
     namelist['grid']['dims'] = 1
-    namelist['grid']['nz'] = 75
+    namelist['grid']['nz'] = 150
     namelist['grid']['gw'] = 2
     namelist['grid']['dz'] = 100 / 2.5
 
@@ -124,7 +134,7 @@ def Rico():
 
     namelist['time_stepping'] = {}
     namelist['time_stepping']['dt'] = 10.0
-    namelist['time_stepping']['t_max'] = 28800.0
+    namelist['time_stepping']['t_max'] = 3600.0*24.0
 
 
     namelist['turbulence'] = {}
@@ -143,38 +153,36 @@ def Rico():
     namelist['stats_io']['frequency'] = 60.0
 
     namelist['meta'] = {}
-    namelist['meta']['simname'] = 'Bomex'
-    namelist['meta']['casename'] = 'Bomex'
+    namelist['meta']['simname'] = 'Rico'
+    namelist['meta']['casename'] = 'Rico'
 
 
     return namelist
 
-def TRMM_LBA():
+def TRMM_LBA(): # yair
 
     namelist = {}
 
     namelist['grid'] = {}
     namelist['grid']['dims'] = 1
-    namelist['grid']['nz'] = 75
+    namelist['grid']['nz'] = 2000
     namelist['grid']['gw'] = 2
-    namelist['grid']['dz'] = 100 / 2.5
-
+    namelist['grid']['dz'] = 10
 
     namelist['thermodynamics'] = {}
     namelist['thermodynamics']['thermal_variable'] = 'thetal'
 
     namelist['time_stepping'] = {}
-    namelist['time_stepping']['dt'] = 10.0
-    namelist['time_stepping']['t_max'] = 28800.0
-
+    namelist['time_stepping']['dt'] = 5.0
+    namelist['time_stepping']['t_max'] = 21590.0
 
     namelist['turbulence'] = {}
-    namelist['turbulence']['scheme'] = 'EDMF_BulkSteady'
+    namelist['turbulence']['scheme'] = 'EDMF_BulkSteady'# 'EDMF_BulkSteady' #'SimilarityED'
     namelist['turbulence']['EDMF_BulkSteady'] = {}
     namelist['turbulence']['EDMF_BulkSteady']['updraft_number'] = 1
     namelist['turbulence']['EDMF_BulkSteady']['constant_area'] = False
     namelist['turbulence']['EDMF_BulkSteady']['surface_area'] = 0.1
-
+    namelist['turbulence']['EDMF_BulkSteady']['entrainment'] = 'inverse_z'
 
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
@@ -184,9 +192,8 @@ def TRMM_LBA():
     namelist['stats_io']['frequency'] = 60.0
 
     namelist['meta'] = {}
-    namelist['meta']['simname'] = 'Bomex'
-    namelist['meta']['casename'] = 'Bomex'
-
+    namelist['meta']['simname'] = 'TRMM_LBA'
+    namelist['meta']['casename'] = 'TRMM_LBA'
 
     return namelist
 
@@ -196,9 +203,9 @@ def ARM_SGP():
 
     namelist['grid'] = {}
     namelist['grid']['dims'] = 1
-    namelist['grid']['nz'] = 75
+    namelist['grid']['nz'] = 220
     namelist['grid']['gw'] = 2
-    namelist['grid']['dz'] = 100 / 2.5
+    namelist['grid']['dz'] = 20
 
 
     namelist['thermodynamics'] = {}
@@ -206,7 +213,7 @@ def ARM_SGP():
 
     namelist['time_stepping'] = {}
     namelist['time_stepping']['dt'] = 10.0
-    namelist['time_stepping']['t_max'] = 28800.0
+    namelist['time_stepping']['t_max'] = 3600.0 * 14.5
 
 
     namelist['turbulence'] = {}
@@ -225,12 +232,11 @@ def ARM_SGP():
     namelist['stats_io']['frequency'] = 60.0
 
     namelist['meta'] = {}
-    namelist['meta']['simname'] = 'Bomex'
-    namelist['meta']['casename'] = 'Bomex'
+    namelist['meta']['simname'] = 'ARM_SGP'
+    namelist['meta']['casename'] = 'ARM_SGP'
 
 
     return namelist
-
 
 def SCMS():
 
@@ -238,9 +244,9 @@ def SCMS():
 
     namelist['grid'] = {}
     namelist['grid']['dims'] = 1
-    namelist['grid']['nz'] = 75
+    namelist['grid']['nz'] = 250
     namelist['grid']['gw'] = 2
-    namelist['grid']['dz'] = 100 / 2.5
+    namelist['grid']['dz'] = 20
 
 
     namelist['thermodynamics'] = {}
@@ -248,7 +254,7 @@ def SCMS():
 
     namelist['time_stepping'] = {}
     namelist['time_stepping']['dt'] = 10.0
-    namelist['time_stepping']['t_max'] = 28800.0
+    namelist['time_stepping']['t_max'] = 3600.0 * 12.0
 
 
     namelist['turbulence'] = {}
@@ -267,39 +273,37 @@ def SCMS():
     namelist['stats_io']['frequency'] = 60.0
 
     namelist['meta'] = {}
-    namelist['meta']['simname'] = 'Bomex'
-    namelist['meta']['casename'] = 'Bomex'
+    namelist['meta']['simname'] = 'SCMS'
+    namelist['meta']['casename'] = 'SCMS'
 
 
     return namelist
 
-
-def GATE_III():
-
+def GATE_III(): # yair
+    # adopted from: "Large eddy simulation of Maritime Deep Tropical Convection",
+    # By Khairoutdinov et al (2009)  JAMES, vol. 1, article #15
     namelist = {}
 
     namelist['grid'] = {}
     namelist['grid']['dims'] = 1
-    namelist['grid']['nz'] = 75
+    namelist['grid']['nz'] = 2700
     namelist['grid']['gw'] = 2
-    namelist['grid']['dz'] = 100 / 2.5
-
+    namelist['grid']['dz'] = 10
 
     namelist['thermodynamics'] = {}
     namelist['thermodynamics']['thermal_variable'] = 'thetal'
 
     namelist['time_stepping'] = {}
-    namelist['time_stepping']['dt'] = 10.0
-    namelist['time_stepping']['t_max'] = 28800.0
-
+    namelist['time_stepping']['dt'] = 5.0
+    namelist['time_stepping']['t_max'] = 3600.0 * 24.0
 
     namelist['turbulence'] = {}
-    namelist['turbulence']['scheme'] = 'EDMF_BulkSteady'
+    namelist['turbulence']['scheme'] = 'EDMF_BulkSteady'# 'EDMF_BulkSteady' #'SimilarityED'
     namelist['turbulence']['EDMF_BulkSteady'] = {}
     namelist['turbulence']['EDMF_BulkSteady']['updraft_number'] = 1
     namelist['turbulence']['EDMF_BulkSteady']['constant_area'] = False
     namelist['turbulence']['EDMF_BulkSteady']['surface_area'] = 0.1
-
+    namelist['turbulence']['EDMF_BulkSteady']['entrainment'] = 'inverse_z'
 
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
@@ -309,13 +313,10 @@ def GATE_III():
     namelist['stats_io']['frequency'] = 60.0
 
     namelist['meta'] = {}
-    namelist['meta']['simname'] = 'Bomex'
-    namelist['meta']['casename'] = 'Bomex'
-
+    namelist['meta']['simname'] = 'GATE_III'
+    namelist['meta']['casename'] = 'GATE_III'
 
     return namelist
-
-
 
 def write_file(namelist):
 
