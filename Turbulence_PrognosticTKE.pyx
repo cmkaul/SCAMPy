@@ -261,7 +261,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.reset_surface_tke(GMV, Case)
         self.decompose_environment(GMV, 'values')
 
-        if TS.nstep > 100000000000000000:
+        # if TS.nstep > 30:
+        if TS.nstep > 30:
             self.compute_prognostic_updrafts(GMV, Case, TS)
         else:
             self.compute_diagnostic_updrafts(GMV, Case)
@@ -471,8 +472,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     c = -2.0 * dz * B_k - w_km * w_km
                     # B has to be
                     w = (-b + sqrt(fmax(b*b - 4.0 * a *c,0.0)))/(2.0 * a)
-                    if w2 > 0.0:
-                        self.UpdVar.W.values[i,k] = sqrt(w2)
+                    if w > 0.0:
+                        self.UpdVar.W.values[i,k] = w
                     else:
                         self.UpdVar.W.values[i,k:] = 0
                         break

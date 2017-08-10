@@ -130,6 +130,10 @@ cdef class UpdraftVariables:
         Stats.add_profile('updraft_temperature')
         Stats.add_profile('updraft_buoyancy')
 
+        Stats.add_ts('cloud_cover')
+        Stats.add_ts('cloud_base')
+        Stats.add_ts('cloud_top')
+
         return
 
     cpdef set_means(self, GridMeanVariables GMV):
@@ -212,6 +216,12 @@ cdef class UpdraftVariables:
 
 
     cpdef io(self, NetCDFIO_Stats Stats):
+        cdef:
+            double cloud_cover= 0.0
+            double cloud_base = 99999.0
+            double cloud_top = -99999.0
+            Py_ssize_t k
+
         Stats.write_profile('updraft_area', self.Area.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('updraft_w', self.W.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('updraft_qt', self.QT.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
@@ -223,6 +233,17 @@ cdef class UpdraftVariables:
             #Stats.write_profile('updraft_thetal', self.THL.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('updraft_temperature', self.T.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('updraft_buoyancy', self.B.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+
+        for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+            if self.QL.bulkvalues[k] >0.0:
+                cloud_cover = np.maximum(cloud_cover, self.Area.bulkvalues[k])
+                cloud_base = np.minimum(cloud_base,self.Gr.z_half[k])
+                cloud_top = np.maximum(cloud_top, self.Gr.z_half[k])
+        Stats.write_ts('cloud_cover', cloud_cover)
+        Stats.write_ts('cloud_base', cloud_base)
+        Stats.write_ts('cloud_top', cloud_top)
+
+
 
         return
 
