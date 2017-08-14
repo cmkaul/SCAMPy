@@ -56,8 +56,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double max_area_factor
         double updraft_surface_height
         double tke_ed_coeff
-        double w_entr_coeff
-        double w_buoy_coeff
         double tke_diss_coeff
 
     cpdef initialize(self, GridMeanVariables GMV)
@@ -78,6 +76,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef update_GMV_MF(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef update_GMV_ED(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
     cpdef compute_tke(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
+    cpdef initialize_tke(self, GridMeanVariables GMV, CasesBase Case)
     cpdef compute_tke_buoy(self, GridMeanVariables GMV)
     cpdef compute_tke_dissipation(self, TimeStepping TS)
     cpdef compute_tke_entr_detr(self)
