@@ -56,8 +56,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double max_area_factor
         double updraft_surface_height
         double tke_ed_coeff
-        double w_entr_coeff
-        double w_buoy_coeff
         double tke_diss_coeff
 
     cpdef initialize(self, GridMeanVariables GMV)

@@ -42,12 +42,13 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         try:
             self.const_area = namelist['turbulence']['EDMF_PrognosticTKE']['constant_area']
         except:
-            self.const_area = True
-            print('Turbulence--EDMF_PrognosticTKE: defaulting to constant area fraction')
+            self.const_area = False
+            print('Turbulence--EDMF_PrognosticTKE: defaulting to variable area fraction')
         try:
             self.use_local_micro = namelist['turbulence']['EDMF_PrognosticTKE']['use_local_micro']
         except:
             self.use_local_micro = True
+            print('Turbulence--EDMF_PrognosticTKE: defaulting to local (level-by-level) microphysics')
 
         try:
             if namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] == 'inverse_z':
@@ -81,16 +82,18 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.similarity_diffusivity = namelist['turbulence']['EDMF_PrognosticTKE']['use_similarity_diffusivity']
         except:
             self.similarity_diffusivity = False
+            print('Turbulence--EDMF_PrognosticTKE: defaulting to TKE-based eddy diffusivity')
 
+        try:
+            self.extrapolate_buoyancy = namelist['turbulence']['EDMF_PrognosticTKE']['extrapolate_buoyancy']
+        except:
+            self.extrapolate_buoyancy = True
+            print('Turbulence--EDMF_PrognosticTKE: defaulting to extrapolation of updraft buoyancy along a pseudoadiabat')
 
-        self.extrapolate_buoyancy = True
 
         # Get values from paramlist
         self.surface_area = paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area']
-        self.surface_scalar_coeff = paramlist['turbulence']['EDMF_PrognosticTKE']['surface_scalar_coeff']
         self.tke_ed_coeff = paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff']
-        self.w_entr_coeff = paramlist['turbulence']['EDMF_PrognosticTKE']['w_entr_coeff']
-        self.w_buoy_coeff = paramlist['turbulence']['EDMF_PrognosticTKE']['w_buoy_coeff']
         self.tke_diss_coeff = paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff']
         self.max_area_factor = paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor']
         self.entrainment_factor = paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor']

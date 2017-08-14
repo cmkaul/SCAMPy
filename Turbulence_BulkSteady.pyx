@@ -76,7 +76,6 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
 
         # Get parameters
         self.surface_area = paramlist['turbulence']['EDMF_BulkSteady']['surface_area']
-        self.surface_scalar_coeff = paramlist['turbulence']['EDMF_BulkSteady']['surface_scalar_coeff']
         self.w_entr_coeff = paramlist['turbulence']['EDMF_BulkSteady']['w_entr_coeff']
         self.w_buoy_coeff = paramlist['turbulence']['EDMF_BulkSteady']['w_buoy_coeff']
         self.max_area_factor = paramlist['turbulence']['EDMF_BulkSteady']['max_area_factor']
