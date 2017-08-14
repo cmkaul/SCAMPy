@@ -28,6 +28,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double entrainment_factor
         double detrainment_factor
         double vel_pressure_coeff
+        double vel_buoy_coeff
         double dt_upd
         double [:,:] entr_sc
         double [:,:] detr_sc

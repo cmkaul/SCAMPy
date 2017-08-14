@@ -99,6 +99,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.entrainment_factor = paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor']
         self.detrainment_factor = paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor']
         self.vel_pressure_coeff = paramlist['turbulence']['EDMF_PrognosticTKE']['vel_pressure_coeff']
+        self.vel_buoy_coeff = paramlist['turbulence']['EDMF_PrognosticTKE']['vel_buoy_coeff']
 
         # Need to code up
         self.minimum_area = 1e-3
@@ -779,9 +780,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                    - self.Ref.rho0[k-1] * a_km * self.UpdVar.W.values[i,k-1] * self.UpdVar.W.values[i,k-1] * dzi)
                             exch = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k]
                                     * (entr_w * self.EnvVar.W.values[k] - detr_w * self.UpdVar.W.values[i,k] ))
-                            buoy = self.Ref.rho0[k] * a_k * B_k
-                            press = self.vel_pressure_coeff*(self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * (entr_w + detr_w)
-                                     * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k]))
+                            # modified to reflect "virtual mass effects"
+                            buoy = self.Ref.rho0[k] * a_k * B_k * self.vel_buoy_coeff
+                            # press = self.vel_pressure_coeff*(self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * (entr_w + detr_w)
+                            #          * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k]))
+                            # Trial pressure term
+                            press = self.vel_pressure_coeff  * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k])**2.0/sqrt(a_k)
                             self.UpdVar.W.new[i,k] = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * dti_
                                                       -adv + exch + buoy -press)/(self.Ref.rho0[k] * anew_k * dti_)
 
