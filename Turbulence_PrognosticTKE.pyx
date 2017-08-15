@@ -94,7 +94,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         # Get values from paramlist
         self.surface_area = paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area']
         self.tke_ed_coeff = paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff']
-        self.tke_diss_coeff = paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff']
+        self.tke_diss_coeff = paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff']
         self.max_area_factor = paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor']
         self.entrainment_factor = paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor']
         self.detrainment_factor = paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor']
@@ -275,6 +275,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.update_GMV_MF(GMV, TS)
         self.decompose_environment(GMV, 'mf_update')
         self.EnvThermo.satadjust(self.EnvVar, GMV)
+        self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar,GMV, self.extrapolate_buoyancy)
+
 
 
         self.compute_eddy_diffusivities_tke(GMV, Case)
@@ -394,7 +396,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.UpdVar.set_values_with_new()
             time_elapsed += self.dt_upd
             self.dt_upd = np.minimum(TS.dt-time_elapsed, 0.5 * self.Gr.dz/np.max(self.UpdVar.W.values))
-            self.UpdThermo.buoyancy(self.UpdVar, GMV, self.extrapolate_buoyancy)
+            self.decompose_environment(GMV, 'values')
+            self.EnvThermo.satadjust(self.EnvVar, GMV)
+            self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar, GMV, self.extrapolate_buoyancy)
 
 
 
@@ -458,7 +462,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         self.UpdVar.QT.set_bcs(self.Gr)
         self.UpdVar.H.set_bcs(self.Gr)
-        self.UpdThermo.buoyancy(self.UpdVar, GMV, self.extrapolate_buoyancy)
+        self.decompose_environment(GMV, 'values')
+        self.EnvThermo.satadjust(self.EnvVar, GMV)
+        self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar, GMV, self.extrapolate_buoyancy)
 
         # Solve updraft velocity equation
         with nogil:
@@ -587,7 +593,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     l2 = vkb * z_ /  (1. + 2.7 *z_/obukhov_length)
                 else:
                     l2 = vkb * z_
-                self.mixing_length[k] = 1.0/(1.0/fmax(l1,1e-10) + 1.0/l2)
+                self.mixing_length[k] = fmax( 1.0/(1.0/fmax(l1,1e-10) + 1.0/l2), self.Gr.dz)
         return
 
 
@@ -738,8 +744,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         with nogil:
             for i in xrange(self.n_updrafts):
                 for k in xrange(self.n_updrafts):
-                    self.entr_sc[i,gw] = 2.0 * dzi
-                    self.detr_sc[i,gw] = 0.0
+                    # self.entr_sc[i,gw] = 2.0 * dzi
+                    # self.detr_sc[i,gw] = 0.0
                     self.UpdVar.W.new[i,gw-1] = self.w_surface_bc[i]
                     self.UpdVar.Area.new[i,gw] = self.area_surface_bc[i]
                     au_lim = self.area_surface_bc[i] * self.max_area_factor
@@ -785,7 +791,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                             # press = self.vel_pressure_coeff*(self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * (entr_w + detr_w)
                             #          * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k]))
                             # Trial pressure term
-                            press = self.vel_pressure_coeff  * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k])**2.0/sqrt(a_k)
+                            press = self.vel_pressure_coeff  * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k])**2.0/sqrt(fmax(a_k,self.minimum_area))
                             self.UpdVar.W.new[i,k] = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * dti_
                                                       -adv + exch + buoy -press)/(self.Ref.rho0[k] * anew_k * dti_)
 
@@ -1149,11 +1155,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         # Using the "semi-implicit formulation" with dissipation averaged over timestep
         with nogil:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                self.tke_dissipation[k] = ae[k] * (self.EnvVar.TKE.values[k] * TS.dti  *
-                                           (-1.0 + pow((1.0 + 0.5 * self.tke_diss_coeff * TS.dt *
-                                                        sqrt(fmax(self.EnvVar.TKE.values[k],0.0))/fmax(self.mixing_length[k],1e-5)),-2.0)))
-
-                # self.tke_dissipation[k] = -ae[k] * pow(fmax(self.EnvVar.TKE.values[k],0), 1.5)/fmax(self.mixing_length[k],1e-6)
+                self.tke_dissipation[k] = -ae[k] * pow(fmax(self.EnvVar.TKE.values[k],0), 1.5)/fmax(self.mixing_length[k],1e-5) * self.tke_diss_coeff
         return
 
     # Note updrafts' entrainment rate = environment's detrainment rate
@@ -1297,8 +1299,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 GMV.THL.values[k] = t_to_thetali_c(self.Ref.p0_half[k], GMV.T.values[k], GMV.QT.values[k],
                                                    GMV.QL.values[k], 0.0)
 
-                alpha = alpha_c(self.Ref.p0_half[k], GMV.T.values[k], GMV.QT.values[k], qv)
-                GMV.B.values[k] = buoyancy_c(self.Ref.alpha0_half[k], alpha)
+                # alpha = alpha_c(self.Ref.p0_half[k], GMV.T.values[k], GMV.QT.values[k], qv)
+                # GMV.B.values[k] = buoyancy_c(self.Ref.alpha0_half[k], alpha)
+                GMV.B.values[k] = (self.UpdVar.Area.bulkvalues[k] * self.UpdVar.B.bulkvalues[k]
+                                    + (1.0 - self.UpdVar.Area.bulkvalues[k]) * self.EnvVar.B.values[k])
+
 
         return
 

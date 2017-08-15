@@ -2,6 +2,7 @@ cimport Grid
 cimport ReferenceState
 from Variables cimport GridMeanVariables
 from NetCDFIO cimport NetCDFIO_Stats
+from EDMF_Environment cimport EnvironmentVariables
 
 cdef class UpdraftVariable:
     cdef:
@@ -48,7 +49,8 @@ cdef class UpdraftThermodynamics:
         Py_ssize_t n_updraft
 
     cpdef satadjust(self, UpdraftVariables UpdVar)
-    cpdef buoyancy(self, UpdraftVariables UpdVar, GridMeanVariables GMV, bint extrap)
+    cpdef buoyancy(self, UpdraftVariables UpdVar, EnvironmentVariables EnvVar,
+                   GridMeanVariables GMV, bint extrap)
 
 cdef class UpdraftMicrophysics:
     cdef:
