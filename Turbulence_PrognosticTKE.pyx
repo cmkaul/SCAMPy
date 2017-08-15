@@ -94,7 +94,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         # Get values from paramlist
         self.surface_area = paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area']
         self.tke_ed_coeff = paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff']
-        self.tke_diss_coeff = paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff']
+        self.tke_diss_coeff = paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff']
         self.max_area_factor = paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor']
         self.entrainment_factor = paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor']
         self.detrainment_factor = paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor']
