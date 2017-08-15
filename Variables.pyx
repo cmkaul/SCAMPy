@@ -243,10 +243,15 @@ cdef class GridMeanVariables:
         Stats.add_profile('ql_mean')
         if self.use_tke:
             Stats.add_profile('tke_mean')
+
+        Stats.add_ts('lwp')
         return
 
     cpdef io(self, NetCDFIO_Stats Stats):
-        cdef  double [:] arr = self.U.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw]
+        cdef:
+            double [:] arr = self.U.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw]
+            double lwp = 0.0
+            Py_ssize_t k
         Stats.write_profile('u_mean', arr)
         Stats.write_profile('v_mean',self.V.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('qt_mean',self.QT.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
@@ -260,6 +265,9 @@ cdef class GridMeanVariables:
             Stats.write_profile('thetal_mean',self.H.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         if self.use_tke:
             Stats.write_profile('tke_mean',self.TKE.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+            lwp += self.Ref.rho0_half[k]*self.QL.values[k]*self.Gr.dz
+        Stats.write_ts('lwp', lwp)
 
 
 

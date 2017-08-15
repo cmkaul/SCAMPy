@@ -16,6 +16,7 @@ cimport Grid
 cimport ReferenceState
 from Variables cimport GridMeanVariables
 from NetCDFIO cimport NetCDFIO_Stats
+from EDMF_Environment cimport EnvironmentVariables
 from libc.math cimport fmax
 import pylab as plt
 
@@ -130,6 +131,10 @@ cdef class UpdraftVariables:
         Stats.add_profile('updraft_temperature')
         Stats.add_profile('updraft_buoyancy')
 
+        Stats.add_ts('cloud_cover')
+        Stats.add_ts('cloud_base')
+        Stats.add_ts('cloud_top')
+
         return
 
     cpdef set_means(self, GridMeanVariables GMV):
@@ -212,6 +217,12 @@ cdef class UpdraftVariables:
 
 
     cpdef io(self, NetCDFIO_Stats Stats):
+        cdef:
+            double cloud_cover= 0.0
+            double cloud_base = 99999.0
+            double cloud_top = -99999.0
+            Py_ssize_t k
+
         Stats.write_profile('updraft_area', self.Area.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('updraft_w', self.W.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('updraft_qt', self.QT.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
@@ -223,6 +234,17 @@ cdef class UpdraftVariables:
             #Stats.write_profile('updraft_thetal', self.THL.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('updraft_temperature', self.T.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('updraft_buoyancy', self.B.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+
+        for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+            if self.QL.bulkvalues[k] >0.0:
+                cloud_cover = np.maximum(cloud_cover, self.Area.bulkvalues[k])
+                cloud_base = np.minimum(cloud_base,self.Gr.z_half[k])
+                cloud_top = np.maximum(cloud_top, self.Gr.z_half[k])
+        Stats.write_ts('cloud_cover', cloud_cover)
+        Stats.write_ts('cloud_base', cloud_base)
+        Stats.write_ts('cloud_top', cloud_top)
+
+
 
         return
 
@@ -254,13 +276,13 @@ cdef class UpdraftThermodynamics:
                     UpdVar.T.values[i,k] = sa.T
         return
 
-    cpdef buoyancy(self,  UpdraftVariables UpdVar, GridMeanVariables GMV, bint extrap):
+    cpdef buoyancy(self,  UpdraftVariables UpdVar, EnvironmentVariables EnvVar,GridMeanVariables GMV, bint extrap):
         cdef:
             Py_ssize_t k, i
             double alpha, qv, qt, t, h
             Py_ssize_t gw = self.Gr.gw
 
-        GMV.satadjust()
+        UpdVar.Area.bulkvalues = np.sum(UpdVar.Area.values,axis=0)
 
         if not extrap:
             with nogil:
@@ -268,7 +290,7 @@ cdef class UpdraftThermodynamics:
                     for k in xrange(self.Gr.nzg):
                         qv = UpdVar.QT.values[i,k] - UpdVar.QL.values[i,k]
                         alpha = alpha_c(self.Ref.p0_half[k], UpdVar.T.values[i,k], UpdVar.QT.values[i,k], qv)
-                        UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_half[k], alpha) - GMV.B.values[k]
+                        UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_half[k], alpha) #- GMV.B.values[k]
         else:
             with nogil:
                 for i in xrange(self.n_updraft):
@@ -279,9 +301,8 @@ cdef class UpdraftThermodynamics:
                             h = UpdVar.H.values[i,k]
                             t = UpdVar.T.values[i,k]
                             alpha = alpha_c(self.Ref.p0_half[k], t, qt, qv)
-                            UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_half[k], alpha) - GMV.B.values[k]
-                            # with gil:
-                            #     print(k, 'direct ',  h, qt,UpdVar.QL.values[i,k], UpdVar.B.values[i,k])
+                            UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_half[k], alpha)
+
                         else:
                             sa = eos(self.t_to_prog_fp, self.prog_to_t_fp, self.Ref.p0_half[k],
                                      qt, h)
@@ -289,9 +310,15 @@ cdef class UpdraftThermodynamics:
                             qv = qt
                             t = sa.T
                             alpha = alpha_c(self.Ref.p0_half[k], t, qt, qv)
-                            UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_half[k], alpha) - GMV.B.values[k]
-                            # with gil:
-                            #     print(k, 'extrap ',  h, qt, sa.ql, UpdVar.B.values[i,k])
+                            UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_half[k], alpha)
+        with nogil:
+            for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+                GMV.B.values[k] = (1.0 - UpdVar.Area.bulkvalues[k]) * EnvVar.B.values[k]
+                for i in xrange(self.n_updraft):
+                    GMV.B.values[k] += UpdVar.Area.values[i,k] * UpdVar.B.values[i,k]
+                for i in xrange(self.n_updraft):
+                    UpdVar.B.values[i,k] -= GMV.B.values[k]
+                EnvVar.B.values[k] -= GMV.B.values[k]
 
         return
 

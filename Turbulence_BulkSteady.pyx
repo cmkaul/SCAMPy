@@ -76,7 +76,6 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
 
         # Get parameters
         self.surface_area = paramlist['turbulence']['EDMF_BulkSteady']['surface_area']
-        self.surface_scalar_coeff = paramlist['turbulence']['EDMF_BulkSteady']['surface_scalar_coeff']
         self.w_entr_coeff = paramlist['turbulence']['EDMF_BulkSteady']['w_entr_coeff']
         self.w_buoy_coeff = paramlist['turbulence']['EDMF_BulkSteady']['w_buoy_coeff']
         self.max_area_factor = paramlist['turbulence']['EDMF_BulkSteady']['max_area_factor']
@@ -229,7 +228,9 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
         self.set_updraft_surface_bc(GMV, Case)
 
         self.solve_updraft_scalars(GMV)
-        self.UpdThermo.buoyancy(self.UpdVar, GMV, self.extrapolate_buoyancy)
+        self.decompose_environment(GMV, 'values')
+        self.EnvThermo.satadjust(self.EnvVar, GMV)
+        self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar,GMV, self.extrapolate_buoyancy)
 
         self.solve_updraft_velocity()
         self.solve_area_fraction(GMV)
@@ -240,8 +241,9 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
 
         # Compute the decomposition based on the updated updraft variables
         self.decompose_environment(GMV, 'mf_update')
-
         self.EnvThermo.satadjust(self.EnvVar, GMV)
+        self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar,GMV, self.extrapolate_buoyancy)
+
 
         # Compute the eddy diffusion term with the updated environmental values
         self.update_GMV_ED(GMV, Case, TS)
@@ -729,8 +731,12 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
                 GMV.THL.values[k] = t_to_thetali_c(self.Ref.p0_half[k], GMV.T.values[k], GMV.QT.values[k],
                                                    GMV.QL.values[k], 0.0)
 
-                alpha = alpha_c(self.Ref.p0_half[k], GMV.T.values[k], GMV.QT.values[k], qv)
-                GMV.B.values[k] = buoyancy_c(self.Ref.alpha0_half[k], alpha)
+                # alpha = alpha_c(self.Ref.p0_half[k], GMV.T.values[k], GMV.QT.values[k], qv)
+                # GMV.B.values[k] = buoyancy_c(self.Ref.alpha0_half[k], alpha)
+
+                GMV.B.values[k] = (self.UpdVar.Area.bulkvalues[k] * self.UpdVar.B.bulkvalues[k]
+                                    + (1.0 - self.UpdVar.Area.bulkvalues[k]) * self.EnvVar.B.values[k])
+
 
         return
 

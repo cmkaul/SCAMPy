@@ -187,7 +187,7 @@ cdef class EnvironmentThermodynamics:
                         outer_int_thl_cloudy += outer_int_thl_cloudy * weights[m_q] * sqpi_inv
                         outer_int_T_cloudy += outer_int_T_cloudy * weights[m_q] * sqpi_inv
                     EnvVar.QL.values[k]    = outer_int_ql
-                    EnvVar.B.values[k] = g * (outer_int_alpha - self.Ref.alpha0_half[k])/self.Ref.alpha0_half[k] - GMV_B.values[k]
+                    EnvVar.B.values[k] = g * (outer_int_alpha - self.Ref.alpha0_half[k])/self.Ref.alpha0_half[k] #- GMV_B.values[k]
                     EnvVar.T.values[k]  = outer_int_T
                     EnvVar.CF.values[k]    = outer_int_cf
                     self.qt_cloudy[k] = outer_int_qt_cloudy
@@ -246,7 +246,7 @@ cdef class EnvironmentThermodynamics:
                         outer_int_thl_cloudy += outer_int_thl_cloudy * weights[m_q] * sqpi_inv
                         outer_int_T_cloudy += outer_int_T_cloudy * weights[m_q] * sqpi_inv
                     EnvVar.QL.values[k]    = outer_int_ql
-                    EnvVar.B.values[k] = g * (outer_int_alpha - self.Ref.alpha0_half[k])/self.Ref.alpha0_half[k] - GMV_B.values[k]
+                    EnvVar.B.values[k] = g * (outer_int_alpha - self.Ref.alpha0_half[k])/self.Ref.alpha0_half[k] # - GMV_B.values[k]
                     EnvVar.T.values[k]  = outer_int_T
                     EnvVar.CF.values[k]    = outer_int_cf
                     self.qt_cloudy[k] = outer_int_qt_cloudy
@@ -272,7 +272,7 @@ cdef class EnvironmentThermodynamics:
                     EnvVar.T.values[k] = sa.T
                     qv = EnvVar.QT.values[k] - EnvVar.QL.values[k]
                     alpha = alpha_c(self.Ref.p0_half[k], EnvVar.T.values[k], EnvVar.QT.values[k], qv)
-                    EnvVar.B.values[k] = buoyancy_c(self.Ref.alpha0_half[k], alpha) - GMV.B.values[k]
+                    EnvVar.B.values[k] = buoyancy_c(self.Ref.alpha0_half[k], alpha) #- GMV.B.values[k]
                     EnvVar.THL.values[k] = t_to_thetali_c(self.Ref.p0_half[k], EnvVar.T.values[k], EnvVar.QT.values[k],
                                                           EnvVar.QL.values[k], 0.0)
                     if EnvVar.QL.values[k] > 0.0:
