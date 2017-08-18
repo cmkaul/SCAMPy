@@ -78,6 +78,8 @@ cdef class EnvironmentVariables:
         else:
             Stats.add_profile('env_thetal')
         Stats.add_profile('env_temperature')
+        if self.use_tke:
+            Stats.add_profile('env_tke')
 
 
         return
@@ -91,6 +93,9 @@ cdef class EnvironmentVariables:
             Stats.write_profile('env_thetal', self.H.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
 
         Stats.write_profile('env_temperature', self.T.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        if self.use_tke:
+            Stats.write_profile('env_tke', self.TKE.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+
         return
 
 cdef class EnvironmentThermodynamics:
