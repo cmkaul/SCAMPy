@@ -1199,7 +1199,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         cdef:
             Py_ssize_t i, k
             double w_u, w_e
-            double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),self.UpdVar.Area.bulkvalues) # area of environment
+            # double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),self.UpdVar.Area.bulkvalues) # area of environment
 
         with nogil:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
@@ -1208,7 +1208,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 for i in xrange(self.n_updrafts):
                     w_u = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
                     self.tke_entr_gain[k] +=self.detr_sc[i,k] * (w_u - w_e) * (w_u - w_e)
-                self.tke_entr_gain[k] *= 0.5 * self.Ref.rho0_half[k] * ae[k] * w_e
+                self.tke_entr_gain[k] *= 0.5 * self.Ref.rho0_half[k] * self.UpdVar.Area.bulkvalues[k] * w_u
         return
 
     cpdef compute_tke_shear(self, GridMeanVariables GMV):
