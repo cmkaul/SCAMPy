@@ -100,17 +100,19 @@ cdef class UpdraftVariables:
             double dz = self.Gr.dz
 
         with nogil:
-            for k in xrange(self.Gr.nzg):
-                for i in xrange(self.n_updrafts):
+            for i in xrange(self.n_updrafts):
+                for k in xrange(self.Gr.nzg):
+
                     self.W.values[i,k] = 0.0
                     # Simple treatment for now, revise when multiple updraft closures
                     # become more well defined
-                    self.Area.values[i,k] = self.updraft_fraction/self.n_updrafts
+                    self.Area.values[i,k] = 0.0 #self.updraft_fraction/self.n_updrafts
                     self.QT.values[i,k] = GMV.QT.values[k]
                     self.QL.values[i,k] = GMV.QL.values[k]
                     self.H.values[i,k] = GMV.H.values[k]
                     self.T.values[i,k] = GMV.T.values[k]
-                    self.B.values[i,k] = 1e-4
+                    self.B.values[i,k] = 0.0
+                self.Area.values[i,gw] = self.updraft_fraction/self.n_updrafts
 
 
         self.QT.set_bcs(self.Gr)

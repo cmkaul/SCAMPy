@@ -17,6 +17,8 @@ def main():
         paramlist = defaults()
     elif case_name == 'Soares':
         paramlist = Soares()
+    elif case_name == 'Bomex':
+        paramlist = Bomex()
     else:
         print('Not a valid case name')
         exit()
@@ -94,6 +96,46 @@ def Soares():
     paramlist['turbulence']['updraft_microphysics']['max_supersaturation'] = 0.1
 
     return paramlist
+
+
+def Bomex():
+
+    paramlist = {}
+    paramlist['meta'] = {}
+    paramlist['meta']['casename'] = 'Bomex'
+
+    paramlist['turbulence'] = {}
+    paramlist['turbulence']['prandtl_number'] = 1.0
+    paramlist['turbulence']['Ri_bulk_crit'] = 0.0
+
+    paramlist['turbulence']['EDMF_PrognosticTKE'] = {}
+    paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area'] = 0.18
+    paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.1
+    paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 0.3
+    paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = 1.0
+    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = 1.0
+    paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = 1.0
+    paramlist['turbulence']['EDMF_PrognosticTKE']['vel_pressure_coeff'] = 0.1
+    paramlist['turbulence']['EDMF_PrognosticTKE']['vel_buoy_coeff'] = 2.0 / 3.0
+    paramlist['turbulence']['EDMF_PrognosticTKE']['vel_pressure_coeff'] = 0.00005
+
+    paramlist['turbulence']['EDMF_BulkSteady'] = {}
+    paramlist['turbulence']['EDMF_BulkSteady']['surface_area'] = 0.18
+    paramlist['turbulence']['EDMF_BulkSteady']['w_entr_coeff'] = 2.0  #"w_b"
+    paramlist['turbulence']['EDMF_BulkSteady']['w_buoy_coeff'] = 1.0
+    paramlist['turbulence']['EDMF_BulkSteady']['max_area_factor'] = 1.0
+    paramlist['turbulence']['EDMF_BulkSteady']['entrainment_factor'] = 1.0
+    paramlist['turbulence']['EDMF_BulkSteady']['detrainment_factor'] = 1.0
+
+    paramlist['turbulence']['updraft_microphysics'] = {}
+    paramlist['turbulence']['updraft_microphysics']['max_supersaturation'] = 0.1
+
+    return  paramlist
+
+
+
+
+
 
 def write_file(paramlist):
 
