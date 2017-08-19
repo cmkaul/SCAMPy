@@ -1,6 +1,6 @@
 import numpy as np
 cimport numpy as np
-from libc.math cimport cbrt, sqrt, log, fabs,atan, exp, fmax, pow
+from libc.math cimport cbrt, sqrt, log, fabs,atan, exp, fmax, pow, fmin
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 include "parameters.pxi"
 
@@ -67,16 +67,29 @@ cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil:
     return  _ret
 
 
+#
+# cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil:
+#     cdef entr_struct _ret
+#     # in cloud portion from Soares 2004
+#     if entr_in.z >= entr_in.zi :
+#         _ret.detr_sc= 3.0e-3 +  0.2 * fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-4)
+#     else:
+#         _ret.detr_sc = 0.0
+#
+#     _ret.entr_sc = 0.2 * fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-4)
+#     # or add to detrainment when buoyancy is negative
+#     return  _ret
+
 
 cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil:
     cdef entr_struct _ret
     # in cloud portion from Soares 2004
     if entr_in.z >= entr_in.zi :
-        _ret.detr_sc= 3.0e-3
+        _ret.detr_sc= 4.0e-3 +  0.12 * fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-4)
     else:
         _ret.detr_sc = 0.0
 
-    _ret.entr_sc = 0.5 * fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-4)
+    _ret.entr_sc = 0.12 * fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-4)
     # or add to detrainment when buoyancy is negative
     return  _ret
 
@@ -126,9 +139,9 @@ cdef double get_mixing_tau(double zi, double wstar) nogil:
 
 cdef double get_surface_tke(double ustar, double wstar, double zLL, double oblength) nogil:
     if oblength < 0.0:
-        return (3.75 + cbrt(zLL/oblength * zLL/oblength)) * ustar * ustar + 0.2 * wstar * wstar
+        return ((3.75 + cbrt(zLL/oblength * zLL/oblength)) * ustar * ustar + 0.2 * wstar * wstar)
     else:
-        return 3.75 * ustar * ustar
+        return (3.75 * ustar * ustar)
 
 cdef double get_surface_variance(double flux1, double flux2, double ustar, double zLL, double oblength) nogil:
     cdef:
