@@ -16,6 +16,8 @@ def main():
 
     if case_name == 'Bomex':
         namelist = Bomex()
+    elif case_name == 'Bomex_pulse':
+        namelist = Bomex_pulse()
     elif case_name == 'Soares':
         namelist = Soares()
     elif case_name == 'Rico':
@@ -117,6 +119,48 @@ def Bomex():
 
 
     return namelist
+
+def Bomex_pulse():
+
+    namelist = {}
+
+    namelist['grid'] = {}
+    namelist['grid']['dims'] = 1
+    namelist['grid']['nz'] = 75
+    namelist['grid']['gw'] = 2
+    namelist['grid']['dz'] = 100 / 2.5
+
+
+    namelist['thermodynamics'] = {}
+    namelist['thermodynamics']['thermal_variable'] = 'thetal'
+
+    namelist['time_stepping'] = {}
+    namelist['time_stepping']['dt'] = 1.0
+    namelist['time_stepping']['t_max'] = 3*3600.0
+
+
+    namelist['turbulence'] = {}
+    namelist['turbulence']['scheme'] = 'EDMF_PrognosticTKE'
+    namelist['turbulence']['EDMF_PrognosticTKE'] = {}
+    namelist['turbulence']['EDMF_PrognosticTKE']['updraft_number'] = 1
+    namelist['turbulence']['EDMF_PrognosticTKE']['constant_area'] = False
+    namelist['turbulence']['EDMF_PrognosticTKE']['surface_area'] = 0.1
+
+
+    namelist['output'] = {}
+    namelist['output']['output_root'] = './'
+
+    namelist['stats_io'] = {}
+    namelist['stats_io']['stats_dir'] = 'stats'
+    namelist['stats_io']['frequency'] = 1.0
+
+    namelist['meta'] = {}
+    namelist['meta']['simname'] = 'Bomex_pulse'
+    namelist['meta']['casename'] = 'Bomex_pulse'
+
+
+    return namelist
+
 
 def Rico():
 
