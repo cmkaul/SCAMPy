@@ -212,7 +212,7 @@ cdef class GridMeanVariables:
         if self.use_tke:
             with nogil:
                 for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                    self.TKE.values[k]  +=  self.TKE.tendencies[k] * TS.dt
+                    self.TKE.values[k]  = self.TKE.new[k]  #+=  self.TKE.tendencies[k] * TS.dt
             self.TKE.set_bcs(self.Gr)
         if self.use_scalar_var:
             with nogil:

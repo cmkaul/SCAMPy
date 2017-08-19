@@ -82,7 +82,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef compute_tke_dissipation(self, TimeStepping TS)
     cpdef compute_tke_entr_detr(self)
     cpdef compute_tke_shear(self, GridMeanVariables GMV)
-    cpdef update_tke_MF(self, GridMeanVariables GMV, TimeStepping TS)
+    # cpdef update_tke_MF(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef update_tke_ED(self, GridMeanVariables GMV, CasesBase Case,TimeStepping TS)
     cpdef update_GMV_diagnostics(self, GridMeanVariables GMV)
 
