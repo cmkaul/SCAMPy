@@ -288,7 +288,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.compute_tke(GMV, Case, TS)
 
 
-        if TS.nstep > 1000000:
+        if TS.nstep > 100000000:
             print(TS.nstep)
             # PLOTS
             plt.figure('Updated  W')
@@ -413,32 +413,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Py_ssize_t i, k
             Py_ssize_t gw = self.Gr.gw
             double dz = self.Gr.dz
+            double dzi = self.Gr.dzi
             eos_struct sa
             entr_struct ret
             entr_in_struct input
             double a,b,c, w, w_km,  w_mid, w_low, denom
-            double entr_w, detr_w, B_k
+            double entr_w, detr_w, B_k, area_k, w2
 
         self.set_updraft_surface_bc(GMV, Case)
-
-        # input.zi = self.zi
-        # input.wstar = self.wstar
-        # print('zi', self.zi)
-        #
-        # with nogil:
-        #     for i in xrange(self.n_updrafts):
-        #         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-        #             with gil:
-        #                 print('k,input.zi',k, input.zi )
-        #             input.b = self.UpdVar.B.values[i,k]
-        #             input.w = interp2pt(self.UpdVar.W.values[i,k],self.UpdVar.W.values[i,k-1])
-        #             input.z = self.Gr.z_half[k]
-        #             input.af = self.UpdVar.Area.values[i,k]
-        #             input.tke = self.EnvVar.TKE.values[k]
-        #             input.ml = self.mixing_length[k]
-        #             ret = self.entr_detr_fp(input)
-        #             self.entr_sc[i,k] = ret.entr_sc * self.entrainment_factor
-        #             self.detr_sc[i,k] = ret.detr_sc * self.detrainment_factor
 
 
         self.compute_entrainment_detrainment(GMV, Case)
@@ -472,24 +454,28 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         # Solve updraft velocity equation
         with nogil:
             for i in xrange(self.n_updrafts):
-                self.UpdVar.W.values[i, self.Gr.gw-1] = 0.0  #self.w_surface_bc[i]
+                self.UpdVar.W.values[i, self.Gr.gw-1] = self.w_surface_bc[i]
                 self.entr_sc[i,gw] = 2.0 /dz
                 self.detr_sc[i,gw] = 0.0
                 for k in range(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                    w_km = self.UpdVar.W.values[i,k-1]
-                    entr_w = interp2pt(self.entr_sc[i,k], self.entr_sc[i,k+1])
-                    detr_w = interp2pt(self.detr_sc[i,k], self.detr_sc[i,k+1])
-                    B_k = interp2pt(self.UpdVar.B.values[i,k], self.UpdVar.B.values[i,k+1])
-                    a = 1.0 + 2.0 * dz * (2.0 * entr_w + detr_w)
-                    b = -2.0 * dz * (2.0 * entr_w + detr_w) * self.EnvVar.W.values[k]
-                    c = -2.0 * dz * B_k - w_km * w_km
-                    # B has to be
-                    w = (-b + sqrt(fmax(b*b - 4.0 * a *c,0.0)))/(2.0 * a)
-                    if w > 0.0:
-                        self.UpdVar.W.values[i,k] = w
+                    area_k = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
+                    if area_k >= self.minimum_area:
+                        w_km = self.UpdVar.W.values[i,k-1]
+                        entr_w = interp2pt(self.entr_sc[i,k], self.entr_sc[i,k+1])
+                        detr_w = interp2pt(self.detr_sc[i,k], self.detr_sc[i,k+1])
+                        B_k = interp2pt(self.UpdVar.B.values[i,k], self.UpdVar.B.values[i,k+1])
+                        w2 = ((self.vel_buoy_coeff * B_k + 0.5 * w_km * w_km * dzi)
+                              /(0.5 * dzi +entr_w + self.vel_pressure_coeff/sqrt(self.UpdVar.Area.values[i,k])))
+
+                        if w2 > 0.0:
+                            self.UpdVar.W.values[i,k] = sqrt(w2)
+                        else:
+                            self.UpdVar.W.values[i,k:] = 0
+                            break
                     else:
                         self.UpdVar.W.values[i,k:] = 0
                         break
+
         self.UpdVar.W.set_bcs(self.Gr)
         # solve_area_fraction
         # if self.const_area:
@@ -1134,6 +1120,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.tke_buoy[k] = -self.Ref.rho0_half[k] * ae[k] * b_flux
         return
 
+
+
     # cpdef compute_tke_buoy(self, GridMeanVariables GMV):
     #     cdef:
     #         Py_ssize_t k
@@ -1175,6 +1163,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     #                                  - self.KH.values[k] * interp2pt(grad_qt_plus, grad_qt_minus)
     #                                   *  ((1.0 - cf) * db_dqt_d + cf * db_dqt_s)) * ae[k]
     #     return
+
+
+
+
+
+
 
     # Note we need mixing length again here....
     cpdef compute_tke_dissipation(self, TimeStepping TS):
