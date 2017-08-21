@@ -219,7 +219,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                 mf_h[k] = interp2pt(self.massflux_h[k], self.massflux_h[k-1])
                 mf_qt[k] = interp2pt(self.massflux_qt[k], self.massflux_qt[k-1])
-                massflux[k] = interp2pt(self.m[k], self.m[k-1])
+                massflux[k] = interp2pt(self.m[0,k], self.m[0,k-1])
                 if self.UpdVar.Area.bulkvalues[k] > 0.0:
                     for i in xrange(self.n_updrafts):
                         mean_entr_sc[k] += self.UpdVar.Area.values[i,k] * self.entr_sc[i,k]/self.UpdVar.Area.bulkvalues[k]
@@ -227,7 +227,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         Stats.write_profile('entrainment_sc', mean_entr_sc[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('detrainment_sc', mean_detr_sc[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
-        Stats.write_profile('massflux', np.sum(massflux[:,self.Gr.gw:self.Gr.nzg-self.Gr.gw ], axis=0))
+        Stats.write_profile('massflux', massflux[self.Gr.gw:self.Gr.nzg-self.Gr.gw ])
+        # Stats.write_profile('massflux', np.sum(massflux[:,self.Gr.gw:self.Gr.nzg-self.Gr.gw ], axis=0))
         Stats.write_profile('massflux_h', mf_h[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('massflux_qt', mf_qt[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('massflux_tendency_h', self.massflux_tendency_h[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
