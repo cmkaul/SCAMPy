@@ -36,7 +36,7 @@ def defaults():
     paramlist['turbulence']['Ri_bulk_crit'] = 0.0
 
     paramlist['turbulence']['EDMF_PrognosticTKE'] = {}
-    paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area'] = 0.2
+    paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area'] = 0.1
     paramlist['turbulence']['EDMF_PrognosticTKE']['surface_scalar_coeff'] = 0.3
     paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.375
     paramlist['turbulence']['EDMF_PrognosticTKE']['w_entr_coeff'] = 2.5 # "b1"
@@ -109,7 +109,7 @@ def Bomex():
     paramlist['turbulence']['Ri_bulk_crit'] = 0.0
 
     paramlist['turbulence']['EDMF_PrognosticTKE'] = {}
-    paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area'] = 0.18
+    paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area'] = 0.1
     paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.1
     paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 0.3
     paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = 1.0
