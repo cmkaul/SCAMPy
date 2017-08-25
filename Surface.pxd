@@ -21,6 +21,8 @@ cdef class SurfaceBase:
         double rho_vflux
         double obukhov_length
         double Ri_bulk_crit
+        double shf0 # yair - added for bomex coise
+        double lhf0
         bint ustar_fixed
         Grid Gr
         ReferenceState Ref
