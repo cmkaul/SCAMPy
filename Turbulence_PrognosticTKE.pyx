@@ -476,6 +476,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         self.UpdVar.W.values[i,k:] = 0
                         break
 
+
         self.UpdVar.W.set_bcs(self.Gr)
         # solve_area_fraction
         # if self.const_area:
