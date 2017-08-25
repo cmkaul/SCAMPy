@@ -224,16 +224,27 @@ def Bomex_cosine():
     namelist['thermodynamics']['thermal_variable'] = 'thetal'
 
     namelist['time_stepping'] = {}
-    namelist['time_stepping']['dt'] = 1.0
-    namelist['time_stepping']['t_max'] = 3*3600.0
+    namelist['time_stepping']['dt'] = 30.0
+    namelist['time_stepping']['t_max'] = 6*3600.0
 
+
+    #namelist['turbulence'] = {}
+    #namelist['turbulence']['scheme'] = 'EDMF_PrognosticTKE'
+    #namelist['turbulence']['EDMF_PrognosticTKE'] = {}
+    #namelist['turbulence']['EDMF_PrognosticTKE']['updraft_number'] = 1
+    #namelist['turbulence']['EDMF_PrognosticTKE']['constant_area'] = False
+    #namelist['turbulence']['EDMF_PrognosticTKE']['surface_area'] = 0.1
 
     namelist['turbulence'] = {}
     namelist['turbulence']['scheme'] = 'EDMF_PrognosticTKE'
     namelist['turbulence']['EDMF_PrognosticTKE'] = {}
     namelist['turbulence']['EDMF_PrognosticTKE']['updraft_number'] = 1
     namelist['turbulence']['EDMF_PrognosticTKE']['constant_area'] = False
-    namelist['turbulence']['EDMF_PrognosticTKE']['surface_area'] = 0.1
+    namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] = 'b_w2'
+    namelist['turbulence']['EDMF_PrognosticTKE']['use_local_micro'] = True
+    namelist['turbulence']['EDMF_PrognosticTKE']['use_similarity_diffusivity'] = False
+    namelist['turbulence']['EDMF_PrognosticTKE']['updraft_surface_height'] = 0.0
+    namelist['turbulence']['EDMF_PrognosticTKE']['extrapolate_buoyancy'] = True
 
 
     namelist['output'] = {}
@@ -241,7 +252,7 @@ def Bomex_cosine():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['frequency'] = 1.0
+    namelist['stats_io']['frequency'] = 60.0
 
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'Bomex_cosine'

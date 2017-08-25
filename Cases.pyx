@@ -633,7 +633,7 @@ cdef class Bomex_cosine(CasesBase):
         self.Fo.initialize(GMV)
         for k in xrange(Gr.gw, Gr.nzg-Gr.gw):
             # Geostrophic velocity profiles. vg = 0
-            self.Fo.ug[k] = 0.5
+            self.Fo.ug[k] = -10.0 + (1.8e-3)*Gr.z_half[k]
             # Set large-scale cooling
             if Gr.z_half[k] <= 1500.0:
                 self.Fo.dTdt[k] =  (-2.0/(3600 * 24.0))  * exner_c(Ref.p0_half[k])
@@ -660,7 +660,7 @@ cdef class Bomex_cosine(CasesBase):
         CasesBase.io(self,Stats)
         return
     cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS):
-        weight = 2.0
+        weight = 1.0
         weight_factor = 0.01 + 0.99 *(np.cos(2.0*pi * TS.t /3600.0) + 1.0)/2.0
         weight = weight * weight_factor
         self.Sur.lhf = self.Sur.lhf0*weight
