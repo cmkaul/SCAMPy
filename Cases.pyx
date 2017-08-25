@@ -587,9 +587,10 @@ cdef class Bomex_cosine(CasesBase):
 
             #Set u profile
             if Gr.z_half[k] <= 700.0:
-                GMV.U.values[k] = 0.5
+                GMV.U.values[k] = -8.75
             if Gr.z_half[k] > 700.0:
-                GMV.U.values[k] = 0.5
+                GMV.U.values[k] = -8.75 + (Gr.z_half[k] - 700.0) * (-4.61 - -8.75)/(3000.0 - 700.0)
+
 
         if GMV.H.name == 'thetal':
             for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
