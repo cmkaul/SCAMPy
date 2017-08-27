@@ -354,8 +354,10 @@ cdef class Bomex_pulse(CasesBase):
         self.Sur.zrough = 1.0e-4 # not actually used, but initialized to reasonable value
         self.Sur.Tsurface = 299.1 * exner_c(Ref.Pg)
         self.Sur.qsurface = 22.45e-3 # kg/kg
-        self.Sur.lhf = 45.8222333536705*2
-        self.Sur.shf = 2.95600040157933*2
+        self.Sur.lhf = 5.2e-5 * Ref.rho0[Gr.gw -1] * latent_heat(self.Sur.Tsurface)
+        self.Sur.shf = 8.0e-3 * cpm_c(self.Sur.qsurface) * Ref.rho0[Gr.gw-1]
+        self.Sur.lhf0 = self.Sur.lhf
+        self.Sur.shf0 = self.Sur.shf
         self.Sur.ustar_fixed = True
         self.Sur.ustar = 0.28 # m/s
         self.Sur.Gr = Gr
@@ -399,7 +401,7 @@ cdef class Bomex_pulse(CasesBase):
         if TS.t > 600.0:
             self.Sur.lhf = 147.1*0.0001
             self.Sur.shf = 9.5*0.0001
-            self.Sur.bflux = (g * ((8.0e-3 + (eps_vi-1.0)*(299.1 * 5.2e-5  + 22.45e-3 * 8.0e-3)) /(299.1 * (1.0 + (eps_vi-1) * 22.45e-3))))
+            self.Sur.bflux = (g * ((8.0e-3*0.0001 + (eps_vi-1.0)*(299.1 * 5.2e-5*0.0001  + 22.45e-3 * 8.0e-3*0.0001)) /(299.1 * (1.0 + (eps_vi-1) * 22.45e-3))))
             #self.Sur.ustar_fixed = False
         print('===========> time is ',TS.t)
         print('===========> SHF is ',self.Sur.shf)
@@ -482,8 +484,8 @@ cdef class Bomex_pulses(CasesBase):
         self.Sur.zrough = 1.0e-4 # not actually used, but initialized to reasonable value
         self.Sur.Tsurface = 299.1 * exner_c(Ref.Pg)
         self.Sur.qsurface = 22.45e-3 # kg/kg
-        self.Sur.lhf = 73.47202
-        self.Sur.shf = 4.7469
+        self.Sur.lhf = 5.2e-5 * Ref.rho0[Gr.gw -1] * latent_heat(self.Sur.Tsurface)
+        self.Sur.shf = 8.0e-3 * cpm_c(self.Sur.qsurface) * Ref.rho0[Gr.gw-1]
         self.Sur.ustar_fixed = True
         self.Sur.ustar = 0.28 # m/s
         self.Sur.Gr = Gr
@@ -525,14 +527,14 @@ cdef class Bomex_pulses(CasesBase):
         return
     cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS):
         if TS.t % 3600 > 600.0:
-            self.Sur.lhf = 147.1*0.0001
-            self.Sur.shf = 9.5*0.0001
-            self.Sur.bflux = (g * ((8.0e-3 + (eps_vi-1.0)*(299.1 * 5.2e-5  + 22.45e-3 * 8.0e-3)) /(299.1 * (1.0 + (eps_vi-1) * 22.45e-3))))
+            self.Sur.lhf = 0.0001
+            self.Sur.shf = 0.0001
+            self.Sur.bflux = (g * ((8.0e-3*0.0001 + (eps_vi-1.0)*(299.1 * 5.2e-5*0.0001  + 22.45e-3 * 8.0e-3*0.0001)) /(299.1 * (1.0 + (eps_vi-1) * 22.45e-3))))
             #self.Sur.ustar_fixed = False
         else:
-            self.Sur.lhf = 73.47202
-            self.Sur.shf = 4.7469
-            self.Sur.bflux = (g * ((8.0e-3 + (eps_vi-1.0)*(299.1 * 5.2e-5  + 22.45e-3 * 8.0e-3)) /(299.1 * (1.0 + (eps_vi-1) * 22.45e-3))))
+            self.Sur.lhf = self.Sur.lhf0*2.0
+            self.Sur.shf = self.Sur.shf0*2.0
+            self.Sur.bflux = (g * ((8.0e-3*2.0 + (eps_vi-1.0)*(299.1 * 5.2e-5*2.0  + 22.45e-3 * 8.0e-3*2.0)) /(299.1 * (1.0 + (eps_vi-1) * 22.45e-3))))
 
         print('===========> time is ',TS.t)
         print('===========> SHF is ',self.Sur.shf)
@@ -618,8 +620,8 @@ cdef class Bomex_cosine(CasesBase):
         self.Sur.qsurface = 22.45e-3 # kg/kg
         self.Sur.lhf = 5.2e-5 * Ref.rho0[Gr.gw -1] * latent_heat(self.Sur.Tsurface)
         self.Sur.shf = 8.0e-3 * cpm_c(self.Sur.qsurface) * Ref.rho0[Gr.gw-1]
-        self.Sur.lhf0 = np.multiply(self.Sur.lhf,1.0)
-        self.Sur.shf0 = np.multiply(self.Sur.shf,1.0)
+        self.Sur.lhf0 = self.Sur.lhf
+        self.Sur.shf0 = self.Sur.shf
         self.Sur.ustar_fixed = True
         self.Sur.ustar = 0.28 # m/s
         self.Sur.Gr = Gr
@@ -660,12 +662,12 @@ cdef class Bomex_cosine(CasesBase):
         CasesBase.io(self,Stats)
         return
     cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS):
-        weight = 1.0
+        weight = 2.0
         weight_factor = 0.01 + 0.99 *(np.cos(2.0*pi * TS.t /3600.0) + 1.0)/2.0
         weight = weight * weight_factor
         self.Sur.lhf = self.Sur.lhf0*weight
         self.Sur.shf = self.Sur.shf0*weight
-
+        self.Sur.bflux = (g * ((8.0e-3*weight + (eps_vi-1.0)*(299.1 * 5.2e-5*weight  + 22.45e-3 * 8.0e-3*weight)) /(299.1 * (1.0 + (eps_vi-1) * 22.45e-3))))
         print('===========> time is ',TS.t)
         print('===========> time residual is ',TS.t%3600.0)
         print('===========> SHF is ',self.Sur.shf)
