@@ -1276,7 +1276,7 @@ cdef class ARM_SGP(CasesBase):
             self.Sur.shf = 1.0
         if self.Sur.lhf < 1.0:
             self.Sur.lhf = 1.0
-        self.Sur.bflux = (g * ((self.Sur.shf + (eps_vi-1.0)*(self.Sur.Tsurface * self.Sur.lhf  + self.Sur.qsurface * 8.0e-3)) /(self.Sur.Tsurface* (1.0 + (eps_vi-1) * self.Sur.qsurface))))
+        #self.Sur.bflux = (g * ((self.Sur.shf + (eps_vi-1.0)*(self.Sur.Tsurface * self.Sur.lhf  + self.Sur.qsurface * 8.0e-3)) /(self.Sur.Tsurface* (1.0 + (eps_vi-1) * self.Sur.qsurface))))
         self.Sur.update(GMV)
         return
 

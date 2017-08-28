@@ -392,7 +392,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
 
         while time_elapsed < TS.dt:
-            print(self.dt_upd)
+            print('dt_upd ====> ',self.dt_upd)
             self.compute_entrainment_detrainment(GMV,Case)
             self.solve_updraft_velocity_area(GMV,TS)
             self.solve_updraft_scalars(GMV, Case, TS)
@@ -1363,7 +1363,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 GMV.B.values[k] = (self.UpdVar.Area.bulkvalues[k] * self.UpdVar.B.bulkvalues[k]
                                     + (1.0 - self.UpdVar.Area.bulkvalues[k]) * self.EnvVar.B.values[k])
 
-
+        print('self.UpdVar.Area.bulkvalues[self.Gr.gw] ==>',self.UpdVar.Area.bulkvalues[self.Gr.gw])
+        print('self.UpdVar.T.bulkvalues[self.Gr.gw] ==>',self.UpdVar.T.bulkvalues[self.Gr.gw])
+        print('self.EnvVar.T.values[self.Gr.gw] ==>',self.EnvVar.T.values[self.Gr.gw])
         return
 
 
