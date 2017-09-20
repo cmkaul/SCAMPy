@@ -84,7 +84,14 @@ cdef class UpdraftVariables:
         self.B = UpdraftVariable(nu, nzg, 'half', 'scalar', 'buoyancy','m^2/s^3' )
 
         if namelist['turbulence']['scheme'] == 'EDMF_PrognosticTKE':
-            self.prognostic = True
+            try:
+                use_steady_updrafts = namelist['turbulence']['EDMF_PrognosticTKE']['use_steady_updrafts']
+            except:
+                use_steady_updrafts = False
+            if use_steady_updrafts:
+                self.prognostic = False
+            else:
+                self.prognostic = True
             self.updraft_fraction = paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area']
         else:
             self.prognostic = False
@@ -106,7 +113,10 @@ cdef class UpdraftVariables:
                     self.W.values[i,k] = 0.0
                     # Simple treatment for now, revise when multiple updraft closures
                     # become more well defined
-                    self.Area.values[i,k] = 0.0 #self.updraft_fraction/self.n_updrafts
+                    if self.prognostic:
+                        self.Area.values[i,k] = 0.0 #self.updraft_fraction/self.n_updrafts
+                    else:
+                        self.Area.values[i,k] = self.updraft_fraction/self.n_updrafts
                     self.QT.values[i,k] = GMV.QT.values[k]
                     self.QL.values[i,k] = GMV.QL.values[k]
                     self.H.values[i,k] = GMV.H.values[k]
