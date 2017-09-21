@@ -141,6 +141,7 @@ cdef class ParameterizationBase:
             Py_ssize_t gw = self.Gr.gw
             Py_ssize_t nzg = self.Gr.nzg
             Py_ssize_t nz = self.Gr.nz
+        print('self.wstar  =  ',self.wstar)
         with nogil:
             for k in xrange(gw,nzg-gw):
                 zzi = self.Gr.z_half[k]/self.zi

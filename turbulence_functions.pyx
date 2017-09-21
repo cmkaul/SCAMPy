@@ -52,6 +52,16 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
     _ret.entr_sc = 1.0/(tau * fmax(entr_in.w,0.1)) #sets baseline to avoid errors
     return  _ret
 
+cdef entr_struct entr_detr_inverse_w_linear(entr_in_struct entr_in) nogil:
+    cdef:
+        entr_struct _ret
+    if entr_in.z >= entr_in.zi :
+        _ret.entr_sc = fmax(entr_in.b/fabs(entr_in.b+0.0000001),0.0)/(100.0 * fmax(entr_in.w,0.1))
+        _ret.detr_sc = fmin(entr_in.b/fabs(entr_in.b+0.0000001),0.0)/(100.0 * fmax(entr_in.w,0.1))
+    else:
+        _ret.entr_sc = fmax(entr_in.b/fabs(entr_in.b+0.0000001),0.0)/(100.0 * fmax(entr_in.w,0.1))
+        _ret.detr_sc = fmin(entr_in.b/fabs(entr_in.b+0.0000001),0.0)/(100.0 * fmax(entr_in.w,0.1))
+    return  _ret
 
 cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil:
     cdef entr_struct _ret

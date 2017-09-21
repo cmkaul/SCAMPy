@@ -953,11 +953,11 @@ cdef class TRMM_LBA(CasesBase):
         GMV.satadjust()
 
 
-        plt.figure(1)
-        plt.plot(GMV.QT.values, Gr.z_half)
-        plt.figure(2)
-        plt.plot(GMV.H.values, Gr.z_half)
-        plt.show()
+        #plt.figure(1)
+        #plt.plot(GMV.QT.values, Gr.z_half)
+        #plt.figure(2)
+        #plt.plot(GMV.H.values, Gr.z_half)
+        #plt.show()
 
         return
     cpdef initialize_surface(self, Grid Gr, ReferenceState Ref):
@@ -1113,6 +1113,7 @@ cdef class TRMM_LBA(CasesBase):
             else:                                             # in all other cases
                 self.Fo.dTdt[kk]    = (self.Fo.rad[ind2,kk]-self.Fo.rad[ind1,kk])/(self.Fo.rad_time[ind2]-self.Fo.rad_time[ind1])*(10.0)+self.Fo.rad[ind1,kk]
 
+
         return
 
 
@@ -1195,7 +1196,8 @@ cdef class ARM_SGP(CasesBase):
         GMV.T.values[0] = Theta[3]*exner_c(Ref.Pg)
         GMV.T.values[1] = Theta[2]*exner_c(Ref.Pg)
         GMV.T.values[Gr.nzg-Gr.gw+1] = Theta[Gr.nzg-Gr.gw-1]*exner_c(Ref.Pg)
-
+        GMV.U.values = np.zeros((Gr.nzg,),dtype=np.double,order='c') + 10.0
+        GMV.V.values = np.zeros((Gr.nzg,),dtype=np.double,order='c')
         theta_rho = qt*0.0
         epsi = 287.1/461.5
         cdef double PV_star # here pv_star is a function

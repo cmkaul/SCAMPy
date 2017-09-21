@@ -27,8 +27,9 @@ def main():
     nz   = namelist['grid']['nz']
     nt = int(tmax/freq)+1
 
-    nvar = 50
-    vel_pressure_coeff = np.linspace(0.000001, 0.000035, num=nvar)
+    nvar = 10
+    sweep_var = np.linspace(0.1, 1.0, num=nvar)
+
 
     destination = '/Users/yaircohen/Documents/SCAMPy_out/parameter_sweep/'
     out_stats = nc.Dataset(destination + '/Stats.sweep_'+case_name+'.nc', 'w', format='NETCDF4')
@@ -49,10 +50,11 @@ def main():
     _thetal_mean = np.zeros((nt,nz,nvar))
     _buoyancy_mean = np.zeros((nt,nz,nvar))
     _env_tke = np.zeros((nt,nz,nvar))
+    _updraft_thetal_precip = np.zeros((nt,nz,nvar))
 
     for i in range(0,nvar):
-        vel_pressure_coeff_i = vel_pressure_coeff[i]
-        paramlist = sweep(vel_pressure_coeff_i)
+        sweep_var_i = sweep_var[i]
+        paramlist = sweep(sweep_var_i)
         write_file(paramlist)
         file_case = open('paramlist_sweep.in').read()
         current = json.loads(file_case)
@@ -77,6 +79,7 @@ def main():
         thetal_mean_ = np.multiply(data.groups['profiles'].variables['thetal_mean'],1.0)
         buoyancy_mean_ = np.multiply(data.groups['profiles'].variables['buoyancy_mean'],1.0)
         env_tke_ = np.multiply(data.groups['profiles'].variables['env_tke'],1.0)
+        updraft_thetal_precip_ = np.multiply(data.groups['profiles'].variables['updraft_thetal_precip'], 1.0)
 
         _lwp[:, i] = lwp_
         _cloud_cover[:,i] = cloud_cover_
@@ -89,6 +92,7 @@ def main():
         _thetal_mean[:,:,i] = thetal_mean_
         _buoyancy_mean[:,:,i] = buoyancy_mean_
         _env_tke[:,:,i] = env_tke_
+        _updraft_thetal_precip[:,:,i] = updraft_thetal_precip_
         os.remove(path)
         os.remove(path1)
 
@@ -100,15 +104,16 @@ def main():
     cloud_cover = grp_stats.createVariable('cloud_cover', 'f4', ('t', 'var'))
     cloud_top = grp_stats.createVariable('cloud_top', 'f4', ('t', 'var'))
     cloud_base = grp_stats.createVariable('cloud_base', 'f4', ('t', 'var'))
-    updraft_area = grp_stats.createVariable('updraft_area', 'f4', ('z', 't', 'var'))
+    updraft_area = grp_stats.createVariable('updraft_area', 'f4', ('t', 'z','var'))
     ql_mean = grp_stats.createVariable('ql_mean', 'f4', ('t', 'z', 'var'))
     updraft_w = grp_stats.createVariable('updraft_w', 'f4', ('t', 'z', 'var'))
     thetal_mean = grp_stats.createVariable('thetal_mean', 'f4', ('t', 'z', 'var'))
     buoyancy_mean = grp_stats.createVariable('buoyancy_mean', 'f4', ('t', 'z', 'var'))
     env_tke = grp_stats.createVariable('env_tke', 'f4', ('t', 'z', 'var'))
+    updraft_thetal_precip = grp_stats.createVariable('updraft_thetal_precip', 'f4', ('t', 'z', 'var'))
 
 
-    var[:] = vel_pressure_coeff
+    var[:] = sweep_var
     t[:] = _t
     z[:] = _z
     lwp[:,:] = _lwp
@@ -121,6 +126,7 @@ def main():
     thetal_mean[:,:,:] = _thetal_mean
     buoyancy_mean[:,:,:] = _buoyancy_mean
     env_tke[:,:,:] = _env_tke
+    updraft_thetal_precip[:, :, :] = _updraft_thetal_precip
 
     out_stats.close()
     print('========================')
@@ -131,7 +137,7 @@ def main():
 
 
 
-def sweep(vel_pressure_coeff_i): # vel_pressure_coeff_i
+def sweep(sweep_var_i): # vel_pressure_coeff_i
 
     paramlist = {}
     paramlist['meta'] = {}
@@ -142,28 +148,28 @@ def sweep(vel_pressure_coeff_i): # vel_pressure_coeff_i
     paramlist['turbulence']['Ri_bulk_crit'] = 0.0
 
     paramlist['turbulence']['EDMF_PrognosticTKE'] = {}
-    paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area'] = 0.1
-    paramlist['turbulence']['EDMF_PrognosticTKE']['surface_scalar_coeff'] = 0.3
-    paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.375
-    paramlist['turbulence']['EDMF_PrognosticTKE']['w_entr_coeff'] = 2.5 # "b1"
-    paramlist['turbulence']['EDMF_PrognosticTKE']['w_buoy_coeff'] =  2.0 # "b2"
-    paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 0.01
-    paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = 10.0
-    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = 1.0
-    paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = 1.0
-    paramlist['turbulence']['EDMF_PrognosticTKE']['vel_pressure_coeff'] = vel_pressure_coeff_i
-    paramlist['turbulence']['EDMF_PrognosticTKE']['vel_buoy_coeff'] = 2.0 / 3.0
+    paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area'] =  0.18
+    paramlist['turbulence']['EDMF_PrognosticTKE']['surface_scalar_coeff'] = 0.1
+    paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.01
+    paramlist['turbulence']['EDMF_PrognosticTKE']['w_entr_coeff'] = 0.5 # "b1"
+    paramlist['turbulence']['EDMF_PrognosticTKE']['w_buoy_coeff'] =  0.5 # "b2"
+    paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 0.1
+    paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = 5.0
+    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = sweep_var_i
+    paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = sweep_var_i
+    paramlist['turbulence']['EDMF_PrognosticTKE']['vel_pressure_coeff'] = 0.0
+    paramlist['turbulence']['EDMF_PrognosticTKE']['vel_buoy_coeff'] = 1.0
 
     paramlist['turbulence']['EDMF_BulkSteady'] = {}
-    paramlist['turbulence']['EDMF_BulkSteady']['surface_area'] = 0.1
+    paramlist['turbulence']['EDMF_BulkSteady']['surface_area'] = 0.05
     paramlist['turbulence']['EDMF_BulkSteady']['w_entr_coeff'] = 2.0  #"w_b"
     paramlist['turbulence']['EDMF_BulkSteady']['w_buoy_coeff'] = 1.0
-    paramlist['turbulence']['EDMF_BulkSteady']['max_area_factor'] = 1.0
-    paramlist['turbulence']['EDMF_BulkSteady']['entrainment_factor'] = 1.0
-    paramlist['turbulence']['EDMF_BulkSteady']['detrainment_factor'] = 1.0
+    paramlist['turbulence']['EDMF_BulkSteady']['max_area_factor'] = 5.0
+    paramlist['turbulence']['EDMF_BulkSteady']['entrainment_factor'] = 0.5
+    paramlist['turbulence']['EDMF_BulkSteady']['detrainment_factor'] = 0.5
 
     paramlist['turbulence']['updraft_microphysics'] = {}
-    paramlist['turbulence']['updraft_microphysics']['max_supersaturation'] = 0.1
+    paramlist['turbulence']['updraft_microphysics']['max_supersaturation'] = 0.01
 
     return  paramlist
 
