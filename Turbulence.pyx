@@ -75,16 +75,16 @@ cdef class ParameterizationBase:
                 GMV.QT.tendencies[k] += (GMV.QT.new[k] - GMV.QT.values[k]) * TS.dti
                 GMV.U.tendencies[k] += (GMV.U.new[k] - GMV.U.values[k]) * TS.dti
                 GMV.V.tendencies[k] += (GMV.V.new[k] - GMV.V.values[k]) * TS.dti
-        if GMV.use_tke:
-            with nogil:
-                for k in xrange(gw,nzg-gw):
-                    GMV.TKE.tendencies[k] += (GMV.TKE.new[k] - GMV.TKE.values[k]) * TS.dti
-        if GMV.use_scalar_var:
-            with nogil:
-                for k in xrange(gw,nzg-gw):
-                    GMV.QTvar.tendencies[k] += (GMV.QTvar.new[k] - GMV.QTvar.values[k]) * TS.dti
-                    GMV.Hvar.tendencies[k] += (GMV.Hvar.new[k] - GMV.Hvar.values[k]) * TS.dti
-                    GMV.HQTcov.tendencies[k] += (GMV.HQTcov.new[k] - GMV.HQTcov.values[k]) * TS.dti
+        # if GMV.use_tke:
+        #     with nogil:
+        #         for k in xrange(gw,nzg-gw):
+        #             GMV.TKE.tendencies[k] += (GMV.TKE.new[k] - GMV.TKE.values[k]) * TS.dti
+        # if GMV.use_scalar_var:
+        #     with nogil:
+        #         for k in xrange(gw,nzg-gw):
+        #             GMV.QTvar.tendencies[k] += (GMV.QTvar.new[k] - GMV.QTvar.values[k]) * TS.dti
+        #             GMV.Hvar.tendencies[k] += (GMV.Hvar.new[k] - GMV.Hvar.values[k]) * TS.dti
+        #             GMV.HQTcov.tendencies[k] += (GMV.HQTcov.new[k] - GMV.HQTcov.values[k]) * TS.dti
         return
 
     # Update the diagnosis of the inversion height, using the maximum temperature gradient method
