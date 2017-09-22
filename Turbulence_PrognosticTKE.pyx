@@ -1047,23 +1047,23 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         return
 
-    cpdef compute_tke_buoy(self, GridMeanVariables GMV):
-        cdef:
-            Py_ssize_t k
-            Py_ssize_t gw = self.Gr.gw
-            double grad_b_minus=0.0, grad_b_plus=0.0
-            double b_flux
-            double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),self.UpdVar.Area.bulkvalues)
-
-        # Note that source terms at the gw grid point are not really used because that is where tke boundary condition is
-        # enforced (according to MO similarity). Thus here I am being sloppy about lowest grid point
-        with nogil:
-            for k in xrange(gw, self.Gr.nzg-gw):
-                grad_b_minus = grad_b_plus
-                grad_b_plus = (self.EnvVar.B.values[k+1] - self.EnvVar.B.values[k]) * self.Gr.dzi
-                b_flux = -self.KH.values[k] * interp2pt(grad_b_minus, grad_b_plus)
-                self.tke_buoy[k] = -self.Ref.rho0_half[k] * ae[k] * b_flux
-        return
+    # cpdef compute_tke_buoy(self, GridMeanVariables GMV):
+    #     cdef:
+    #         Py_ssize_t k
+    #         Py_ssize_t gw = self.Gr.gw
+    #         double grad_b_minus=0.0, grad_b_plus=0.0
+    #         double b_flux
+    #         double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),self.UpdVar.Area.bulkvalues)
+    #
+    #     # Note that source terms at the gw grid point are not really used because that is where tke boundary condition is
+    #     # enforced (according to MO similarity). Thus here I am being sloppy about lowest grid point
+    #     with nogil:
+    #         for k in xrange(gw, self.Gr.nzg-gw):
+    #             grad_b_minus = grad_b_plus
+    #             grad_b_plus = (self.EnvVar.B.values[k+1] - self.EnvVar.B.values[k]) * self.Gr.dzi
+    #             b_flux = -self.KH.values[k] * interp2pt(grad_b_minus, grad_b_plus)
+    #             self.tke_buoy[k] = -self.Ref.rho0_half[k] * ae[k] * b_flux
+    #     return
 
 
 
@@ -1108,6 +1108,40 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     #                                  - self.KH.values[k] * interp2pt(grad_qt_plus, grad_qt_minus)
     #                                   *  ((1.0 - cf) * db_dqt_d + cf * db_dqt_s)) * ae[k]
     #     return
+
+
+    cpdef compute_tke_buoy(self, GridMeanVariables GMV):
+        cdef:
+            Py_ssize_t k
+            Py_ssize_t gw = self.Gr.gw
+            double d_alpha_thetal, d_alpha_qt
+            double qt_d, thl_d, qs_s, lh, wprime_bprime
+            double theta_rho_mean, cf
+            double grad_thl_minus=0.0, grad_qt_minus=0.0, grad_thl_plus=0, grad_qt_plus=0
+            double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),self.UpdVar.Area.bulkvalues)
+
+        # Note that source terms at the gw grid point are not really used because that is where tke boundary condition is
+        # enforced (according to MO similarity). Thus here I am being sloppy about lowest grid point
+        with nogil:
+            for k in xrange(gw, self.Gr.nzg-gw):
+                grad_thl_minus = grad_thl_plus
+                grad_qt_minus = grad_qt_plus
+                grad_thl_plus = (self.EnvVar.THL.values[k+1] - self.EnvVar.THL.values[k]) * self.Gr.dzi
+                grad_qt_plus = (self.EnvVar.QT.values[k+1] - self.EnvVar.QT.values[k]) * self.Gr.dzi
+
+                d_alpha_thetal = Rd * exner_c(self.Ref.p0_half[k])/self.Ref.p0_half[k] \
+                                 * (1.0 + (eps_vi-1.0) * self.EnvVar.QT.values[k])
+
+                d_alpha_qt = Rd * exner_c(self.Ref.p0_half[k])/self.Ref.p0_half[k] \
+                             * self.EnvVar.THL.values[k] * (eps_vi-1.0)
+
+
+                self.tke_buoy[k] = g / self.Ref.alpha0_half[k] * ae[k] \
+                                   * ( -self.KH.values[k] *interp2pt(grad_thl_plus, grad_thl_minus) * d_alpha_thetal
+                                     - self.KH.values[k] * interp2pt(grad_qt_plus, grad_qt_minus) * d_alpha_qt)
+        return
+
+
 
 
 
