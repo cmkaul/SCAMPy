@@ -16,6 +16,8 @@ def CasesFactory(namelist, paramlist):
         return Soares(paramlist)
     elif namelist['meta']['casename'] == 'Bomex':
         return Bomex(paramlist)
+    elif namelist['meta']['casename'] == 'Rico':
+        return Rico(paramlist)
 
 
 cdef class CasesBase:
@@ -64,6 +66,7 @@ cdef class Soares(CasesBase):
         cdef:
             double [:] theta = np.zeros((Gr.nzg,),dtype=np.double, order='c')
             double ql = 0.0, qi = 0.0
+            Py_ssize_t k
 
         for k in xrange(Gr.gw, Gr.nzg-Gr.gw):
             if Gr.z_half[k] <= 1350.0:
@@ -157,6 +160,7 @@ cdef class Bomex(CasesBase):
         cdef:
             double [:] thetal = np.zeros((Gr.nzg,), dtype=np.double, order='c')
             double ql=0.0, qi =0.0 # IC of Bomex is cloud-free
+            Py_ssize_t k
 
         for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
             #Set Thetal profile
@@ -223,6 +227,7 @@ cdef class Bomex(CasesBase):
         self.Fo.Gr = Gr
         self.Fo.Ref = Ref
         self.Fo.initialize(GMV)
+        cdef Py_ssize_t k
         for k in xrange(Gr.gw, Gr.nzg-Gr.gw):
             # Geostrophic velocity profiles. vg = 0
             self.Fo.ug[k] = -10.0 + (1.8e-3)*Gr.z_half[k]
@@ -284,6 +289,7 @@ cdef class Rico(CasesBase):
         cdef:
             double [:] thetal = np.zeros((Gr.nzg,), dtype=np.double, order='c')
             double ql=0.0, qi =0.0 # IC of Rico is cloud-free
+            Py_ssize_t k
 
         for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
             GMV.U.values[k] =  -9.9 + 2.0e-3 * Gr.z_half[k]
@@ -321,6 +327,19 @@ cdef class Rico(CasesBase):
         GMV.T.set_bcs(Gr)
         GMV.satadjust()
 
+
+        # plt.figure('thetal_init')
+        # plt.plot(GMV.H.values[Gr.gw:-Gr.gw], Gr.z_half[Gr.gw:-Gr.gw])
+        #
+        # plt.figure('qt_init')
+        # plt.plot(GMV.QT.values[Gr.gw:-Gr.gw], Gr.z_half[Gr.gw:-Gr.gw])
+        #
+        # plt.figure('vel_init')
+        # plt.plot(GMV.U.values[Gr.gw:-Gr.gw], Gr.z_half[Gr.gw:-Gr.gw])
+        # plt.plot(GMV.V.values[Gr.gw:-Gr.gw], Gr.z_half[Gr.gw:-Gr.gw])
+        # plt.show()
+
+
         return
     cpdef initialize_surface(self, Grid Gr, ReferenceState Ref):
         self.Sur.Gr = Gr
@@ -330,7 +349,7 @@ cdef class Rico(CasesBase):
         self.Sur.ch = 0.001094
         self.Sur.cq = 0.001133
         # Adjust for non-IC grid spacing
-        grid_adjust = (np.log(20.0/self.Sur.zrough)/np.log(Gr.z_half[Gr.dims.gw]/self.Sur.zrough))**2
+        grid_adjust = (np.log(20.0/self.Sur.zrough)/np.log(Gr.z_half[Gr.gw]/self.Sur.zrough))**2
         self.Sur.cm = self.Sur.cm * grid_adjust
         self.Sur.ch = self.Sur.ch * grid_adjust
         self.Sur.cq = self.Sur.cq * grid_adjust
@@ -342,14 +361,14 @@ cdef class Rico(CasesBase):
         self.Fo.Gr = Gr
         self.Fo.Ref = Ref
         self.Fo.initialize(GMV)
-        for k in xrange(Gr.gw, Gr.nzg-Gr.gw):
+        for k in xrange(Gr.nzg):
             # Geostrophic velocity profiles
             self.Fo.ug[k] = -9.9 + 2.0e-3 * Gr.z_half[k]
             self.Fo.vg[k] = -3.8
             # Set large-scale cooling
-            self.Fo.dTdt[k] =  (-2.5/(3600 * 24.0))  * exner_c(Ref.p0_half[k])
+            self.Fo.dTdt[k] =  (-2.5/(3600.0 * 24.0))  * exner_c(Ref.p0_half[k])
 
-            # Set large-scale drying
+            # Set large-scale moistening
             if Gr.z_half[k] <= 2980.0:
                 self.Fo.dqtdt[k] =  (-1.0 + 1.3456/2980.0 * Gr.z_half[k])/86400.0/1000.0   #kg/(kg * s)
             else:
