@@ -19,7 +19,7 @@ from TimeStepping cimport TimeStepping
 from NetCDFIO cimport NetCDFIO_Stats
 from thermodynamic_functions cimport  *
 from turbulence_functions cimport *
-from utility_functions cimport interp2pt,logistic, percentile_mean_norm
+from utility_functions cimport *
 from libc.math cimport fmax, sqrt, exp, pow, cbrt, fmin
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 from Turbulence_BulkSteady cimport EDMF_BulkSteady
@@ -554,7 +554,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         self.update_inversion(GMV, Case.inversion_option)
         self.wstar = get_wstar(Case.Sur.bflux, self.zi)
-        self.surface_scalar_coeff = percentile_mean_norm(1.0-self.surface_area, 10000)
+        # self.surface_scalar_coeff = percentile_mean_norm(1.0-self.surface_area, 10000)
 
         cdef:
             Py_ssize_t i, gw = self.Gr.gw
@@ -565,13 +565,17 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                                  Case.Sur.rho_qtflux*alpha0LL, ustar, zLL, oblength)
             double h_var = get_surface_variance(Case.Sur.rho_hflux*alpha0LL,
                                                  Case.Sur.rho_hflux*alpha0LL, ustar, zLL, oblength)
-        with nogil:
-            for i in xrange(self.n_updrafts):
-                # Placeholder for multiple updraft closure
-                self.area_surface_bc[i] = self.surface_area/self.n_updrafts
-                self.w_surface_bc[i] = 0.0
-                self.h_surface_bc[i] = (GMV.H.values[gw] + self.surface_scalar_coeff * sqrt(h_var))
-                self.qt_surface_bc[i] = (GMV.QT.values[gw] + self.surface_scalar_coeff * sqrt(qt_var))
+
+            double a_ = self.surface_area/self.n_updrafts
+        # with nogil:
+        for i in xrange(self.n_updrafts):
+            self.surface_scalar_coeff= percentile_bounds_mean_norm(1.0-self.surface_area+i*a_,
+                                                                   1.0-self.surface_area + (i+1)*a_ , 1000)
+            # Placeholder for multiple updraft closure
+            self.area_surface_bc[i] = self.surface_area/self.n_updrafts
+            self.w_surface_bc[i] = 0.0
+            self.h_surface_bc[i] = (GMV.H.values[gw] + self.surface_scalar_coeff * sqrt(h_var))
+            self.qt_surface_bc[i] = (GMV.QT.values[gw] + self.surface_scalar_coeff * sqrt(qt_var))
         return
 
 
@@ -647,11 +651,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             entr_struct ret
             entr_in_struct input
 
-        input.zi = self.zi
+        self.UpdVar.get_cloud_base_top()
+
+        # input.zi = self.zi
         input.wstar = self.wstar
 
         with nogil:
             for i in xrange(self.n_updrafts):
+                input.zi = self.UpdVar.cloud_base[i]
                 for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                     input.b = self.UpdVar.B.values[i,k]
                     input.w = interp2pt(self.UpdVar.W.values[i,k],self.UpdVar.W.values[i,k-1])
@@ -677,10 +684,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double whalf_kp, whalf_k
             double a1, a2 # groupings of terms in area fraction discrete equation
             double au_lim
-            double anew_k, a_k, a_km, entr_w, detr_w, B_k, entr_term, rho_ratio
+            double anew_k, a_k, a_km, entr_w, detr_w, B_k, entr_term, detr_term, rho_ratio
             double adv, buoy, exch, press # groupings of terms in velocity discrete equation
-            double x, mid, slope = 50.0
-            double logfn, rhs
+
         with nogil:
             for i in xrange(self.n_updrafts):
                 self.entr_sc[i,gw] = 2.0 * dzi
@@ -688,7 +694,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.UpdVar.W.new[i,gw-1] = self.w_surface_bc[i]
                 self.UpdVar.Area.new[i,gw] = self.area_surface_bc[i]
                 au_lim = self.area_surface_bc[i] * self.max_area_factor
-                mid = -0.5 * au_lim
+
                 for k in range(gw, self.Gr.nzg-gw):
 
                     # First solve for updated area fraction at k+1
@@ -696,21 +702,18 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     whalf_k = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
                     adv = -self.Ref.alpha0_half[k+1] * dzi *( self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp
                                                               -self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * whalf_k)
-                    entr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * (self.entr_sc[i,k+1] - self.detr_sc[i,k+1])
-                    rhs = adv + entr_term
-                    x = self.UpdVar.Area.values[i,k+1] - au_lim
-                    logfn = logistic(x,slope,mid)
+                    entr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * (self.entr_sc[i,k+1] )
+                    detr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * (- self.detr_sc[i,k+1])
 
 
-
-                    if rhs > 0.0 and self.UpdVar.Area.values[i,k+1] * whalf_kp > 0.0:
-                        entr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * self.entr_sc[i,k+1]
-                        self.detr_sc[i,k+1] = (self.detr_sc[i,k+1] * (1.0 - logfn)
-                                               + (adv + entr_term) * logfn/(self.UpdVar.Area.values[i,k+1] * whalf_kp))
-
-                        entr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * (self.entr_sc[i,k+1]-self.detr_sc[i,k+1])
-
-                    self.UpdVar.Area.new[i,k+1]  = fmax(dt_ * (adv + entr_term) + self.UpdVar.Area.values[i,k+1], 0.0)
+                    self.UpdVar.Area.new[i,k+1]  = fmax(dt_ * (adv + entr_term + detr_term) + self.UpdVar.Area.values[i,k+1], 0.0)
+                    if self.UpdVar.Area.new[i,k+1] > au_lim:
+                        self.UpdVar.Area.new[i,k+1] = au_lim
+                        if self.UpdVar.Area.values[i,k+1] > 0.0:
+                            self.detr_sc[i,k+1] = (((au_lim-self.UpdVar.Area.values[i,k+1])* dti_ - adv -entr_term)/(-self.UpdVar.Area.values[i,k+1]  * whalf_kp))
+                        else:
+                            # this detrainment rate won't affect scalars but would affect velocity
+                            self.detr_sc[i,k+1] = (((au_lim-self.UpdVar.Area.values[i,k+1])* dti_ - adv -entr_term)/(-au_lim  * whalf_kp))
 
                     # Now solve for updraft velocity at k
                     rho_ratio = self.Ref.rho0[k-1]/self.Ref.rho0[k]
@@ -943,7 +946,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         GMV.U.set_bcs(self.Gr)
         GMV.V.set_bcs(self.Gr)
 
-        GMV.satadjust()
+        # GMV.satadjust()
 
         return
 
@@ -1144,11 +1147,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
 
 
-
-
-
-
-
     # Note we need mixing length again here....
     cpdef compute_tke_dissipation(self, TimeStepping TS):
         cdef:
@@ -1224,7 +1222,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double [:] ae_old = np.subtract(np.ones((nzg,),dtype=np.double, order='c'), np.sum(self.UpdVar.Area.old,axis=0))
             double [:] rho_ae_K_m = np.zeros((nzg,),dtype=np.double, order='c')
             double [:] whalf = np.zeros((nzg,),dtype=np.double, order='c')
-            double [:] sum_entr = np.sum(self.entr_sc, axis =0)
+            double [:] detr_env = np.sum(self.entr_sc, axis =0)
             double tke_gmv_surf =  get_surface_tke(Case.Sur.ustar, self.wstar, self.Gr.z_half[gw], Case.Sur.obukhov_length)
             double wu_half, tke_0_surf
 
@@ -1252,7 +1250,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 a[kk] = (- rho_ae_K_m[k-1] * dzi * dzi )
                 b[kk] = (self.Ref.rho0_half[k] * ae[k] * dti - self.Ref.rho0_half[k] * ae[k] * whalf[k] * dzi
                          + rho_ae_K_m[k] * dzi * dzi + rho_ae_K_m[k-1] * dzi * dzi
-                         + self.Ref.rho0_half[k] * ae[k] * whalf[k] * sum_entr[k]
+                         + self.Ref.rho0_half[k] * ae[k] * whalf[k] * detr_env[k]
                          + self.Ref.rho0_half[k] * ae[k] * self.tke_diss_coeff * sqrt(fmax(self.EnvVar.TKE.values[k],0.0))/fmax(self.mixing_length[k],1.0))
                 c[kk] = (self.Ref.rho0_half[k+1] * ae[k+1] * whalf[k+1] * dzi - rho_ae_K_m[k] * dzi * dzi)
                 x[kk] = (self.Ref.rho0_half[k] * ae_old[k] * self.EnvVar.TKE.values[k] * dti

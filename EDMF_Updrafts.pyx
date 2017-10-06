@@ -17,7 +17,7 @@ cimport ReferenceState
 from Variables cimport GridMeanVariables
 from NetCDFIO cimport NetCDFIO_Stats
 from EDMF_Environment cimport EnvironmentVariables
-from libc.math cimport fmax
+from libc.math cimport fmax, fmin
 import pylab as plt
 
 
@@ -96,6 +96,9 @@ cdef class UpdraftVariables:
         else:
             self.prognostic = False
             self.updraft_fraction = paramlist['turbulence']['EDMF_BulkSteady']['surface_area']
+
+        self.cloud_base = np.zeros((nu,), dtype=np.double, order='c')
+        self.cloud_top = np.zeros((nu,), dtype=np.double, order='c')
 
 
         return
@@ -249,13 +252,25 @@ cdef class UpdraftVariables:
 
         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
             if self.QL.bulkvalues[k] >0.0:
-                cloud_cover = np.maximum(cloud_cover, self.Area.bulkvalues[k])
-                cloud_base = np.minimum(cloud_base,self.Gr.z_half[k])
-                cloud_top = np.maximum(cloud_top, self.Gr.z_half[k])
+                cloud_cover = fmax(cloud_cover, self.Area.bulkvalues[k])
+                cloud_base = fmin(cloud_base,self.Gr.z_half[k])
+                cloud_top = fmax(cloud_top, self.Gr.z_half[k])
         Stats.write_ts('cloud_cover', cloud_cover)
         Stats.write_ts('cloud_base', cloud_base)
         Stats.write_ts('cloud_top', cloud_top)
 
+        return
+
+    cpdef get_cloud_base_top(self):
+        cdef Py_ssize_t i, k
+
+        for i in xrange(self.n_updrafts):
+            self.cloud_base[i] = 99999.0
+            self.cloud_top[i] = -99999.0
+            for k in xrange(self.Gr.gw,self.Gr.nzg-self.Gr.gw):
+                if self.QL.values[i,k] > 0.0:
+                    self.cloud_base[i] = fmin(self.cloud_base[i], self.Gr.z_half[k])
+                    self.cloud_top[i] = fmax(self.cloud_top[i], self.Gr.z_half[k])
 
 
         return
