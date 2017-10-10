@@ -1050,76 +1050,16 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         return
 
-    # cpdef compute_tke_buoy(self, GridMeanVariables GMV):
-    #     cdef:
-    #         Py_ssize_t k
-    #         Py_ssize_t gw = self.Gr.gw
-    #         double grad_b_minus=0.0, grad_b_plus=0.0
-    #         double b_flux
-    #         double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),self.UpdVar.Area.bulkvalues)
-    #
-    #     # Note that source terms at the gw grid point are not really used because that is where tke boundary condition is
-    #     # enforced (according to MO similarity). Thus here I am being sloppy about lowest grid point
-    #     with nogil:
-    #         for k in xrange(gw, self.Gr.nzg-gw):
-    #             grad_b_minus = grad_b_plus
-    #             grad_b_plus = (self.EnvVar.B.values[k+1] - self.EnvVar.B.values[k]) * self.Gr.dzi
-    #             b_flux = -self.KH.values[k] * interp2pt(grad_b_minus, grad_b_plus)
-    #             self.tke_buoy[k] = -self.Ref.rho0_half[k] * ae[k] * b_flux
-    #     return
-
-
-
-    # cpdef compute_tke_buoy(self, GridMeanVariables GMV):
-    #     cdef:
-    #         Py_ssize_t k
-    #         Py_ssize_t gw = self.Gr.gw
-    #         double db_dthl_d, db_dqt_d, db_dthl_s, db_dqt_s
-    #         double qt_d, thl_d, qs_s, lh, wprime_bprime
-    #         double theta_rho_mean, cf
-    #         double grad_thl_minus=0.0, grad_qt_minus=0.0, grad_thl_plus=0, grad_qt_plus=0
-    #         double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),self.UpdVar.Area.bulkvalues)
-    #
-    #     # Note that source terms at the gw grid point are not really used because that is where tke boundary condition is
-    #     # enforced (according to MO similarity). Thus here I am being sloppy about lowest grid point
-    #     with nogil:
-    #         for k in xrange(gw, self.Gr.nzg-gw):
-    #             grad_thl_minus = grad_thl_plus
-    #             grad_qt_minus = grad_qt_plus
-    #             grad_thl_plus = (self.EnvVar.THL.values[k+1] - self.EnvVar.THL.values[k]) * self.Gr.dzi
-    #             grad_qt_plus = (self.EnvVar.QT.values[k+1] - self.EnvVar.QT.values[k]) * self.Gr.dzi
-    #             cf = self.EnvVar.CF.values[k]
-    #             theta_rho_mean = theta_rho_c(self.Ref.p0_half[k], GMV.T.values[k],
-    #                                          GMV.QT.values[k], GMV.QT.values[k]-GMV.QL.values[k])
-    #             qt_d = (self.EnvVar.QT.values[k] - cf * self.EnvThermo.qt_cloudy[k])/ fmax((1.0 - cf),1.0e-10)
-    #             thl_d = (self.EnvVar.THL.values[k] - cf * self.EnvThermo.thl_cloudy[k])/ fmax((1.0 - cf),1.0e-10)
-    #             qs_s = self.EnvThermo.qt_cloudy[k] - self.EnvVar.QL.values[k]/fmax(cf, 1e-10)
-    #
-    #             db_dthl_d = g/theta_rho_mean * (1.0 + (eps_vi-1.0) * qt_d)
-    #             db_dqt_d = g/theta_rho_mean * (eps_vi - 1.0) * thl_d
-    #             lh = latent_heat(self.EnvThermo.t_cloudy[k])
-    #
-    #             db_dthl_s = g/theta_rho_mean * (1.0 + eps_vi * (1.0 +lh/Rv/self.EnvThermo.t_cloudy[k])
-    #                                             * qs_s - self.EnvThermo.qt_cloudy[k])
-    #             db_dthl_s /= (1.0 + lh * lh/(cpm_c(self.EnvThermo.qt_cloudy[k]) * Rv * self.EnvThermo.t_cloudy[k]
-    #                                          * self.EnvThermo.t_cloudy[k]) * qs_s)
-    #             db_dqt_s = (lh/cpm_c(self.EnvThermo.qt_cloudy[k])/self.EnvThermo.t_cloudy[k] * db_dthl_s
-    #                         - g/theta_rho_mean) * self.EnvThermo.thl_cloudy[k]
-    #
-    #             self.tke_buoy[k] = ( -self.KH.values[k] *interp2pt(grad_thl_plus, grad_thl_minus)
-    #                                   * ((1.0 - cf)*db_dthl_d + cf * db_dthl_s)
-    #                                  - self.KH.values[k] * interp2pt(grad_qt_plus, grad_qt_minus)
-    #                                   *  ((1.0 - cf) * db_dqt_d + cf * db_dqt_s)) * ae[k]
-    #     return
-
 
     cpdef compute_tke_buoy(self, GridMeanVariables GMV):
         cdef:
             Py_ssize_t k
             Py_ssize_t gw = self.Gr.gw
-            double d_alpha_thetal, d_alpha_qt
-            double qt_d, thl_d, qs_s, lh, wprime_bprime
-            double theta_rho_mean, cf
+            double d_alpha_thetal_dry, d_alpha_qt_dry
+            double d_alpha_thetal_cloudy, d_alpha_qt_cloudy
+            double d_alpha_thetal_total, d_alpha_qt_total
+            double lh, prefactor, cpm
+            double qt_dry, th_dry, t_cloudy, qv_cloudy, qt_cloudy, th_cloudy
             double grad_thl_minus=0.0, grad_qt_minus=0.0, grad_thl_plus=0, grad_qt_plus=0
             double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),self.UpdVar.Area.bulkvalues)
 
@@ -1127,21 +1067,42 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         # enforced (according to MO similarity). Thus here I am being sloppy about lowest grid point
         with nogil:
             for k in xrange(gw, self.Gr.nzg-gw):
+                qt_dry = self.EnvThermo.qt_dry[k]
+                th_dry = self.EnvThermo.th_dry[k]
+                t_cloudy = self.EnvThermo.t_cloudy[k]
+                qv_cloudy = self.EnvThermo.qv_cloudy[k]
+                qt_cloudy = self.EnvThermo.qt_cloudy[k]
+                th_cloudy = self.EnvThermo.th_cloudy[k]
+
+                lh = latent_heat(t_cloudy)
+                cpm = cpm_c(qt_cloudy)
                 grad_thl_minus = grad_thl_plus
                 grad_qt_minus = grad_qt_plus
                 grad_thl_plus = (self.EnvVar.THL.values[k+1] - self.EnvVar.THL.values[k]) * self.Gr.dzi
                 grad_qt_plus = (self.EnvVar.QT.values[k+1] - self.EnvVar.QT.values[k]) * self.Gr.dzi
 
-                d_alpha_thetal = Rd * exner_c(self.Ref.p0_half[k])/self.Ref.p0_half[k] \
-                                 * (1.0 + (eps_vi-1.0) * self.EnvVar.QT.values[k])
+                prefactor = Rd * exner_c(self.Ref.p0_half[k])/self.Ref.p0_half[k]
 
-                d_alpha_qt = Rd * exner_c(self.Ref.p0_half[k])/self.Ref.p0_half[k] \
-                             * self.EnvVar.THL.values[k] * (eps_vi-1.0)
+                d_alpha_thetal_dry = prefactor * (1.0 + (eps_vi-1.0) * qt_dry)
+                d_alpha_qt_dry = prefactor * th_dry * (eps_vi-1.0)
+
+                if self.EnvVar.CF.values[k] > 0.0:
+                    d_alpha_thetal_cloudy = (prefactor * (1.0 + eps_vi * (1.0 + lh / Rv / t_cloudy) * qv_cloudy - qt_cloudy )
+                                             / (1.0 + lh * lh / cpm / Rv / t_cloudy / t_cloudy * qv_cloudy))
+                    d_alpha_qt_cloudy = (lh / cpm / t_cloudy * d_alpha_thetal_cloudy - prefactor) * th_cloudy
+                else:
+                    d_alpha_thetal_cloudy = 0.0
+                    d_alpha_qt_cloudy = 0.0
+
+                d_alpha_thetal_total = (self.EnvVar.CF.values[k] * d_alpha_thetal_cloudy
+                                        + (1.0-self.EnvVar.CF.values[k]) * d_alpha_thetal_dry)
+                d_alpha_qt_total = (self.EnvVar.CF.values[k] * d_alpha_qt_cloudy
+                                    + (1.0-self.EnvVar.CF.values[k]) * d_alpha_qt_dry)
 
 
                 self.tke_buoy[k] = g / self.Ref.alpha0_half[k] * ae[k] \
-                                   * ( -self.KH.values[k] *interp2pt(grad_thl_plus, grad_thl_minus) * d_alpha_thetal
-                                     - self.KH.values[k] * interp2pt(grad_qt_plus, grad_qt_minus) * d_alpha_qt)
+                                   * ( -self.KH.values[k] *interp2pt(grad_thl_plus, grad_thl_minus) * d_alpha_thetal_total
+                                     - self.KH.values[k] * interp2pt(grad_qt_plus, grad_qt_minus) * d_alpha_qt_total)
         return
 
 
