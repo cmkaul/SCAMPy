@@ -53,10 +53,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double [:] tke_entr_gain
         double [:] tke_detr_loss
         double [:] tke_shear
-        double surface_scalar_coeff
-        double wu_min
         double max_area_factor
-        double updraft_surface_height
         double tke_ed_coeff
         double tke_diss_coeff
 
