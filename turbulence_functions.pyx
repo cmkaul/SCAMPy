@@ -63,7 +63,7 @@ cdef entr_struct entr_detr_inverse_w_linear(entr_in_struct entr_in) nogil:
         _ret.detr_sc = fmin(entr_in.b/fabs(entr_in.b+0.0000001),0.0)/(100.0 * fmax(entr_in.w,0.1))
     return  _ret
 
-cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil:
+cdef entr_struct entr_detr_tke2(entr_in_struct entr_in) nogil:
     cdef entr_struct _ret
     # in cloud portion from Soares 2004
     if entr_in.z >= entr_in.zi :
@@ -76,7 +76,12 @@ cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil:
     _ret.entr_sc = (0.05 * sqrt(entr_in.tke) / fmax(entr_in.w, 0.01) / fmax(entr_in.af, 0.001) / fmax(entr_in.z, 1.0))
     return  _ret
 
-
+# yair - this is a new entr-detr function that takes entr as proportional to TKE/w and detr ~ b/w2
+cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil:
+    cdef entr_struct _ret
+    _ret.detr_sc = fabs(entr_in.b)/ fmax(entr_in.w * entr_in.w, 1e-3)
+    _ret.entr_sc = sqrt(entr_in.tke) / fmax(entr_in.w, 0.01) / fmax(sqrt(entr_in.af), 0.001) / 50000.0
+    return  _ret
 #
 # cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil:
 #     cdef entr_struct _ret

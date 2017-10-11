@@ -16,9 +16,10 @@ def main():
     args = parser.parse_args()
     case_name = args.case_name
 
-    file_case = open(case_name + '.in').read()
+    file_case = open(case_name + '_sweep.in').read()
     namelist = json.loads(file_case)
     uuid = namelist['meta']['uuid']
+    print(uuid)
     path = namelist['output']['output_root'] + 'Output.' + case_name + '.' + uuid[-5:] + '/stats/Stats.' + case_name + '.nc'
     path1 = namelist['output']['output_root'] + 'Output.' + case_name + '.' + uuid[-5:] + '/paramlist_sweep.in'
     tmax = namelist['time_stepping']['t_max']
@@ -28,7 +29,7 @@ def main():
     nt = int(tmax/freq)+1
 
     nvar = 10
-    sweep_var = np.linspace(0.1, 1.0, num=nvar)
+    sweep_var = np.linspace(1.0, 10.0, num=nvar)
 
 
     destination = '/Users/yaircohen/Documents/SCAMPy_out/parameter_sweep/'
@@ -62,7 +63,7 @@ def main():
         print('========================')
         print('running '+case_name+' var = '+ str(current['turbulence']['EDMF_PrognosticTKE']['vel_pressure_coeff']))
         print('========================')
-        subprocess.call("python main.py " + case_name + ".in paramlist_sweep.in", shell=True)
+        subprocess.call("python main.py " + case_name + "_sweep.in paramlist_sweep.in", shell=True)
 
         data = nc.Dataset(path, 'r')
         _z = data.groups['profiles'].variables['z']
@@ -148,15 +149,15 @@ def sweep(sweep_var_i): # vel_pressure_coeff_i
     paramlist['turbulence']['Ri_bulk_crit'] = 0.0
 
     paramlist['turbulence']['EDMF_PrognosticTKE'] = {}
-    paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area'] =  0.18
+    paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area'] =  0.1
     paramlist['turbulence']['EDMF_PrognosticTKE']['surface_scalar_coeff'] = 0.1
-    paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.01
+    paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.05
     paramlist['turbulence']['EDMF_PrognosticTKE']['w_entr_coeff'] = 0.5 # "b1"
     paramlist['turbulence']['EDMF_PrognosticTKE']['w_buoy_coeff'] =  0.5 # "b2"
     paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 0.1
-    paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = 5.0
-    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = sweep_var_i
-    paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = sweep_var_i
+    paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = sweep_var_i
+    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = 0.4
+    paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = 0.4
     paramlist['turbulence']['EDMF_PrognosticTKE']['vel_pressure_coeff'] = 0.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['vel_buoy_coeff'] = 1.0
 

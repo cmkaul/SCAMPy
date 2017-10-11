@@ -63,6 +63,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.entr_detr_fp = entr_detr_tke
             elif namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] == 'inv_w_linear':
                 self.entr_detr_fp = entr_detr_inverse_w_linear
+            elif namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] == 'tke2':
+                self.entr_detr_fp = entr_detr_tke
             else:
                 print('Turbulence--EDMF_PrognosticTKE: Entrainment rate namelist option is not recognized')
         except:
