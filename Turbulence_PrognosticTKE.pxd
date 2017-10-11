@@ -23,6 +23,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         bint const_area
         bint use_local_micro
         bint similarity_diffusivity
+        bint use_steady_updrafts
         double surface_area
         double minimum_area
         double entrainment_factor
@@ -52,10 +53,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double [:] tke_entr_gain
         double [:] tke_detr_loss
         double [:] tke_shear
-        double surface_scalar_coeff
-        double wu_min
         double max_area_factor
-        double updraft_surface_height
         double tke_ed_coeff
         double tke_diss_coeff
 
@@ -79,8 +77,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef compute_tke(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
     cpdef initialize_tke(self, GridMeanVariables GMV, CasesBase Case)
     cpdef compute_tke_buoy(self, GridMeanVariables GMV)
-    cpdef compute_tke_dissipation(self, TimeStepping TS)
-    cpdef compute_tke_entr_detr(self)
+    cpdef compute_tke_dissipation(self)
+    cpdef compute_tke_entr(self)
+    cpdef compute_tke_detr(self)
     cpdef compute_tke_shear(self, GridMeanVariables GMV)
     # cpdef update_tke_MF(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef update_tke_ED(self, GridMeanVariables GMV, CasesBase Case,TimeStepping TS)
