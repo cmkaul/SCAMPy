@@ -260,24 +260,24 @@ def Bomex_cosine():
 
 
     return namelist
-
 def Rico():
 
     namelist = {}
 
     namelist['grid'] = {}
     namelist['grid']['dims'] = 1
-    namelist['grid']['nz'] = 150
+    namelist['grid']['nz'] = 100
     namelist['grid']['gw'] = 2
-    namelist['grid']['dz'] = 100 / 2.5
+    namelist['grid']['dz'] = 40.0
 
 
     namelist['thermodynamics'] = {}
     namelist['thermodynamics']['thermal_variable'] = 'thetal'
 
     namelist['time_stepping'] = {}
-    namelist['time_stepping']['dt'] = 10.0
-    namelist['time_stepping']['t_max'] = 3600.0*24.0
+    namelist['time_stepping']['dt'] = 20.0
+    namelist['time_stepping']['t_max'] = 86400.0
+
 
     namelist['turbulence'] = {}
     namelist['turbulence']['scheme'] = 'EDMF_PrognosticTKE'
@@ -287,9 +287,7 @@ def Rico():
     namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] = 'b_w2'
     namelist['turbulence']['EDMF_PrognosticTKE']['use_local_micro'] = True
     namelist['turbulence']['EDMF_PrognosticTKE']['use_similarity_diffusivity'] = False
-    namelist['turbulence']['EDMF_PrognosticTKE']['updraft_surface_height'] = 0.0
     namelist['turbulence']['EDMF_PrognosticTKE']['extrapolate_buoyancy'] = True
-
 
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
@@ -473,51 +471,6 @@ def GATE_III(): # yair
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'GATE_III'
     namelist['meta']['casename'] = 'GATE_III'
-
-    return namelist
-
-
-
-def Rico():
-
-    namelist = {}
-
-    namelist['grid'] = {}
-    namelist['grid']['dims'] = 1
-    namelist['grid']['nz'] = 100
-    namelist['grid']['gw'] = 2
-    namelist['grid']['dz'] = 40.0
-
-
-    namelist['thermodynamics'] = {}
-    namelist['thermodynamics']['thermal_variable'] = 'thetal'
-
-    namelist['time_stepping'] = {}
-    namelist['time_stepping']['dt'] = 20.0
-    namelist['time_stepping']['t_max'] = 86400.0
-
-
-    namelist['turbulence'] = {}
-    namelist['turbulence']['scheme'] = 'EDMF_PrognosticTKE'
-    namelist['turbulence']['EDMF_PrognosticTKE'] = {}
-    namelist['turbulence']['EDMF_PrognosticTKE']['updraft_number'] = 1
-    namelist['turbulence']['EDMF_PrognosticTKE']['constant_area'] = False
-    namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] = 'b_w2'
-    namelist['turbulence']['EDMF_PrognosticTKE']['use_local_micro'] = True
-    namelist['turbulence']['EDMF_PrognosticTKE']['use_similarity_diffusivity'] = False
-    namelist['turbulence']['EDMF_PrognosticTKE']['extrapolate_buoyancy'] = True
-
-    namelist['output'] = {}
-    namelist['output']['output_root'] = './'
-
-    namelist['stats_io'] = {}
-    namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['frequency'] = 60.0
-
-    namelist['meta'] = {}
-    namelist['meta']['simname'] = 'Rico'
-    namelist['meta']['casename'] = 'Rico'
-
 
     return namelist
 
