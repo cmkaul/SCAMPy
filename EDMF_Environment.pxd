@@ -41,9 +41,13 @@ cdef class EnvironmentThermodynamics:
         double (*t_to_prog_fp)(double p0, double T,  double qt, double ql, double qi)   nogil
         double (*prog_to_t_fp)(double H, double pd, double pv, double qt ) nogil
         void eos_update_SA_sgs(self, EnvironmentVariables EnvVar, VariableDiagnostic GMV_B)
-        double [:] thl_cloudy
-        double [:] qt_cloudy
+        double [:] qt_dry
+        double [:] th_dry
         double [:] t_cloudy
+        double [:] qv_cloudy
+        double [:] qt_cloudy
+        double [:] th_cloudy
+
     cpdef satadjust(self, EnvironmentVariables EnvVar, GridMeanVariables GMV)
 
 

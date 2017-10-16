@@ -41,7 +41,6 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
         double [:] diffusive_flux_qt
         double [:] diffusive_tendency_h
         double [:] diffusive_tendency_qt
-        double surface_scalar_coeff
         double w_entr_coeff
         double w_buoy_coeff
         double max_area_factor

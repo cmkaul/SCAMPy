@@ -95,7 +95,6 @@ def Soares():
 
     paramlist['turbulence']['EDMF_BulkSteady'] = {}
     paramlist['turbulence']['EDMF_BulkSteady']['surface_area'] = 0.1
-    paramlist['turbulence']['EDMF_BulkSteady']['surface_scalar_coeff'] = 0.3
     paramlist['turbulence']['EDMF_BulkSteady']['w_entr_coeff'] = 2.0  # "w_b"
     paramlist['turbulence']['EDMF_BulkSteady']['w_buoy_coeff'] = 1.0
     paramlist['turbulence']['EDMF_BulkSteady']['max_area_factor'] = 1.0

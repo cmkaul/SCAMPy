@@ -19,7 +19,7 @@ from TimeStepping cimport TimeStepping
 from NetCDFIO cimport NetCDFIO_Stats
 from thermodynamic_functions cimport  *
 from turbulence_functions cimport *
-from utility_functions cimport interp2pt, percentile_mean_norm
+from utility_functions cimport *
 from libc.math cimport fmax, sqrt, exp, pow
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 from Turbulence_BulkSteady cimport EDMF_BulkSteady
@@ -382,7 +382,7 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
 
         self.update_inversion(GMV, Case.inversion_option)
         self.wstar = get_wstar(Case.Sur.bflux, self.zi)
-        self.surface_scalar_coeff = percentile_mean_norm(1.0-self.surface_area, 10000)
+
 
         cdef:
             Py_ssize_t i, gw = self.Gr.gw
@@ -393,14 +393,21 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
                                                  Case.Sur.rho_qtflux*alpha0LL, ustar, zLL, oblength)
             double h_var = get_surface_variance(Case.Sur.rho_hflux*alpha0LL,
                                                  Case.Sur.rho_hflux*alpha0LL, ustar, zLL, oblength)
-        with nogil:
-            for i in xrange(self.n_updrafts):
-                # Placeholder for multiple updraft closure
-                self.area_surface_bc[i] = self.surface_area/self.n_updrafts
-                self.w_surface_bc[i] = 0.0
-                self.h_surface_bc[i] = (GMV.H.values[gw] + self.surface_scalar_coeff * sqrt(h_var))
-                self.qt_surface_bc[i] = (GMV.QT.values[gw] + self.surface_scalar_coeff * sqrt(qt_var))
+
+            double a_ = self.surface_area/self.n_updrafts
+            double surface_scalar_coeff
+
+        # with nogil:
+        for i in xrange(self.n_updrafts):
+            surface_scalar_coeff= percentile_bounds_mean_norm(1.0-self.surface_area+i*a_,
+                                                                   1.0-self.surface_area + (i+1)*a_ , 1000)
+
+            self.area_surface_bc[i] = self.surface_area/self.n_updrafts
+            self.w_surface_bc[i] = 0.0
+            self.h_surface_bc[i] = (GMV.H.values[gw] + surface_scalar_coeff * sqrt(h_var))
+            self.qt_surface_bc[i] = (GMV.QT.values[gw] + surface_scalar_coeff * sqrt(qt_var))
         return
+
 
 
 
