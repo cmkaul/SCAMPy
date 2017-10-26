@@ -1588,14 +1588,14 @@ cdef class SCMS(CasesBase):
 cdef class GATE_III(CasesBase):
     def __init__(self, paramlist):
         self.casename = 'GATE_III'
-        self.Sur = Surface.SurfaceFixedFlux(paramlist)
+        self.Sur = Surface.SurfaceFixedCoeffs(paramlist)
         self.Fo = Forcing.ForcingRadiative() # it was forcing standard
         self.inversion_option = 'thetal_maxgrad'
 
         return
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats):
         Ref.Pg = 1013.0*100  #Pressure at ground
-        Ref.Tg = 299.88   # surface values for reference state (RS) which outputs p0 rho0 alpha0
+        Ref.Tg = 299.184   # surface values for reference state (RS) which outputs p0 rho0 alpha0
         Ref.qtg = 16.5/1000#Total water mixing ratio at surface
         Ref.initialize(Gr, Stats)
         return
@@ -1666,14 +1666,23 @@ cdef class GATE_III(CasesBase):
 
         return
     cpdef initialize_surface(self, Grid Gr, ReferenceState Ref):
-        self.Sur.zrough = 1.0e-4 # not actually used, but initialized to reasonable value
-        self.Sur.Tsurface = 299.88 * exner_c(Ref.Pg)
-        self.Sur.qsurface = 16.5/1000.0 # kg/kg
-        self.Sur.ustar_fixed = False
         self.Sur.Gr = Gr
         self.Sur.Ref = Ref
+        self.Sur.zrough = 1.0e-4 # not actually used, but initialized to reasonable value
+
+        self.Sur.qsurface = 16.5/1000.0 # kg/kg
+        self.Sur.Gr = Gr
+        self.Sur.Ref = Ref
+        self.Sur.cm  = 0.0012
+        self.Sur.ch = 0.0034337
+        self.Sur.cq = 0.0034337
+        grid_adjust = (np.log(20.0/self.Sur.zrough)/np.log(Gr.z_half[Gr.gw]/self.Sur.zrough))**2
+        self.Sur.cm = self.Sur.cm * grid_adjust
+        self.Sur.ch = self.Sur.ch * grid_adjust
+        self.Sur.cq = self.Sur.cq * grid_adjust
+        self.Sur.Tsurface = 299.184
         # yair - this was just compied from Bomex hoiw do oyu calculate LHF and SHF from bulk formula ?
-        self.Sur.bflux = (g * ((8.0e-3 + (eps_vi-1.0)*(299.1 * 5.2e-5  + 22.45e-3 * 8.0e-3)) /(299.1 * (1.0 + (eps_vi-1) * 22.45e-3))))
+        #self.Sur.bflux = (g * ((8.0e-3 + (eps_vi-1.0)*(299.1 * 5.2e-5  + 22.45e-3 * 8.0e-3)) /(299.1 * (1.0 + (eps_vi-1) * 22.45e-3))))
         #print('self.Sur.bflux =',self.Sur.bflux )
         #self.Sur.bflux = (g * ((self.Sur.shf + (eps_vi-1.0)*(self.Sur.Tsurface * self.Sur.lhf  + self.Sur.qsurface * 8.0e-3)) /(self.Sur.Tsurface* (1.0 + (eps_vi-1) * self.Sur.qsurface))))
         self.Sur.initialize()
@@ -1706,26 +1715,6 @@ cdef class GATE_III(CasesBase):
         return
 
     cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS):
-        # Surface fluxes in GATE_III are wind dependent consider reading these values from GATE_III pycles simulation like in Rico :
-
-        #t_in=nc.Dataset('/Users/yaircohen/Documents/PyCLES_out/Output.Rico.standard/stats/Stats.Rico.nc', 'r').groups['timeseries'].variables['t']
-        #lhf_in=nc.Dataset('/Users/yaircohen/Documents/PyCLES_out/Output.Rico.standard/stats/Stats.Rico.nc', 'r').groups['timeseries'].variables['lhf_surface_mean']
-        #shf_in=nc.Dataset('/Users/yaircohen/Documents/PyCLES_out/Output.Rico.standard/stats/Stats.Rico.nc', 'r').groups['timeseries'].variables['shf_surface_mean']
-        #if TS.t<100.0:
-        #    self.Sur.lhf = lhf_in[1]
-        #    self.Sur.shf = shf_in[1]
-        #elif TS.t<=86400:
-        #    if TS.t%100.0 == 0:  # in case you step right on the data point
-        #        self.Sur.lhf = lhf_in[TS.t/100.0]
-        #        self.Sur.shf = shf_in[TS.t/100.0]
-        #    else:
-        #        self.Sur.lhf = (lhf_in[TS.t%100.0+1]-lhf_in[TS.t%100.0])/(t_in[TS.t%100.0+1]-t_in[TS.t%100.0])*TS.dt+lhf_in[TS.t%100.0]
-        #        self.Sur.shf = (shf_in[TS.t%100.0+1]-shf_in[TS.t%100.0])/(t_in[TS.t%100.0+1]-t_in[TS.t%100.0])*TS.dt+shf_in[TS.t%100.0]
-        #else:
-        #    self.Sur.lhf = lhf_in[864]
-        #    self.Sur.shf = shf_in[864]
-        self.Sur.lhf = 5.0 # I just made up values for compiling here
-        self.Sur.shf = 3.0
         self.Sur.update(GMV) # here lhf and shf are needed for calcualtion of bflux in surface and thus u_star
         return
 
@@ -1733,5 +1722,4 @@ cdef class GATE_III(CasesBase):
         self.Fo.update(GMV)
         return
 
-# Adding Rico
 

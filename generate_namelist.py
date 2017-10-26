@@ -439,7 +439,7 @@ def GATE_III(): # yair
 
     namelist['grid'] = {}
     namelist['grid']['dims'] = 1
-    namelist['grid']['nz'] = 2700
+    namelist['grid']['nz'] = 1700
     namelist['grid']['gw'] = 2
     namelist['grid']['dz'] = 10
 
@@ -457,7 +457,7 @@ def GATE_III(): # yair
     namelist['turbulence']['EDMF_PrognosticTKE']['constant_area'] = False
     namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] = 'b_w2'
     namelist['turbulence']['EDMF_PrognosticTKE']['use_local_micro'] = True
-    namelist['turbulence']['EDMF_PrognosticTKE']['use_similarity_diffusivity'] = False
+    namelist['turbulence']['EDMF_PrognosticTKE']['use_similarity_diffusivity'] = True  # False
     namelist['turbulence']['EDMF_PrognosticTKE']['updraft_surface_height'] = 0.0
     namelist['turbulence']['EDMF_PrognosticTKE']['extrapolate_buoyancy'] = True
 
