@@ -47,7 +47,7 @@ def Soares():
 
 
     namelist['turbulence'] = {}
-    namelist['turbulence']['scheme'] = 'EDMF_BulkSteady'
+    namelist['turbulence']['scheme'] = 'EDMF_PrognosticTKE'
     namelist['turbulence']['EDMF_BulkSteady'] = {}
     namelist['turbulence']['EDMF_BulkSteady']['updraft_number'] = 1
     namelist['turbulence']['EDMF_BulkSteady']['constant_area'] = True
