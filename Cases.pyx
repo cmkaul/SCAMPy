@@ -966,6 +966,11 @@ cdef class Rico(CasesBase):
 
 
 cdef class TRMM_LBA(CasesBase):
+    # adopted from: "Daytime convective development over land- A model intercomparison based on LBA observations",
+    # By Grabowski et al (2004)  Q. J. R. Meteorol. Soc. 132 317-344
+    # modifications: we use less random perturbations than the original paper, our simulation does not change domain size in time
+    # and has higher resolution in the BL when deep convection takes place
+
     def __init__(self, paramlist):
         self.casename = 'TRMM_LBA'
         self.Sur = Surface.SurfaceFixedFlux(paramlist)
@@ -1293,6 +1298,9 @@ cdef class TRMM_LBA(CasesBase):
 
 
 cdef class ARM_SGP(CasesBase):
+    # adopted from: "Large-eddy simulation of the diurnal cycle of shallow cumulus convection over land",
+    # By Brown et al. (2002)  Q. J. R. Meteorol. Soc. 128, 1075-1093
+
     def __init__(self, paramlist):
         self.casename = 'ARM_SGP'
         self.Sur = Surface.SurfaceFixedFlux(paramlist)
@@ -1586,6 +1594,9 @@ cdef class SCMS(CasesBase):
         return
 
 cdef class GATE_III(CasesBase):
+    # adopted from: "Large eddy simulation of Maritime Deep Tropical Convection",
+    # By Khairoutdinov et al (2009)  JAMES, vol. 1, article #15
+
     def __init__(self, paramlist):
         self.casename = 'GATE_III'
         self.Sur = Surface.SurfaceFixedCoeffs(paramlist)
