@@ -1295,8 +1295,6 @@ cdef class TRMM_LBA(CasesBase):
 
         return
 
-
-
 cdef class ARM_SGP(CasesBase):
     # adopted from: "Large-eddy simulation of the diurnal cycle of shallow cumulus convection over land",
     # By Brown et al. (2002)  Q. J. R. Meteorol. Soc. 128, 1075-1093
@@ -1330,8 +1328,12 @@ cdef class ARM_SGP(CasesBase):
         qt = np.interp(Gr.z_half,z_in,qt_in)
 
         GMV.QT.values = np.zeros((Gr.nzg,),dtype=np.double,order='c')
+        GMV.QT.values[0] = qt[3]
+        GMV.QT.values[1] = qt[2]
         GMV.T.values = np.zeros((Gr.nzg,),dtype=np.double,order='c')
-        #GMV.T.values[Gr.nzg-Gr.gw+1] = Theta[Gr.nzg-Gr.gw-1]/exner_c(Ref.Pg)
+        GMV.T.values[0] = Theta[3]*exner_c(Ref.Pg)
+        GMV.T.values[1] = Theta[2]*exner_c(Ref.Pg)
+        GMV.T.values[Gr.nzg-Gr.gw+1] = Theta[Gr.nzg-Gr.gw-1]*exner_c(Ref.Pg)
         GMV.U.values = np.zeros((Gr.nzg,),dtype=np.double,order='c') + 10.0
         GMV.V.values = np.zeros((Gr.nzg,),dtype=np.double,order='c')
         theta_rho = qt*0.0
@@ -1340,13 +1342,12 @@ cdef class ARM_SGP(CasesBase):
         cdef double qv_star
 
         GMV.U.set_bcs(Gr)
-        GMV.V.set_bcs(Gr)
-
+        GMV.T.set_bcs(Gr)
 
         for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
             GMV.QT.values[k] = qt[k]
             qv = GMV.QT.values[k] - GMV.QL.values[k]
-            GMV.T.values[k] = Theta[k]*exner_c(Ref.p0_half[k])
+            GMV.T.values[k] = Theta[k]*exner_c(Ref.Pg)
             if GMV.H.name == 's':
                 GMV.H.values[k] = t_to_entropy_c(Ref.p0_half[k],GMV.T.values[k],
                                                 GMV.QT.values[k], 0.0, 0.0)
@@ -1362,24 +1363,23 @@ cdef class ARM_SGP(CasesBase):
 
         GMV.QT.set_bcs(Gr)
         GMV.H.set_bcs(Gr)
-        GMV.T.set_bcs(Gr)
         GMV.satadjust()
 
-        plt.figure(1)
-        plt.plot(GMV.QT.values, Gr.z_half,'b')
-        plt.xlabel('qt [kg/kg]')
-        plt.ylabel('z [m]')
-        plt.figure(2)
-        plt.plot(GMV.H.values, Gr.z_half,'r')
-        plt.xlabel('Thetali [K]  or Entropy [J/K]')
-        plt.ylabel('z [m]')
-        plt.figure(3)
-        plt.plot(GMV.T.values, Gr.z_half,'r')
-        plt.xlabel('Themperature [K]')
-        plt.ylabel('z [m]')
-        plt.show()
-
+        # plt.figure(1)
+        # plt.plot(GMV.QT.values, Gr.z_half,'b')
+        # plt.xlabel('qt [kg/kg]')
+        # plt.ylabel('z [m]')
+        # plt.figure(2)
+        # plt.plot(GMV.H.values, Gr.z_half,'r')
+        # plt.xlabel('Thetali [K]  or Entropy [J/K]')
+        # plt.ylabel('z [m]')
+        # plt.figure(3)
+        # plt.plot(GMV.T.values, Gr.z_half,'r')
+        # plt.xlabel('Themperature [K]')
+        # plt.ylabel('z [m]')
+        # plt.show()
         return
+
     cpdef initialize_surface(self, Grid Gr, ReferenceState Ref):
         self.Sur.zrough = 1.0e-4 # not actually used, but initialized to reasonable value
         self.Sur.Tsurface = 299.0 * exner_c(Ref.Pg)
@@ -1443,6 +1443,157 @@ cdef class ARM_SGP(CasesBase):
         self.Fo.update(GMV)
 
         return
+
+# cdef class ARM_SGP(CasesBase):
+#     # adopted from: "Large-eddy simulation of the diurnal cycle of shallow cumulus convection over land",
+#     # By Brown et al. (2002)  Q. J. R. Meteorol. Soc. 128, 1075-1093
+#
+#     def __init__(self, paramlist):
+#         self.casename = 'ARM_SGP'
+#         self.Sur = Surface.SurfaceFixedFlux(paramlist)
+#         self.Fo = Forcing.ForcingRadiative() # it was forcing standard
+#         self.inversion_option = 'thetal_maxgrad'
+#
+#         return
+#     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats):
+#         Ref.Pg = 970.0*100 #Pressure at ground
+#         Ref.Tg = 299.0   # surface values for reference state (RS) which outputs p0 rho0 alpha0
+#         Ref.qtg = 15.2/1000#Total water mixing ratio at surface
+#         Ref.initialize(Gr, Stats)
+#         return
+#     cpdef initialize_profiles(self, Grid Gr, GridMeanVariables GMV, ReferenceState Ref):
+#         cdef:
+#
+#             double [:] p1 = np.zeros((Gr.nzg,),dtype=np.double,order='c')
+#
+#         # ARM_GCSS inputs
+#
+#         z_in = np.array([0.0, 50.0, 350.0, 650.0, 700.0, 1300.0, 2500.0, 5500.0 ]) #LES z is in meters
+#         Theta_in = np.array([299.0, 301.5, 302.5, 303.53, 303.7, 307.13, 314.0, 343.2]) # K
+#         qt_in = np.array([15.2,15.17,14.98,14.8,14.7,13.5,3.0,3.0])/1000 # qt should be in kg/kg
+#
+#         # interpolate to the model grid-points
+#         Theta = np.interp(Gr.z_half,z_in,Theta_in)
+#         qt = np.interp(Gr.z_half,z_in,qt_in)
+#
+#         GMV.QT.values = np.zeros((Gr.nzg,),dtype=np.double,order='c')
+#         GMV.QT.values[0] = qt[3]
+#         GMV.QT.values[1] = qt[2]
+#         GMV.T.values = np.zeros((Gr.nzg,),dtype=np.double,order='c')
+#         GMV.T.values[0] = Theta[3]*exner_c(Ref.Pg)
+#         GMV.T.values[1] = Theta[2]*exner_c(Ref.Pg)
+#         GMV.T.values[Gr.nzg-Gr.gw+1] = Theta[Gr.nzg-Gr.gw-1]*exner_c(Ref.Pg)
+#         GMV.U.values = np.zeros((Gr.nzg,),dtype=np.double,order='c') + 10.0
+#         GMV.V.values = np.zeros((Gr.nzg,),dtype=np.double,order='c')
+#         theta_rho = qt*0.0
+#         epsi = 287.1/461.5
+#         cdef double PV_star # here pv_star is a function
+#         cdef double qv_star
+#
+#         GMV.U.set_bcs(Gr)
+#         GMV.V.set_bcs(Gr)
+#
+#
+#         for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
+#             GMV.QT.values[k] = qt[k]
+#             qv = GMV.QT.values[k] - GMV.QL.values[k]
+#             GMV.T.values[k] = Theta[k]*exner_c(Ref.p0_half[k])
+#             if GMV.H.name == 's':
+#                 GMV.H.values[k] = t_to_entropy_c(Ref.p0_half[k],GMV.T.values[k],
+#                                                 GMV.QT.values[k], 0.0, 0.0)
+#             elif GMV.H.name == 'thetal':
+#                  GMV.H.values[k] = thetali_c(Ref.p0_half[k],GMV.T.values[k],
+#                                                 GMV.QT.values[k], 0.0, 0.0, latent_heat(GMV.T.values[k]))
+#
+#             GMV.THL.values[k] = thetali_c(Ref.p0_half[k],GMV.T.values[k],
+#                                                 GMV.QT.values[k], 0.0, 0.0, latent_heat(GMV.T.values[k]))
+#             theta_rho[k] = theta_rho_c(Ref.p0_half[k], GMV.T.values[k], GMV.QT.values[k], qv)
+#
+#
+#
+#         GMV.QT.set_bcs(Gr)
+#         GMV.H.set_bcs(Gr)
+#         #GMV.T.set_bcs(Gr)
+#         GMV.satadjust()
+#
+#         plt.figure(1)
+#         plt.plot(GMV.QT.values, Gr.z_half,'b')
+#         plt.xlabel('qt [kg/kg]')
+#         plt.ylabel('z [m]')
+#         plt.figure(2)
+#         plt.plot(GMV.H.values, Gr.z_half,'r')
+#         plt.xlabel('Thetali [K]  or Entropy [J/K]')
+#         plt.ylabel('z [m]')
+#         plt.figure(3)
+#         plt.plot(GMV.T.values, Gr.z_half,'r')
+#         plt.xlabel('Themperature [K]')
+#         plt.ylabel('z [m]')
+#         plt.show()
+#
+#         return
+#     cpdef initialize_surface(self, Grid Gr, ReferenceState Ref):
+#         self.Sur.zrough = 1.0e-4 # not actually used, but initialized to reasonable value
+#         self.Sur.Tsurface = 299.0 * exner_c(Ref.Pg)
+#         self.Sur.qsurface = 15.2e-3 # kg/kg
+#         self.Sur.lhf = 5.0
+#         self.Sur.shf = -30.0
+#         #self.Sur.ustar_fixed = True
+#         #self.Sur.ustar = 0.0 # m/s Yair ?
+#         self.Sur.Gr = Gr
+#         self.Sur.Ref = Ref
+#         self.Sur.initialize()
+#
+#         return
+#     cpdef initialize_forcing(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV):
+#         self.Fo.Gr = Gr
+#         self.Fo.Ref = Ref
+#         self.Fo.initialize(GMV)
+#         # only radiative forcing
+#         self.Fo.subsidence = np.zeros(Gr.nzg, dtype=np.double)
+#         return
+#
+#
+#     cpdef initialize_io(self, NetCDFIO_Stats Stats):
+#         CasesBase.initialize_io(self, Stats)
+#         return
+#     cpdef io(self, NetCDFIO_Stats Stats):
+#         CasesBase.io(self,Stats)
+#         return
+#
+#     cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS):
+#         t_Sur_in = np.array([0.0, 4.0, 6.5, 7.5, 10.0, 12.5, 14.5]) * 3600 #LES time is in sec
+#         SH = np.array([-30.0, 90.0, 140.0, 140.0, 100.0, -10, -10]) # W/m^2
+#         LH = np.array([5.0, 250.0, 450.0, 500.0, 420.0, 180.0, 0.0]) # W/m^2
+#         self.Sur.shf = np.interp(TS.t,t_Sur_in,SH)
+#         self.Sur.lhf = np.interp(TS.t,t_Sur_in,LH)
+#         # if fluxes vanish bflux vanish and wstar and obukov length are NaNs
+#         if self.Sur.shf < 1.0:
+#             self.Sur.shf = 1.0
+#         if self.Sur.lhf < 1.0:
+#             self.Sur.lhf = 1.0
+#         #self.Sur.bflux = (g * ((self.Sur.shf + (eps_vi-1.0)*(self.Sur.Tsurface * self.Sur.lhf  + self.Sur.qsurface * 8.0e-3)) /(self.Sur.Tsurface* (1.0 + (eps_vi-1) * self.Sur.qsurface))))
+#         self.Sur.update(GMV)
+#         return
+#
+#     cpdef update_forcing(self, GridMeanVariables GMV, Grid Gr, ReferenceState Ref, TimeStepping TS):
+#         self.Fo.dqtdt =  np.zeros(Gr.nzg, dtype=np.double)
+#         self.Fo.dTdt =  np.zeros(Gr.nzg, dtype=np.double)
+#         t_in = np.array([0.0, 3.0, 6.0, 9.0, 12.0, 14.5]) * 3600.0 #LES time is in sec
+#         AT_in = np.array([0.0, 0.0, 0.0, -0.08, -0.016, -0.016])/3600.0 # Advective forcing for theta [K/h] converted to [K/sec]
+#         RT_in = np.array([-0.125, 0.0, 0.0, 0.0, 0.0, -0.1])/3600.0  # Radiative forcing for theta [K/h] converted to [K/sec]
+#         Rqt_in = np.array([0.08, 0.02, 0.04, -0.1, -0.16, -0.3])/1000.0/3600.0 # Radiative forcing for qt converted to [kg/kg/sec]
+#         dTdt = np.interp(TS.t,t_in,AT_in) + np.interp(TS.t,t_in,RT_in)
+#         dqtdt =  np.interp(TS.t,t_in,Rqt_in)
+#         for k in range(0,Gr.nzg): # correct dims
+#                 if Gr.z_half[k] <=1000:
+#                     self.Fo.dTdt[k] = dTdt
+#                     self.Fo.dqtdt[k]  = dqtdt * exner_c(Ref.p0_half[k])
+#                 elif Gr.z_half[k] > 1000  and Gr.z_half[k] <= 2000:
+#                     self.Fo.dTdt[k] = dTdt*(1-(Gr.z_half[k]-1000)/1000)
+#                     self.Fo.dqtdt[k]  = dqtdt * exner_c(Ref.p0_half[k])*(1-(Gr.z_half[k]-1000)/1000)
+#         self.Fo.update(GMV)
+#
+#         return
 
 
 cdef class SCMS(CasesBase):
