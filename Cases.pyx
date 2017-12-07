@@ -1330,12 +1330,8 @@ cdef class ARM_SGP(CasesBase):
         qt = np.interp(Gr.z_half,z_in,qt_in)
 
         GMV.QT.values = np.zeros((Gr.nzg,),dtype=np.double,order='c')
-        GMV.QT.values[0] = qt[3]
-        GMV.QT.values[1] = qt[2]
         GMV.T.values = np.zeros((Gr.nzg,),dtype=np.double,order='c')
-        GMV.T.values[0] = Theta[3]*exner_c(Ref.Pg)
-        GMV.T.values[1] = Theta[2]*exner_c(Ref.Pg)
-        GMV.T.values[Gr.nzg-Gr.gw+1] = Theta[Gr.nzg-Gr.gw-1]*exner_c(Ref.Pg)
+        #GMV.T.values[Gr.nzg-Gr.gw+1] = Theta[Gr.nzg-Gr.gw-1]/exner_c(Ref.Pg)
         GMV.U.values = np.zeros((Gr.nzg,),dtype=np.double,order='c') + 10.0
         GMV.V.values = np.zeros((Gr.nzg,),dtype=np.double,order='c')
         theta_rho = qt*0.0
@@ -1344,12 +1340,13 @@ cdef class ARM_SGP(CasesBase):
         cdef double qv_star
 
         GMV.U.set_bcs(Gr)
-        GMV.T.set_bcs(Gr)
+        GMV.V.set_bcs(Gr)
+
 
         for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
             GMV.QT.values[k] = qt[k]
             qv = GMV.QT.values[k] - GMV.QL.values[k]
-            GMV.T.values[k] = Theta[k]*exner_c(Ref.Pg)
+            GMV.T.values[k] = Theta[k]*exner_c(Ref.p0_half[k])
             if GMV.H.name == 's':
                 GMV.H.values[k] = t_to_entropy_c(Ref.p0_half[k],GMV.T.values[k],
                                                 GMV.QT.values[k], 0.0, 0.0)
@@ -1365,6 +1362,7 @@ cdef class ARM_SGP(CasesBase):
 
         GMV.QT.set_bcs(Gr)
         GMV.H.set_bcs(Gr)
+        GMV.T.set_bcs(Gr)
         GMV.satadjust()
 
         plt.figure(1)
@@ -1374,6 +1372,10 @@ cdef class ARM_SGP(CasesBase):
         plt.figure(2)
         plt.plot(GMV.H.values, Gr.z_half,'r')
         plt.xlabel('Thetali [K]  or Entropy [J/K]')
+        plt.ylabel('z [m]')
+        plt.figure(3)
+        plt.plot(GMV.T.values, Gr.z_half,'r')
+        plt.xlabel('Themperature [K]')
         plt.ylabel('z [m]')
         plt.show()
 
