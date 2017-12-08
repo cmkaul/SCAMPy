@@ -41,7 +41,7 @@ class Simulation1d:
             self.GMV.zero_tendencies()
             self.Case.update_surface(self.GMV, self.TS)
             self.Case.update_forcing(self.GMV, self.Gr, self.Ref, self.TS)
-            self.Turb.update(self.GMV, self.Case, self.TS )
+            self.Turb.update(self.GMV, self.Case, self.TS, self.Ref )
             self.TS.update()
             # Apply the tendencies, also update the BCs and diagnostic thermodynamics
             self.GMV.update(self.TS)
