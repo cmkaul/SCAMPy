@@ -45,7 +45,7 @@ def defaults():
     paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = 1.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = 1.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = 1.0
-    paramlist['turbulence']['EDMF_PrognosticTKE']['vel_pressure_coeff'] = 0.1
+    paramlist['turbulence']['EDMF_PrognosticTKE']['vel_pressure_coeff'] = 0.00005
     paramlist['turbulence']['EDMF_PrognosticTKE']['vel_buoy_coeff'] = 2.0 / 3.0
 
     paramlist['turbulence']['EDMF_BulkSteady'] = {}
@@ -77,7 +77,7 @@ def Soares():
     paramlist['turbulence']['EDMF_PrognosticTKE']['vel_buoy_coeff'] = 2.0/3.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 0.01
     paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = 1.0
-    paramlist['turbulence']['EDMF_PrognosticTKE']['vel_pressure_coeff'] = 1.0
+    paramlist['turbulence']['EDMF_PrognosticTKE']['vel_pressure_coeff'] = 0.00005
     paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = 1.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = 1.0
 
@@ -114,7 +114,6 @@ def Bomex():
     paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = 1.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = 1.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = 1.0
-    paramlist['turbulence']['EDMF_PrognosticTKE']['vel_pressure_coeff'] = 0.1
     paramlist['turbulence']['EDMF_PrognosticTKE']['vel_buoy_coeff'] = 2.0 / 3.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['vel_pressure_coeff'] = 0.00005
 
