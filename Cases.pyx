@@ -18,13 +18,12 @@ def CasesFactory(namelist, paramlist):
         return Soares(paramlist)
     elif namelist['meta']['casename'] == 'Bomex':
         return Bomex(paramlist)
-    elif namelist['meta']['casename'][0:4] == 'Bome':
-        return Bomex(paramlist)
     elif namelist['meta']['casename'] == 'Bomex_pulse':
         return Bomex_pulse(paramlist)
     elif namelist['meta']['casename'] == 'Bomex_pulses':
         return Bomex_pulses(paramlist)
     elif namelist['meta']['casename'] == 'Bomex_cosine':
+        print namelist['meta']['casename']
         return Bomex_cosine(paramlist)
     elif namelist['meta']['casename'] == 'Rico':
         return Rico(paramlist)
@@ -36,6 +35,8 @@ def CasesFactory(namelist, paramlist):
         return SCMS(paramlist)
     elif namelist['meta']['casename'] == 'GATE_III':
         return GATE_III(paramlist)
+    elif namelist['meta']['casename'][0:4] == 'Bome':
+        return Bomex(paramlist)
     else:
         print('case not recognized')
     return
@@ -541,6 +542,7 @@ cdef class Bomex_pulses(CasesBase):
 
 cdef class Bomex_cosine(CasesBase):
     def __init__(self, paramlist):
+
         self.casename = 'Bomex_cosine'
         self.Sur = Surface.SurfaceFixedFlux(paramlist)
         self.Fo = Forcing.ForcingStandard()
@@ -558,7 +560,6 @@ cdef class Bomex_cosine(CasesBase):
         cdef:
             double [:] thetal = np.zeros((Gr.nzg,), dtype=np.double, order='c')
             double ql=0.0, qi =0.0 # IC of Bomex is cloud-free
-
         for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
             #Set Thetal profile
             if Gr.z_half[k] <= 520.:
@@ -656,7 +657,7 @@ cdef class Bomex_cosine(CasesBase):
         CasesBase.io(self,Stats)
         return
     cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS):
-        weight = 2.0
+        weight = 1.0
         weight_factor = 0.01 + 0.99 *(np.cos(2.0*pi * TS.t /3600.0) + 1.0)/2.0
         weight = weight * weight_factor
         self.Sur.lhf = self.Sur.lhf0*weight
