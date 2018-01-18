@@ -112,6 +112,7 @@ def Bomex():
     namelist['turbulence']['EDMF_PrognosticTKE']['use_local_micro'] = True
     namelist['turbulence']['EDMF_PrognosticTKE']['use_similarity_diffusivity'] = False
     namelist['turbulence']['EDMF_PrognosticTKE']['extrapolate_buoyancy'] = True
+    namelist['turbulence']['EDMF_PrognosticTKE']['use_steady_updrafts'] = True
 
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
@@ -245,6 +246,7 @@ def Bomex_cosine():
     namelist['turbulence']['EDMF_PrognosticTKE']['use_similarity_diffusivity'] = False
     namelist['turbulence']['EDMF_PrognosticTKE']['updraft_surface_height'] = 0.0
     namelist['turbulence']['EDMF_PrognosticTKE']['extrapolate_buoyancy'] = True
+    namelist['turbulence']['EDMF_PrognosticTKE']['use_steady_updrafts'] = False
 
 
     namelist['output'] = {}
