@@ -61,6 +61,7 @@ def Soares():
 
     namelist['turbulence'] = {}
     namelist['turbulence']['scheme'] = 'EDMF_PrognosticTKE'
+
     namelist['turbulence']['EDMF_PrognosticTKE'] = {}
     namelist['turbulence']['EDMF_PrognosticTKE']['updraft_number'] = 1
     namelist['turbulence']['EDMF_PrognosticTKE']['constant_area'] = False
@@ -69,6 +70,7 @@ def Soares():
     namelist['turbulence']['EDMF_PrognosticTKE']['use_similarity_diffusivity'] = False
     namelist['turbulence']['EDMF_PrognosticTKE']['updraft_surface_height'] = 0.0
     namelist['turbulence']['EDMF_PrognosticTKE']['extrapolate_buoyancy'] = True
+
 
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
