@@ -727,8 +727,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         #          * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k]))
                         # Trial pressure term
                         press = (self.vel_pressure_coeff  * self.Ref.rho0[k]
-                                 * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k])**2.0/sqrt(fmax(a_k,self.minimum_area)))
-                        self.press[i,k] = (a_k * B_k * (1.0-self.vel_buoy_coeff) + press)*self.Ref.rho0[k]
+                                  * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k])**2.0/sqrt(fmax(a_k,self.minimum_area)))
+                        self.press[i,k] = ((1.0-self.vel_buoy_coeff)*B_k * self.Ref.rho0[k] + press)
                         self.UpdVar.W.new[i,k] = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * dti_
                                                   -adv + exch + buoy - press)/(self.Ref.rho0[k] * anew_k * dti_)
 
@@ -1219,7 +1219,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                          + self.Ref.rho0_half[k] * ae[k] * self.tke_diss_coeff * sqrt(fmax(self.EnvVar.TKE.values[k],0.0))/fmax(self.mixing_length[k],1.0))
                 c[kk] = (self.Ref.rho0_half[k+1] * ae[k+1] * whalf[k+1] * dzi - rho_ae_K_m[k] * dzi * dzi)
                 x[kk] = (self.Ref.rho0_half[k] * ae_old[k] * self.EnvVar.TKE.values[k] * dti
-                         + self.tke_shear[k] + self.tke_buoy[k] + self.tke_entr_gain[k] - press_tot)
+                         + self.tke_shear[k] + self.tke_buoy[k] + self.tke_entr_gain[k] + press_tot)
                          #+ (1.0-self.vel_buoy_coeff)*interp2pt(self.m[0,k-1], self.m[0,k]) * self.UpdVar.B.values[0,k]  )
             a[0] = 0.0
             b[0] = 1.0
