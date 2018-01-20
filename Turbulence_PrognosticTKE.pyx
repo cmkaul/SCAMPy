@@ -1240,8 +1240,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
 
 
-        if self.use_steady_updrafts:
-            dti = 0.0
+        #if self.use_steady_updrafts:
+        #    dti = TS.dti
 
 
         with nogil:
