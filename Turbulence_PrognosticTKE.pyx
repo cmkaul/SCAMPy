@@ -980,10 +980,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 GMV.QT.new[k+gw] = GMV.QT.mf_update[k+gw] + ae[k+gw] *(x[k] - self.EnvVar.QT.values[k+gw])
                 self.diffusive_tendency_qt[k+gw] = (GMV.QT.new[k+gw] - GMV.QT.mf_update[k+gw]) * TS.dti
             # get the diffusive flux
-            self.diffusive_flux_qt[gw] = interp2pt(Case.Sur.rho_qtflux, -rho_ae_K_m[k] * dzi *(GMV.QT.values[gw+1]-GMV.QT.values[gw]) )
+            #self.diffusive_flux_qt[gw] = interp2pt(Case.Sur.rho_qtflux, -rho_ae_K_m[gw] * dzi *(GMV.QT.values[gw+1]-GMV.QT.values[gw]) )
+            #for k in xrange(self.Gr.gw+1, self.Gr.nzg-self.Gr.gw):
+            #    self.diffusive_flux_qt[k] = -0.5 * self.Ref.rho0_half[k] * self.KH.values[k] * dzi * (GMV.QT.values[k+1]-GMV.QT.values[k-1])
+            self.diffusive_flux_qt[gw] = interp2pt(Case.Sur.rho_qtflux, -rho_ae_K_m[gw] * dzi *(self.EnvVar.QT.values[gw+1]-self.EnvVar.QT.values[gw]) )
             for k in xrange(self.Gr.gw+1, self.Gr.nzg-self.Gr.gw):
-                self.diffusive_flux_qt[k] = -0.5 * self.Ref.rho0_half[k] * self.KH.values[k] * dzi * (GMV.QT.values[k+1]-GMV.QT.values[k-1])
-
+                self.diffusive_flux_qt[k] = -0.5 * self.Ref.rho0_half[k]*ae[k] * self.KH.values[k] * dzi * (self.EnvVar.QT.values[k+1]-self.EnvVar.QT.values[k-1])
 
         # Solve H
         with nogil:
@@ -997,9 +999,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 GMV.H.new[k+gw] = GMV.H.mf_update[k+gw] + ae[k+gw] *(x[k] - self.EnvVar.H.values[k+gw])
                 self.diffusive_tendency_h[k+gw] = (GMV.H.new[k+gw] - GMV.H.mf_update[k+gw]) * TS.dti
             # get the diffusive flux
-            self.diffusive_flux_h[gw] = interp2pt(Case.Sur.rho_hflux, -rho_ae_K_m[k] * dzi *(GMV.H.values[gw+1]-GMV.H.values[gw]) )
+            #self.diffusive_flux_h[gw] = interp2pt(Case.Sur.rho_hflux, -rho_ae_K_m[gw] * dzi *(GMV.H.values[gw+1]-GMV.H.values[gw]) )
+            #for k in xrange(self.Gr.gw+1, self.Gr.nzg-self.Gr.gw):
+            #    self.diffusive_flux_h[k] = -0.5 * self.Ref.rho0_half[k] * self.KH.values[k] * dzi * (GMV.H.values[k+1]-GMV.H.values[k-1])
+            self.diffusive_flux_h[gw] = interp2pt(Case.Sur.rho_hflux, -rho_ae_K_m[gw] * dzi *(self.EnvVar.H.values[gw+1]-self.EnvVar.H.values[gw]) )
             for k in xrange(self.Gr.gw+1, self.Gr.nzg-self.Gr.gw):
-                self.diffusive_flux_h[k] = -0.5 * self.Ref.rho0_half[k] * self.KH.values[k] * dzi * (GMV.H.values[k+1]-GMV.H.values[k-1])
+                self.diffusive_flux_h[k] = -0.5 * self.Ref.rho0_half[k]*ae[k] * self.KH.values[k] * dzi * (self.EnvVar.H.values[k+1]-self.EnvVar.H.values[k-1])
 
         # Solve U
         with nogil:
