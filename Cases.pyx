@@ -788,9 +788,8 @@ cdef class Rico(CasesBase):
 
 cdef class TRMM_LBA(CasesBase):
     # adopted from: "Daytime convective development over land- A model intercomparison based on LBA observations",
-    # By Grabowski et al (2004)  Q. J. R. Meteorol. Soc. 132 317-344
-    # modifications: we use less random perturbations than the original paper, our simulation does not change domain size in time
-    # and has higher resolution in the BL when deep convection takes place
+    # By Grabowski et al (2006)  Q. J. R. Meteorol. Soc. 132 317-344
+
 
     def __init__(self, paramlist):
         self.casename = 'TRMM_LBA'
@@ -811,7 +810,7 @@ cdef class TRMM_LBA(CasesBase):
 
             double [:] p1 = np.zeros((Gr.nzg,),dtype=np.double,order='c')
 
-        # TRMM_LBA inputs from Grabowski et al. 2004
+        # TRMM_LBA inputs from Grabowski et al. 2006
         z_in = np.array([0.130,  0.464,  0.573,  1.100,  1.653,  2.216,  2.760,
                          3.297,  3.824,  4.327,  4.787,  5.242,  5.686,  6.131,
                          6.578,  6.996,  7.431,  7.881,  8.300,  8.718,  9.149,
@@ -866,7 +865,6 @@ cdef class TRMM_LBA(CasesBase):
         GMV.V.values = np.interp(Gr.z_half,z_in,v_in)
 
         # get the entropy from RH, p, T
-
         RH = np.zeros(Gr.nzg)
         RH[Gr.gw:Gr.nzg-Gr.gw] = np.interp(Gr.z_half[Gr.gw:Gr.nzg-Gr.gw],z_in,RH_in)
         RH[0] = RH[3]
@@ -875,10 +873,10 @@ cdef class TRMM_LBA(CasesBase):
 
         T = np.zeros(Gr.nzg)
         T[Gr.gw:Gr.nzg-Gr.gw] = np.interp(Gr.z_half[Gr.gw:Gr.nzg-Gr.gw],z_in,T_in)
-        GMV.T.values[0] = T[3]
-        GMV.T.values[1] = T[2]
+        #GMV.T.values[0] = T[3]
+        #GMV.T.values[1] = T[2]
         GMV.T.values = T
-        GMV.T.values[Gr.nzg-Gr.gw+1] = GMV.T.values[Gr.nzg-Gr.gw-1]
+        #GMV.T.values[Gr.nzg-Gr.gw+1] = GMV.T.values[Gr.nzg-Gr.gw-1]
 
 
         theta_rho = RH*0.0
@@ -1086,7 +1084,7 @@ cdef class TRMM_LBA(CasesBase):
         self.Fo.dqtdt =  np.zeros(Gr.nzg, dtype=np.double)
         ind1 = int(math.trunc(TS.t/600.0))                   # the index preceding the current time step
         ind2 = int(math.ceil(TS.t/600.0))                    # the index following the current time step
-        if TS.t<600.0: # first 10 min use the radiative forcing of t=10min
+        if TS.t<600.0: # first 10 min use the radiative forcing of t=10min (as in the paper)
             for kk in range(0,Gr.nzg):
                 self.Fo.rad_cool[kk] = self.Fo.rad[0,kk]
         elif TS.t>18900.0:
@@ -1137,18 +1135,20 @@ cdef class ARM_SGP(CasesBase):
 
         z_in = np.array([0.0, 50.0, 350.0, 650.0, 700.0, 1300.0, 2500.0, 5500.0 ]) #LES z is in meters
         Theta_in = np.array([299.0, 301.5, 302.5, 303.53, 303.7, 307.13, 314.0, 343.2]) # K
-        qt_in = np.array([15.2,15.17,14.98,14.8,14.7,13.5,3.0,3.0])/1000 # qt should be in kg/kg
+        r_in = np.array([15.2,15.17,14.98,14.8,14.7,13.5,3.0,3.0])/1000 # qt should be in kg/kg
+        qt_in = np.divide(r_in,(1+r_in))
+        print qt_in
 
         # interpolate to the model grid-points
         Theta = np.interp(Gr.z_half,z_in,Theta_in)
         qt = np.interp(Gr.z_half,z_in,qt_in)
 
         GMV.QT.values = np.zeros((Gr.nzg,),dtype=np.double,order='c')
-        GMV.QT.values[0] = qt[3]
-        GMV.QT.values[1] = qt[2]
+        #GMV.QT.values[0] = qt[3]
+        #GMV.QT.values[1] = qt[2]
         GMV.T.values = np.zeros((Gr.nzg,),dtype=np.double,order='c')
-        GMV.T.values[0] = Theta[3]*exner_c(Ref.Pg)
-        GMV.T.values[1] = Theta[2]*exner_c(Ref.Pg)
+        #GMV.T.values[0] = Theta[3]*exner_c(Ref.Pg)
+        #GMV.T.values[1] = Theta[2]*exner_c(Ref.Pg)
         GMV.T.values[Gr.nzg-Gr.gw+1] = Theta[Gr.nzg-Gr.gw-1]*exner_c(Ref.Pg)
         GMV.U.values = np.zeros((Gr.nzg,),dtype=np.double,order='c') + 10.0
         GMV.V.values = np.zeros((Gr.nzg,),dtype=np.double,order='c')
@@ -1159,6 +1159,7 @@ cdef class ARM_SGP(CasesBase):
 
         GMV.U.set_bcs(Gr)
         GMV.T.set_bcs(Gr)
+        GMV.QT.set_bcs(Gr)
 
         for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
             GMV.QT.values[k] = qt[k]
@@ -1177,7 +1178,6 @@ cdef class ARM_SGP(CasesBase):
 
 
 
-        GMV.QT.set_bcs(Gr)
         GMV.H.set_bcs(Gr)
         GMV.satadjust()
         return
@@ -1413,34 +1413,40 @@ cdef class GATE_III(CasesBase):
             double [:] U = np.zeros((Gr.nzg,),dtype=np.double,order='c')
             double [:] theta_rho = np.zeros((Gr.nzg,),dtype=np.double,order='c')
 
-        # GATE_III inputs
-        z_in  = np.array([ 0.0,   0.5,  1.0,  1.5,  2.0,   2.5,    3.0,   3.5,   4.0,   4.5,   5.0,  5.5,  6.0,  6.5, 7.0, 7.5, 8.0,  8.5,   9.0,   9.5,  10.0,   10.5,   11.0, 11.5, 12.0, 12.5, 13.0, 13.5, 14.0, 14.5, 15.0, 15.5, 16.0, 16.5, 17.0, 17.5, 18.0, 27.0]) * 1000.0 #LES z is in meters
-        qt_in = np.array([16.5,  16.5, 13.5, 12.0, 10.0,   8.7,    7.1,   6.1,   5.2,   4.5,   3.6,  3.0,  2.3, 1.75, 1.3, 0.9, 0.5, 0.25, 0.125, 0.065, 0.003, 0.0015, 0.0007,  0.0003,  0.0001,  0.0001,  0.0001,  0.0001,  0.0001,  0.0001,  0.0001,  0.0001,  0.0001,  0.0001,  0.0001,  0.0001,  0.0001, 0.0001])/1000 # qt should be in kg/kg
-        U_in  = np.array([  -1, -1.75, -2.5, -3.6, -6.0, -8.75, -11.75, -13.0, -13.1, -12.1, -11.0, -8.5, -5.0, -2.6, 0.0, 0.5, 0.4,  0.3,   0.0,  -1.0,  -2.5,   -3.5,   -4.5, -4.8, -5.0, -3.5, -2.0, -1.0, -1.0, -1.0, -1.5, -2.0, -2.5, -2.6, -2.7, -3.0, -3.0, -3.0])# [m/s]
+        # GATE_III inputs - I extended them to z=2.2 km
+        z_in  = np.array([ 0.0,   0.5,  1.0,  1.5,  2.0,   2.5,    3.0,   3.5,   4.0,   4.5,   5.0,  5.5,  6.0,  6.5, 7.0, 7.5, 8.0,  8.5,   9.0,   9.5,
+                           10.0,   10.5,   11.0, 11.5, 12.0, 12.5, 13.0, 13.5, 14.0, 14.5, 15.0, 15.5, 16.0, 16.5, 17.0, 17.5, 18.0, 27.0]) * 1000.0 #z is in meters
+        r_in = np.array([16.5,  16.5, 13.5, 12.0, 10.0,   8.7,    7.1,   6.1,   5.2,   4.5,   3.6,  3.0,  2.3, 1.75, 1.3, 0.9, 0.5, 0.25, 0.125, 0.065, 0.003,
+                         0.0015, 0.0007,  0.0003,  0.0001,  0.0001,  0.0001,  0.0001,  0.0001,  0.0001,  0.0001,  0.0001,  0.0001,  0.0001,  0.0001,  0.0001,  0.0001, 0.0001])/1000 # qt should be in kg/kg
+        U_in  = np.array([  -1, -1.75, -2.5, -3.6, -6.0, -8.75, -11.75, -13.0, -13.1, -12.1, -11.0, -8.5, -5.0, -2.6, 0.0, 0.5, 0.4,  0.3,   0.0,  -1.0,
+                            -2.5,   -3.5,   -4.5, -4.8, -5.0, -3.5, -2.0, -1.0, -1.0, -1.0, -1.5, -2.0, -2.5, -2.6, -2.7, -3.0, -3.0, -3.0])# [m/s]
+        # temperature is taken from a different input plot
         T_in = np.array([299.184, 294.836, 294.261, 288.773, 276.698, 265.004, 253.930, 243.662, 227.674, 214.266, 207.757, 201.973, 198.278, 197.414, 198.110, 198.110])
         z_T_in = np.array([0.0, 0.492, 0.700, 1.698, 3.928, 6.039, 7.795, 9.137, 11.055, 12.645, 13.521, 14.486, 15.448, 16.436, 17.293, 22.0])*1000.0 # for km
+        qt_in = np.divide(r_in,(1+r_in)) # convert mixing ratio to specific humidity
+
         # interpolate to the model grid-points
-
-
         T = np.interp(Gr.z_half,z_T_in,T_in) # interpolate to ref pressure level
-        GMV.T.values[0] = T[3]
-        GMV.T.values[1] = T[2]
+        #GMV.T.values[0] = T[3]
+        #GMV.T.values[1] = T[2]
         GMV.T.values[Gr.nzg-Gr.gw+1] = T[Gr.nzg-Gr.gw-1]
 
         qt = np.interp(Gr.z_half,z_in,qt_in)
-        GMV.QT.values[0] = qt[3]
-        GMV.QT.values[1] = qt[2]
+        #GMV.QT.values[0] = qt[3]
+        #GMV.QT.values[1] = qt[2]
         GMV.QT.values[Gr.nzg-Gr.gw+1] = qt[Gr.nzg-Gr.gw-1]
 
         U = np.interp(Gr.z_half,z_in,U_in)
-        GMV.U.values[0] = U[3]
-        GMV.U.values[1] = U[2]
+        #GMV.U.values[0] = U[3]
+        #GMV.U.values[1] = U[2]
         GMV.U.values[Gr.nzg-Gr.gw+1] = U[Gr.nzg-Gr.gw-1]
 
         GMV.V.values = np.zeros((Gr.nzg,),dtype=np.double,order='c')
 
         GMV.U.set_bcs(Gr)
+        GMV.V.set_bcs(Gr)
         GMV.T.set_bcs(Gr)
+        GMV.QT.set_bcs(Gr)
 
 
         for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
@@ -1459,7 +1465,6 @@ cdef class GATE_III(CasesBase):
                                                 GMV.QT.values[k], 0.0, 0.0, latent_heat(GMV.T.values[k]))
             theta_rho[k] = theta_rho_c(Ref.p0_half[k], GMV.T.values[k], GMV.QT.values[k], qv)
 
-        GMV.QT.set_bcs(Gr)
         GMV.H.set_bcs(Gr)
         GMV.satadjust()
         return
@@ -1468,7 +1473,6 @@ cdef class GATE_III(CasesBase):
         self.Sur.Gr = Gr
         self.Sur.Ref = Ref
         self.Sur.zrough = 1.0e-4 # not actually used, but initialized to reasonable value
-
         self.Sur.qsurface = 16.5/1000.0 # kg/kg
         self.Sur.Gr = Gr
         self.Sur.Ref = Ref
@@ -1494,8 +1498,12 @@ cdef class GATE_III(CasesBase):
         z_in     = np.array([ 0.0,   0.5,  1.0,  1.5,   2.0,   2.5,    3.0,   3.5,   4.0,   4.5,   5.0,   5.5,   6.0,   6.5,  7.0,  7.5,   8.0,  8.5,   9.0,  9.5,  10.0,  10.5,  11.0,    11.5,   12.0, 12.5,  13.0, 13.5, 14.0, 14.5, 15.0, 15.5, 16.0, 16.5, 17.0, 17.5, 18.0]) * 1000.0 #LES z is in meters
         u_in     = np.array([  -1, -1.75, -2.5, -3.6,  -6.0, -8.75, -11.75, -12.9, -13.1, -12.1, -11.0,  -8.5,  -5.0,  -2.6,  0.0,  0.5,   0.4,  0.3,   0.0, -1.0,  -3.0,  -3.5,  -4.5,    -4.6,   -5.0, -3.5,  -2.0, -1.0, -1.0, -1.0, -1.5, -2.0, -2.5, -2.6, -2.7, -3.0, -3.0])
         RAD_in   = np.array([-2.9,  -1.1, -0.8, -1.1, -1.25, -1.35,   -1.4,  -1.4, -1.44, -1.52,  -1.6, -1.54, -1.49, -1.43, -1.36, -1.3, -1.25, -1.2, -1.15, -1.1, -1.05,  -1.0,  -0.95,   -0.9,  -0.85, -0.8, -0.75, -0.7, -0.6, -0.3,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0])/(24.0*3600.0)  # Radiative forcing for T [K/d] converted to [K/sec]
-        Qtend_in = np.array([ 0.0,   1.2,  2.0,  2.3,   2.2,   2.1,    1.9,   1.7,   1.5,  1.35,  1.22,  1.08,  0.95,  0.82,  0.7,  0.6,   0.5,  0.4,   0.3,  0.2,   0.1,  0.05, 0.0025, 0.0012, 0.0006,  0.0,   0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0])/(24.0*3600.0)/1000.0  # Advective qt forcing  for theta [g/kg/d] converted to [kg/kg/sec]
+        r_tend_in = np.array([ 0.0,   1.2,  2.0,  2.3,   2.2,   2.1,    1.9,   1.7,   1.5,  1.35,  1.22,  1.08,  0.95,  0.82,  0.7,  0.6,   0.5,  0.4,   0.3,  0.2,   0.1,  0.05, 0.0025, 0.0012, 0.0006,  0.0,   0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0])/(24.0*3600.0)/1000.0  # Advective qt forcing  for theta [g/kg/d] converted to [kg/kg/sec]
         Ttend_in = np.array([ 0.0,  -1.0, -2.2, -3.0,  -3.5,  -3.8,   -4.0,  -4.1,  -4.2,  -4.2,  -4.1,  -4.0, -3.85,  -3.7, -3.5, -3.25, -3.0, -2.8,  -2.5, -2.1,  -1.7,  -1.3,   -1.0,   -0.7,   -0.5, -0.4,  -0.3, -0.2, -0.1,-0.05,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0])/(24.0*3600.0)  # Radiative T forcing [K/d] converted to [K/sec]
+
+        Qtend_in = np.divide(r_tend_in,(1+r_tend_in)) # convert mixing ratio to specific humidity
+
+
 
         self.Fo.dqtdt = np.interp(Gr.z_half,z_in,Qtend_in)
         self.Fo.dTdt = np.interp(Gr.z_half,z_in,Ttend_in) + np.interp(Gr.z_half,z_in,RAD_in)
