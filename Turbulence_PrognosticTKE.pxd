@@ -53,6 +53,27 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double [:] tke_entr_gain
         double [:] tke_detr_loss
         double [:] tke_shear
+        double [:] Hvar
+        double [:] QTvar
+        double [:] Hvar_shear
+        double [:] QTvar_shear
+        double [:] Hvar_entr_gain
+        double [:] QTvar_entr_gain
+        double [:] Hvar_detr_loss
+        double [:] QTvar_detr_loss
+        double [:] Hvar_diss_coeff
+        double [:] QTvar_diss_coeff
+        double [:] HQTcov
+        double [:] HQTcov_shear
+        double [:] HQTcov_entr_gain
+        double [:] HQTcov_detr_loss
+        double [:] HQTcov_diss_coeff
+        double [:] Hvar_dissipation
+        double [:] QTvar_dissipation
+        double [:] HQTcov_dissipation
+
+
+
         double [:,:] press #  Yair
         double max_area_factor
         double tke_ed_coeff
@@ -82,6 +103,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef compute_tke_entr(self)
     cpdef compute_tke_detr(self)
     cpdef compute_tke_shear(self, GridMeanVariables GMV)
+    cpdef compute_covariance(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
+    cpdef initialize_covariance(self, GridMeanVariables GMV, CasesBase Case)
+    cpdef reset_surface_covariance(self, GridMeanVariables GMV, CasesBase Case)
+    cpdef compute_covariance_dissipation(self)
+    cpdef compute_covariance_entr(self)
+    cpdef compute_covariance_detr(self)
+    cpdef compute_covariance_shear(self, GridMeanVariables GMV)
+    cpdef update_covariance_ED(self, GridMeanVariables GMV, CasesBase Case,TimeStepping TS)
     # cpdef update_tke_MF(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef update_tke_ED(self, GridMeanVariables GMV, CasesBase Case,TimeStepping TS)
     cpdef update_GMV_diagnostics(self, GridMeanVariables GMV)
