@@ -206,6 +206,18 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         Stats.add_profile('tke_shear')
         Stats.add_profile('updraft_qt_precip')
         Stats.add_profile('updraft_thetal_precip')
+        Stats.add_profile('Hvar_dissipation')
+        Stats.add_profile('QTvar_dissipation')
+        Stats.add_profile('HQTcov_dissipation')
+        Stats.add_profile('Hvar_entr_gain')
+        Stats.add_profile('QTvar_entr_gain')
+        Stats.add_profile('HQTcov_entr_gain')
+        Stats.add_profile('Hvar_detr_loss')
+        Stats.add_profile('Qtvar_detr_loss')
+        Stats.add_profile('HQTcov_detr_loss')
+        Stats.add_profile('Hvar_shear')
+        Stats.add_profile('QTvar_shear')
+        Stats.add_profile('HQTcov_shear')
 
         return
 
@@ -1372,13 +1384,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         return
 
-    cpdef initialize_covariance(self, GridMeanVariables GMV, CasesBase Case): # yair this need work
+
+    cpdef initialize_covariance(self, GridMeanVariables GMV, CasesBase Case):
         cdef:
             Py_ssize_t k
             double ws= self.wstar, us = Case.Sur.ustar, zs = self.zi, z
-        # Similarity profile initialization of TKE
-
-
+            # yair this need more work - not sure what is the similarity profiles for Hvar QTvar and HQTcov
 
         with nogil:
             for k in xrange(self.Gr.nzg):
@@ -1396,9 +1407,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.reset_surface_covariance(GMV, Case)
         self.compute_mixing_length(Case.Sur.obukhov_length)
 
-        # plt.figure('Init TKE')
-        # plt.plot(GMV.TKE.values, self.Gr.z_half)
-        # plt.show()
         return
 
 
