@@ -483,10 +483,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.compute_tke_buoy(GMV)
             self.compute_tke_entr()
             self.compute_tke_shear(GMV)
-
             self.reset_surface_tke(GMV, Case)
             self.update_tke_ED(GMV, Case, TS)
-            # self.reset_surface_tke(GMV, Case)
         else:
             self.initialize_tke(GMV, Case)
 
@@ -1365,19 +1363,16 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             if self.similarity_diffusivity: # otherwise, we computed mixing length when we computed
                 self.compute_mixing_length(Case.Sur.obukhov_length)
 
-            #self.compute_tpe_buoy(GMV)
             self.compute_covariance_entr()
             self.compute_covariance_shear(GMV)
-
             self.reset_surface_covariance(GMV, Case)
             self.update_covariance_ED(GMV, Case, TS)
-            # self.reset_surface_tke(GMV, Case)
         else:
             self.initialize_covariance(GMV, Case)
 
         return
 
-    cpdef initialize_covariance(self, GridMeanVariables GMV, CasesBase Case):
+    cpdef initialize_covariance(self, GridMeanVariables GMV, CasesBase Case): # yair this need work
         cdef:
             Py_ssize_t k
             double ws= self.wstar, us = Case.Sur.ustar, zs = self.zi, z
@@ -1407,74 +1402,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         return
 
 
-
-    cpdef compute_covariance_shear(self, GridMeanVariables GMV):
-        cdef:
-            Py_ssize_t k
-            Py_ssize_t gw = self.Gr.gw
-            double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),self.UpdVar.Area.bulkvalues) # area of environment
-            double H_high = 0.0
-            double QT_high = 0.0
-            double H_low, QT_low
-
-        with nogil:
-            for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                H_low = H_high
-                QT_low = QT_high
-                H_high = (GMV.H.values[k+1] - GMV.H.values[k]) * self.Gr.dzi
-                QT_high = (GMV.QT.values[k+1] - GMV.QT.values[k]) * self.Gr.dzi
-                self.Hvar_shear[k] = 2.0*( self.Ref.rho0_half[k] * ae[k] * self.KM.values[k] * ( pow(interp2pt(H_low, H_high),2.0)))
-                self.QTvar_shear[k] = 2.0*(self.Ref.rho0_half[k] * ae[k] * self.KM.values[k] * ( pow(interp2pt(QT_low, QT_high),2.0)))
-                self.HQTcov_shear[k] = 2.0*(self.Ref.rho0_half[k] * ae[k] * self.KM.values[k] * (interp2pt(QT_low, QT_high)) * (interp2pt(H_low, H_high)))
-        return
-
-    cpdef compute_covariance_entr(self):
-        cdef:
-            Py_ssize_t i, k
-            double Thetal_u, Thetal_env, QT_u, QT_env
-
-        with nogil:
-            for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                self.Hvar_entr_gain[k] = 0.0
-                self.QTvar_entr_gain[k] = 0.0
-                self.HQTcov_entr_gain[k] = 0.0
-                Thetal_env = interp2pt(self.EnvVar.H.values[k-1], self.EnvVar.H.values[k])
-                QT_env = interp2pt(self.EnvVar.QT.values[k-1], self.EnvVar.QT.values[k])
-
-                for i in xrange(self.n_updrafts):
-                    Thetal_u = interp2pt(self.UpdVar.H.values[i,k-1], self.UpdVar.H.values[i,k])
-                    QT_u = interp2pt(self.UpdVar.QT.values[i,k-1], self.UpdVar.QT.values[i,k])
-                    w_u = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
-                    self.Hvar_entr_gain[k] +=   self.UpdVar.Area.values[i,k] * w_u * self.detr_sc[i,k] * (Thetal_u - Thetal_env) * (Thetal_u - Thetal_env)
-                    self.QTvar_entr_gain[k] +=   self.UpdVar.Area.values[i,k] * w_u * self.detr_sc[i,k] * (QT_u - QT_env) * (QT_u - QT_env)
-                    self.HQTcov_entr_gain[k] +=   self.UpdVar.Area.values[i,k] * w_u * self.detr_sc[i,k] * (Thetal_u - Thetal_env) * (QT_u - QT_env)
-                self.Hvar_entr_gain[k] *= self.Ref.rho0_half[k]
-                self.QTvar_entr_gain[k] *= self.Ref.rho0_half[k]
-                self.HQTcov_entr_gain[k] *= self.Ref.rho0_half[k]
-        return
-
-
-    cpdef compute_covariance_detr(self):
-        cdef:
-            Py_ssize_t i, k
-            double Thetal_u, QT_u
-
-        with nogil:
-            for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                self.Hvar_detr_loss[k] = 0.0
-                self.QTvar_detr_loss[k] = 0.0
-                for i in xrange(self.n_updrafts):
-                    Thetal_u = interp2pt(self.UpdVar.H.values[i,k-1], self.UpdVar.H.values[i,k])
-                    QT_u = interp2pt(self.UpdVar.QT.values[i,k-1], self.UpdVar.QT.values[i,k])
-                    w_u = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
-                    self.Hvar_detr_loss[k] += self.UpdVar.Area.values[i,k] * w_u * self.entr_sc[i,k]
-                    self.QTvar_detr_loss[k] += self.UpdVar.Area.values[i,k] * w_u * self.entr_sc[i,k]
-                    self.HQTcov_detr_loss[k] += self.UpdVar.Area.values[i,k] * w_u * self.entr_sc[i,k]
-                self.Hvar_detr_loss[k] *= self.Ref.rho0_half[k] * self.EnvVar.Hvar.values[k]
-                self.QTvar_detr_loss[k] *= self.Ref.rho0_half[k] * self.EnvVar.QTvar.values[k]
-                self.HQTcov_detr_loss[k] *= self.Ref.rho0_half[k] * self.EnvVar.HQTcov.values[k]
-        return
-
     cpdef reset_surface_covariance(self, GridMeanVariables GMV, CasesBase Case):
         flux1 = Case.Sur.rho_hflux
         flux2 = Case.Sur.rho_hflux
@@ -1498,6 +1425,74 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         GMV.HQTcov.values[self.Gr.gw] = HQTcov_sur
         GMV.HQTcov.mf_update[self.Gr.gw] = HQTcov_sur
 
+        return
+
+
+    cpdef compute_covariance_shear(self, GridMeanVariables GMV):
+        cdef:
+            Py_ssize_t k
+            Py_ssize_t gw = self.Gr.gw
+            double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),self.UpdVar.Area.bulkvalues) # area of environment
+            double dH = 0.0
+            double dQT = 0.0
+
+
+        with nogil:
+            for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+                if k == self.Gr.gw:
+                    dH = 0.0
+                    dQT = 0.0
+                else:
+                    dH = (GMV.H.values[k+1] - GMV.H.values[k-1]) * self.Gr.dzi
+                    dQT = (GMV.QT.values[k+1] - GMV.QT.values[k-1]) * self.Gr.dzi
+                self.Hvar_shear[k] = 2.0*( self.Ref.rho0_half[k] * ae[k] * self.KM.values[k] *pow(dH,2.0))
+                self.QTvar_shear[k] = 2.0*( self.Ref.rho0_half[k] * ae[k] * self.KM.values[k] *pow(dQT,2.0))
+                self.HQTcov_shear[k] = 2.0*( self.Ref.rho0_half[k] * ae[k] * self.KM.values[k] *dH*dQT)
+        return
+
+    cpdef compute_covariance_entr(self):
+        cdef:
+            Py_ssize_t i, k
+            double H_u, H_env, QT_u, QT_env
+
+        with nogil:
+            for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+                self.Hvar_entr_gain[k] = 0.0
+                self.QTvar_entr_gain[k] = 0.0
+                self.HQTcov_entr_gain[k] = 0.0
+                #w_e = interp2pt(self.EnvVar.W.values[k-1], self.EnvVar.W.values[k])
+                H_env = interp2pt(self.EnvVar.H.values[k-1], self.EnvVar.H.values[k])
+                QT_env = interp2pt(self.EnvVar.QT.values[k-1], self.EnvVar.QT.values[k])
+                for i in xrange(self.n_updrafts):
+                    H_u = interp2pt(self.UpdVar.H.values[i,k-1], self.UpdVar.H.values[i,k])
+                    QT_u = interp2pt(self.UpdVar.QT.values[i,k-1], self.UpdVar.QT.values[i,k])
+                    w_u = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
+                    self.Hvar_entr_gain[k] +=   self.UpdVar.Area.values[i,k] * w_u * self.detr_sc[i,k] * (H_u - H_env) * (H_u - H_env)
+                    self.QTvar_entr_gain[k] +=   self.UpdVar.Area.values[i,k] * w_u * self.detr_sc[i,k] * (QT_u - QT_env) * (QT_u - QT_env)
+                    self.HQTcov_entr_gain[k] +=   self.UpdVar.Area.values[i,k] * w_u * self.detr_sc[i,k] * (H_u - H_env) * (QT_u - QT_env)
+                self.Hvar_entr_gain[k] *= self.Ref.rho0_half[k]
+                self.QTvar_entr_gain[k] *= self.Ref.rho0_half[k]
+                self.HQTcov_entr_gain[k] *= self.Ref.rho0_half[k]
+        return
+
+
+    cpdef compute_covariance_detr(self):
+        cdef:
+            Py_ssize_t i, k
+            double Thetal_u, QT_u
+
+        with nogil:
+            for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+                self.Hvar_detr_loss[k] = 0.0
+                self.QTvar_detr_loss[k] = 0.0
+                for i in xrange(self.n_updrafts):
+                    w_u = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
+                    self.Hvar_detr_loss[k] += self.UpdVar.Area.values[i,k] * w_u * self.entr_sc[i,k]
+                    self.QTvar_detr_loss[k] += self.UpdVar.Area.values[i,k] * w_u * self.entr_sc[i,k]
+                    self.HQTcov_detr_loss[k] += self.UpdVar.Area.values[i,k] * w_u * self.entr_sc[i,k]
+                self.Hvar_detr_loss[k] *= self.Ref.rho0_half[k] * self.EnvVar.Hvar.values[k]
+                self.QTvar_detr_loss[k] *= self.Ref.rho0_half[k] * self.EnvVar.QTvar.values[k]
+                self.HQTcov_detr_loss[k] *= self.Ref.rho0_half[k] * self.EnvVar.HQTcov.values[k]
         return
 
     cpdef update_covariance_ED(self, GridMeanVariables GMV, CasesBase Case,TimeStepping TS):
@@ -1676,12 +1671,13 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         with nogil:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                self.Hvar_dissipation[k] = (self.Ref.rho0_half[k] * ae[k] * pow(fmax(self.EnvVar.Hvar.values[k],0), 1.5)
-                                           /fmax(self.mixing_length[k],1.0) * self.tke_diss_coeff)
-                self.QTvar_dissipation[k] = (self.Ref.rho0_half[k] * ae[k] * pow(fmax(self.EnvVar.QTvar.values[k],0), 1.5)
-                                           /fmax(self.mixing_length[k],1.0) * self.tke_diss_coeff)
-                self.HQTcov_dissipation[k] = (self.Ref.rho0_half[k] * ae[k] * pow(fmax(self.EnvVar.HQTcov.values[k],0), 1.5)
-                                           /fmax(self.mixing_length[k],1.0) * self.tke_diss_coeff)
+                self.Hvar_dissipation[k] = (self.Ref.rho0_half[k] * ae[k] * self.EnvVar.Hvar.values[k]
+                                    *pow(fmax(self.EnvVar.TKE.values[k],0), 0.5)/fmax(self.mixing_length[k],1.0) * self.tke_diss_coeff)
+                self.QTvar_dissipation[k] = (self.Ref.rho0_half[k] * ae[k] * self.EnvVar.QTvar.values[k]
+                                    *pow(fmax(self.EnvVar.TKE.values[k],0), 0.5)/fmax(self.mixing_length[k],1.0) * self.tke_diss_coeff)
+                self.HQTcov_dissipation[k] = (self.Ref.rho0_half[k] * ae[k] * self.EnvVar.HQTcov.values[k]
+                                    *pow(fmax(self.EnvVar.TKE.values[k],0), 0.5)/fmax(self.mixing_length[k],1.0) * self.tke_diss_coeff)
+
         return
 
 
