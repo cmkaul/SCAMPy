@@ -137,7 +137,7 @@ cdef class GridMeanVariables:
 
         # Create thermodynamic variables
         self.QT = VariablePrognostic(Gr.nzg, 'half', 'scalar','sym', 'qt', 'kg/kg')
-        print('QT in Variables.pyx 140 == ',self.QT)
+        #print('QT in Variables.pyx 140 == ',self.QT)
 
         if namelist['thermodynamics']['thermal_variable'] == 'entropy':
             self.H = VariablePrognostic(Gr.nzg, 'half', 'scalar', 'sym','s', 'J/kg/K' )
@@ -169,7 +169,7 @@ cdef class GridMeanVariables:
         #Now add the 2nd moment variables
         if self.use_tke:
             self.TKE = VariablePrognostic(Gr.nzg, 'half', 'scalar','sym', 'tke','m^2/s^2' )
-        if self.use_scalar_var:
+            # yair
             self.QTvar = VariablePrognostic(Gr.nzg, 'half', 'scalar','sym', 'qt_var','kg^2/kg^2' )
             if namelist['thermodynamics']['thermal_variable'] == 'entropy':
                 self.Hvar = VariablePrognostic(Gr.nzg, 'half', 'scalar', 'sym', 's_var', '(J/kg/K)^2')
@@ -177,6 +177,16 @@ cdef class GridMeanVariables:
             elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
                 self.Hvar = VariablePrognostic(Gr.nzg, 'half', 'scalar', 'sym' ,'thetal_var', 'K^2')
                 self.HQTcov = VariablePrognostic(Gr.nzg, 'half', 'scalar','sym' ,'thetal_qt_covar', 'K(kg/kg)' )
+
+        # if self.use_scalar_var:
+        #     self.QTvar = VariablePrognostic(Gr.nzg, 'half', 'scalar','sym', 'qt_var','kg^2/kg^2' )
+        #     if namelist['thermodynamics']['thermal_variable'] == 'entropy':
+        #         self.Hvar = VariablePrognostic(Gr.nzg, 'half', 'scalar', 'sym', 's_var', '(J/kg/K)^2')
+        #         self.HQTcov = VariablePrognostic(Gr.nzg, 'half', 'scalar', 'sym' ,'s_qt_covar', '(J/kg/K)(kg/kg)' )
+        #     elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
+        #         self.Hvar = VariablePrognostic(Gr.nzg, 'half', 'scalar', 'sym' ,'thetal_var', 'K^2')
+        #         self.HQTcov = VariablePrognostic(Gr.nzg, 'half', 'scalar','sym' ,'thetal_qt_covar', 'K(kg/kg)' )
+
 
 
 

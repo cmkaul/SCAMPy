@@ -71,9 +71,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double [:] Hvar_dissipation
         double [:] QTvar_dissipation
         double [:] HQTcov_dissipation
-
-
-
         double [:,:] press #  Yair
         double max_area_factor
         double tke_ed_coeff
@@ -89,6 +86,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef compute_mixing_length(self, double obukhov_length)
     cpdef compute_eddy_diffusivities_tke(self, GridMeanVariables GMV, CasesBase Case)
     cpdef reset_surface_tke(self, GridMeanVariables GMV, CasesBase Case)
+    cpdef reset_surface_covariance(self, GridMeanVariables GMV, CasesBase Case)
     cpdef set_updraft_surface_bc(self, GridMeanVariables GMV, CasesBase Case)
     cpdef decompose_environment(self, GridMeanVariables GMV, whichvals)
     cpdef compute_entrainment_detrainment(self, GridMeanVariables GMV, CasesBase Case, ReferenceState Ref)
@@ -97,21 +95,20 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef update_GMV_MF(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef update_GMV_ED(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
     cpdef compute_tke(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
+    cpdef compute_covariance(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
     cpdef initialize_tke(self, GridMeanVariables GMV, CasesBase Case)
+    cpdef initialize_covariance(self, GridMeanVariables GMV, CasesBase Case)
     cpdef compute_tke_buoy(self, GridMeanVariables GMV)
     cpdef compute_tke_dissipation(self)
-    cpdef compute_tke_entr(self)
-    cpdef compute_tke_detr(self)
-    cpdef compute_tke_shear(self, GridMeanVariables GMV)
-    cpdef compute_covariance(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
-    cpdef initialize_covariance(self, GridMeanVariables GMV, CasesBase Case)
-    cpdef reset_surface_covariance(self, GridMeanVariables GMV, CasesBase Case)
     cpdef compute_covariance_dissipation(self)
+    cpdef compute_tke_entr(self)
     cpdef compute_covariance_entr(self)
+    cpdef compute_tke_detr(self)
     cpdef compute_covariance_detr(self)
+    cpdef compute_tke_shear(self, GridMeanVariables GMV)
     cpdef compute_covariance_shear(self, GridMeanVariables GMV)
-    cpdef update_covariance_ED(self, GridMeanVariables GMV, CasesBase Case,TimeStepping TS)
     # cpdef update_tke_MF(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef update_tke_ED(self, GridMeanVariables GMV, CasesBase Case,TimeStepping TS)
+    cpdef update_covariance_ED(self, GridMeanVariables GMV, CasesBase Case,TimeStepping TS)
     cpdef update_GMV_diagnostics(self, GridMeanVariables GMV)
 
