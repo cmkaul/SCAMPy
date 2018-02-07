@@ -1705,6 +1705,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 QTu_half = interp2pt(self.UpdVar.QT.bulkvalues[k-1], self.UpdVar.QT.bulkvalues[k])
                 GMV.HQTcov.new[k] = (ae[k] * (self.EnvVar.HQTcov.values[k]  * Hhalf[k] * QThalf[k])
                                   + self.UpdVar.Area.bulkvalues[k] * Hu_half * QTu_half)
+                #GMV.HQTcov.new[k] = self.EnvVar.TKE.values[k]
 
 
         return
