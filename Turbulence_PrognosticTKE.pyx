@@ -135,6 +135,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.tke_detr_loss = np.zeros((Gr.nzg,),dtype=np.double, order='c')
         self.tke_shear = np.zeros((Gr.nzg,),dtype=np.double, order='c')
 
+        self.Hvar = np.zeros((Gr.nzg,),dtype=np.double, order='c')
+        self.QTvar = np.zeros((Gr.nzg,),dtype=np.double, order='c')
+        self.HQTcov = np.zeros((Gr.nzg,),dtype=np.double, order='c')
         self.Hvar_dissipation = np.zeros((Gr.nzg,),dtype=np.double, order='c')
         self.QTvar_dissipation = np.zeros((Gr.nzg,),dtype=np.double, order='c')
         self.HQTcov_dissipation = np.zeros((Gr.nzg,),dtype=np.double, order='c')
@@ -206,6 +209,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         Stats.add_profile('tke_shear')
         Stats.add_profile('updraft_qt_precip')
         Stats.add_profile('updraft_thetal_precip')
+        Stats.add_profile('Hvar')
+        Stats.add_profile('QTvar')
+        Stats.add_profile('HQTcov')
         Stats.add_profile('Hvar_dissipation')
         Stats.add_profile('QTvar_dissipation')
         Stats.add_profile('HQTcov_dissipation')
@@ -276,6 +282,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         Stats.write_profile('tke_shear', self.tke_shear[kmin:kmax])
         Stats.write_profile('updraft_qt_precip', self.UpdMicro.prec_source_qt_tot[kmin:kmax])
         Stats.write_profile('updraft_thetal_precip', self.UpdMicro.prec_source_h_tot[kmin:kmax])
+        Stats.write_profile('Hvar', self.Hvar[kmin:kmax])
+        Stats.write_profile('QTvar', self.QTvar[kmin:kmax])
+        Stats.write_profile('HQTcov', self.HQTcov[kmin:kmax])
         self.compute_covariance_dissipation()
         Stats.write_profile('Hvar_dissipation', self.Hvar_dissipation[kmin:kmax])
         Stats.write_profile('QTvar_dissipation', self.QTvar_dissipation[kmin:kmax])
@@ -1691,7 +1700,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         with nogil:
             for kk in xrange(nz):
                 k = kk + gw
-                self.EnvVar.HQTcov.values[k] = fmax(x[kk], 0.0)
+                self.EnvVar.HQTcov.values[k] = x[kk]
                 Hu_half = interp2pt(self.UpdVar.H.bulkvalues[k-1], self.UpdVar.H.bulkvalues[k])
                 QTu_half = interp2pt(self.UpdVar.QT.bulkvalues[k-1], self.UpdVar.QT.bulkvalues[k])
                 GMV.HQTcov.new[k] = (ae[k] * (self.EnvVar.HQTcov.values[k]  * Hhalf[k] * QThalf[k])
