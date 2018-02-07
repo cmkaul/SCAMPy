@@ -668,7 +668,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         cdef:
             Py_ssize_t k, gw = self.Gr.gw
-            double val1, val2, au_full, wu_half, we_half
+            double val1, val2, au_full, wu_half, we_half, Hvar_u, QTvar_u, HQTcov_u
 
 
         if whichvals == 'values':
@@ -685,15 +685,15 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     self.EnvVar.W.values[k] = -au_full/(1.0-au_full) * self.UpdVar.W.bulkvalues[k]
                     wu_half = interp2pt(self.UpdVar.W.bulkvalues[k-1], self.UpdVar.W.bulkvalues[k])
                     we_half = interp2pt(self.EnvVar.W.values[k-1], self.EnvVar.W.values[k])
+                    Hvar_u = (self.UpdVar.H.bulkvalues[k] - GMV.H.values[k])*(self.UpdVar.H.bulkvalues[k] - GMV.H.values[k])
+                    QTvar_u = (self.UpdVar.QT.bulkvalues[k] - GMV.QT.values[k])*(self.UpdVar.QT.bulkvalues[k] - GMV.QT.values[k])
+                    HQTcov_u = (self.UpdVar.H.bulkvalues[k] - GMV.H.values[k])*(self.UpdVar.QT.bulkvalues[k] - GMV.QT.values[k])
                     GMV.TKE.values[k] =  (self.UpdVar.Area.bulkvalues[k] * 0.5 * wu_half * wu_half
                                           + (1.0-self.UpdVar.Area.bulkvalues[k]) * 0.5 * we_half * we_half
                                           + (1.0-self.UpdVar.Area.bulkvalues[k]) * self.EnvVar.TKE.values[k])
-                    GMV.Hvar.values[k] =   (self.UpdVar.Area.bulkvalues[k] * self.UpdVar.H.bulkvalues[k] * self.UpdVar.H.bulkvalues[k]
-                                         + (1.0-self.UpdVar.Area.bulkvalues[k]) * self.EnvVar.Hvar.values[k])
-                    GMV.QTvar.values[k] =  (self.UpdVar.Area.bulkvalues[k] * self.UpdVar.QT.bulkvalues[k] * self.UpdVar.QT.bulkvalues[k]
-                                         + (1.0-self.UpdVar.Area.bulkvalues[k]) * self.EnvVar.QTvar.values[k])
-                    GMV.HQTcov.values[k] = (self.UpdVar.Area.bulkvalues[k] * self.UpdVar.H.bulkvalues[k] * self.UpdVar.QT.bulkvalues[k]
-                                         + (1.0-self.UpdVar.Area.bulkvalues[k]) * self.EnvVar.HQTcov.values[k])
+                    GMV.Hvar.values[k] =   (self.UpdVar.Area.bulkvalues[k] * Hvar_u + (1.0-self.UpdVar.Area.bulkvalues[k]) * self.EnvVar.Hvar.values[k])
+                    GMV.QTvar.values[k] =  (self.UpdVar.Area.bulkvalues[k] * QTvar_u + (1.0-self.UpdVar.Area.bulkvalues[k]) * self.EnvVar.QTvar.values[k])
+                    GMV.HQTcov.values[k] = (self.UpdVar.Area.bulkvalues[k] * HQTcov_u + (1.0-self.UpdVar.Area.bulkvalues[k]) * self.EnvVar.HQTcov.values[k])
 
         elif whichvals == 'mf_update':
             # same as above but replace GMV.SomeVar.values with GMV.SomeVar.mf_update
@@ -711,15 +711,17 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     self.EnvVar.W.values[k] = -au_full/(1.0-au_full) * self.UpdVar.W.bulkvalues[k]
                     wu_half = interp2pt(self.UpdVar.W.bulkvalues[k-1], self.UpdVar.W.bulkvalues[k])
                     we_half = interp2pt(self.EnvVar.W.values[k-1], self.EnvVar.W.values[k])
+                    Hvar_u = (self.UpdVar.H.bulkvalues[k] - GMV.H.values[k])*(self.UpdVar.H.bulkvalues[k] - GMV.H.values[k])
+                    QTvar_u = (self.UpdVar.QT.bulkvalues[k] - GMV.QT.values[k])*(self.UpdVar.QT.bulkvalues[k] - GMV.QT.values[k])
+                    HQTcov_u = (self.UpdVar.H.bulkvalues[k] - GMV.H.values[k])*(self.UpdVar.QT.bulkvalues[k] - GMV.QT.values[k])
+
                     GMV.TKE.mf_update[k] =    (self.UpdVar.Area.bulkvalues[k] * 0.5 * wu_half * wu_half
                                             + (1.0-self.UpdVar.Area.bulkvalues[k]) * 0.5 * we_half * we_half
                                             + (1.0-self.UpdVar.Area.bulkvalues[k]) * self.EnvVar.TKE.values[k])
-                    GMV.Hvar.mf_update[k] =   (self.UpdVar.Area.bulkvalues[k] * self.UpdVar.H.bulkvalues[k] * self.UpdVar.H.bulkvalues[k]
-                                            + (1.0-self.UpdVar.Area.bulkvalues[k]) * self.EnvVar.Hvar.values[k])
-                    GMV.QTvar.mf_update[k] =  (self.UpdVar.Area.bulkvalues[k] * self.UpdVar.QT.bulkvalues[k] * self.UpdVar.QT.bulkvalues[k]
-                                            + (1.0-self.UpdVar.Area.bulkvalues[k]) * self.EnvVar.QTvar.values[k])
-                    GMV.HQTcov.mf_update[k] = (self.UpdVar.Area.bulkvalues[k] * self.UpdVar.H.bulkvalues[k] * self.UpdVar.QT.bulkvalues[k]
-                                            + (1.0-self.UpdVar.Area.bulkvalues[k]) * self.EnvVar.HQTcov.values[k])
+                    GMV.Hvar.mf_update[k] =   (self.UpdVar.Area.bulkvalues[k] * Hvar_u + (1.0-self.UpdVar.Area.bulkvalues[k]) * self.EnvVar.Hvar.values[k])
+                    GMV.QTvar.mf_update[k] =  (self.UpdVar.Area.bulkvalues[k] * QTvar_u + (1.0-self.UpdVar.Area.bulkvalues[k]) * self.EnvVar.QTvar.values[k])
+                    GMV.HQTcov.mf_update[k] = (self.UpdVar.Area.bulkvalues[k] * HQTcov_u + (1.0-self.UpdVar.Area.bulkvalues[k]) * self.EnvVar.HQTcov.values[k])
+
         return
 
     cpdef compute_entrainment_detrainment(self, GridMeanVariables GMV, CasesBase Case, ReferenceState Ref):
