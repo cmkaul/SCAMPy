@@ -224,7 +224,17 @@ cdef class GridMeanVariables:
             with nogil:
                 for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                     self.TKE.values[k]  = self.TKE.new[k]  #+=  self.TKE.tendencies[k] * TS.dt
+                    self.QTvar.values[k]  +=  self.QTvar.tendencies[k] * TS.dt
+                    self.Hvar.values[k] += self.Hvar.tendencies[k] * TS.dt
+                    self.HQTcov.values[k] += self.HQTcov.tendencies[k] * TS.dt
+            self.QTvar.set_bcs(self.Gr)
+            self.Hvar.set_bcs(self.Gr)
+            self.HQTcov.set_bcs(self.Gr)
+
             self.TKE.set_bcs(self.Gr)
+            self.Hvar.set_bcs(self.Gr)
+            self.QTvar.set_bcs(self.Gr)
+            self.HQTcov.set_bcs(self.Gr)
         if self.use_scalar_var:
             with nogil:
                 for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):

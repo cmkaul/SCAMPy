@@ -320,9 +320,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             with nogil:
                 for k in xrange(self.Gr.nzg):
                     self.EnvVar.TKE.values[k] = GMV.TKE.values[k]
-                    #self.EnvVar.Hvar.values[k] = GMV.Hvar.values[k]
-                    #self.EnvVar.QTvar.values[k] = GMV.QTvar.values[k]
-                    #self.EnvVar.HQTcov.values[k] = GMV.HQTcov.values[k]
+                    self.EnvVar.Hvar.values[k] = GMV.Hvar.values[k]
+                    self.EnvVar.QTvar.values[k] = GMV.QTvar.values[k]
+                    self.EnvVar.HQTcov.values[k] = GMV.HQTcov.values[k]
         # self.reset_surface_tke(GMV, Case) -- I don't believe this to be needed
         self.decompose_environment(GMV, 'values')
 
