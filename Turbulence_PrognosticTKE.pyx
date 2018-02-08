@@ -561,18 +561,18 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double grad, grad2, H
 
 
-        # with nogil:
-        #     for k in xrange(gw, self.Gr.nzg-gw):
-        #         l1 = tau * sqrt(fmax(self.EnvVar.TKE.values[k],0.0))
-        #         z_ = self.Gr.z_half[k]
-        #         if obukhov_length < 0.0: #unstable
-        #             l2 = vkb * z_ * ( (1.0 - 100.0 * z_/obukhov_length)**0.2 )
-        #         elif obukhov_length > 0.0: #stable
-        #             l2 = vkb * z_ /  (1. + 2.7 *z_/obukhov_length)
-        #         else:
-        #             l2 = vkb * z_
-        #         self.mixing_length[k] = fmax( 1.0/(1.0/fmax(l1,1e-10) + 1.0/l2), 1e-3)
-        #
+        with nogil:
+            for k in xrange(gw, self.Gr.nzg-gw):
+                l1 = tau * sqrt(fmax(self.EnvVar.TKE.values[k],0.0))
+                z_ = self.Gr.z_half[k]
+                if obukhov_length < 0.0: #unstable
+                    l2 = vkb * z_ * ( (1.0 - 100.0 * z_/obukhov_length)**0.2 )
+                elif obukhov_length > 0.0: #stable
+                    l2 = vkb * z_ /  (1. + 2.7 *z_/obukhov_length)
+                else:
+                    l2 = vkb * z_
+                self.mixing_length[k] = fmax( 1.0/(1.0/fmax(l1,1e-10) + 1.0/l2), 1e-3)
+
         # cdef:
         #     Py_ssize_t k
         #     Py_ssize_t gw = self.Gr.gw
@@ -580,22 +580,22 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         #     double l1, l2, z_
 
 
-        with nogil:
-            for k in range(gw,+1):
-                grad = (self.EnvVar.H.values[k+1]-self.EnvVar.H.values[k])/(self.Gr.z[k+1]-self.Gr.z[k])
-                grad2 = pow(fmax(grad,0.001),2.0)
-                H = self.EnvVar.H.values[k]
-                self.mixing_length[k] = sqrt(H/grad2)
-            for k in xrange(gw+1, self.Gr.nzg-gw-1):
-                grad = (self.EnvVar.H.values[k+1]-self.EnvVar.H.values[k-1])/(self.Gr.z[k+1]-self.Gr.z[k-1])
-                grad2 = pow(fmax(grad,0.001),2.0)
-                H = self.EnvVar.H.values[k]
-                self.mixing_length[k] = sqrt(H/grad2)
-            for k in xrange(gw+1, self.Gr.nzg-gw-1):
-                grad = (self.EnvVar.H.values[k]-self.EnvVar.H.values[k-1])/(self.Gr.z[k]-self.Gr.z[k-1])
-                grad2 = pow(fmax(grad,0.001),2.0)
-                H = self.EnvVar.H.values[k]
-                self.mixing_length[k] = sqrt(H/grad2)
+        # with nogil:
+        #     for k in range(gw,+1):
+        #         grad = (self.EnvVar.H.values[k+1]-self.EnvVar.H.values[k])/(self.Gr.z[k+1]-self.Gr.z[k])
+        #         grad2 = pow(fmax(grad,0.001),2.0)
+        #         H = self.EnvVar.H.values[k]
+        #         self.mixing_length[k] = sqrt(H/grad2)
+        #     for k in xrange(gw+1, self.Gr.nzg-gw-1):
+        #         grad = (self.EnvVar.H.values[k+1]-self.EnvVar.H.values[k-1])/(self.Gr.z[k+1]-self.Gr.z[k-1])
+        #         grad2 = pow(fmax(grad,0.001),2.0)
+        #         H = self.EnvVar.H.values[k]
+        #         self.mixing_length[k] = sqrt(H/grad2)
+        #     for k in xrange(gw+1, self.Gr.nzg-gw-1):
+        #         grad = (self.EnvVar.H.values[k]-self.EnvVar.H.values[k-1])/(self.Gr.z[k]-self.Gr.z[k-1])
+        #         grad2 = pow(fmax(grad,0.001),2.0)
+        #         H = self.EnvVar.H.values[k]
+        #         self.mixing_length[k] = sqrt(H/grad2)
         return
 
 
@@ -1497,15 +1497,15 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for k in xrange(self.Gr.nzg):
                 z = self.Gr.z_half[k]
 
-                GMV.Hvar.values[k]   = 0.1*0.1
-                GMV.QTvar.values[k]  = 0.001*0.001
-                GMV.HQTcov.values[k] = 0.1*0.001
+                #GMV.Hvar.values[k]   = 0.1*0.1
+                #GMV.QTvar.values[k]  = 0.001*0.001
+                #GMV.HQTcov.values[k] = 0.1*0.001
                 #GMV.Hvar.values[k]   = GMV.Hvar.values[self.Gr.gw]
                 #GMV.QTvar.values[k]  = GMV.QTvar.values[self.Gr.gw]
                 #GMV.HQTcov.values[k] = GMV.HQTcov.values[self.Gr.gw]
-                #GMV.Hvar.values[k]   = GMV.Hvar.values[self.Gr.gw]*ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
-                #GMV.QTvar.values[k]  = GMV.QTvar.values[self.Gr.gw]*ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
-                #GMV.HQTcov.values[k] = GMV.HQTcov.values[self.Gr.gw]*ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
+                GMV.Hvar.values[k]   = GMV.Hvar.values[self.Gr.gw]*ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
+                GMV.QTvar.values[k]  = GMV.QTvar.values[self.Gr.gw]*ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
+                GMV.HQTcov.values[k] = GMV.HQTcov.values[self.Gr.gw]*ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
 
                 GMV.QTvar.new[k] = GMV.QTvar.values[k]
                 GMV.QTvar.mf_update[k] = GMV.QTvar.values[k]
