@@ -1570,6 +1570,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double HQTcov_gmv_surf =  get_surface_variance(Case.Sur.rho_hflux * alpha0LL, Case.Sur.rho_qtflux * alpha0LL, Case.Sur.ustar, zLL, Case.Sur.obukhov_length)
             double Hu_half, He_half, a_half, QTu_half, QTe_half
             double wu_half, we_half, Hvar_0_surf, QTvar_0_surf, HQTcov_0_surf
+        print Hvar_gmv_surf
+        print QTvar_gmv_surf
+        print HQTcov_gmv_surf
 
 
         with nogil:
