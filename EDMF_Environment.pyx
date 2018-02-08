@@ -80,6 +80,9 @@ cdef class EnvironmentVariables:
         Stats.add_profile('env_temperature')
         if self.use_tke:
             Stats.add_profile('env_tke')
+            Stats.add_profile('env_Hvar')
+            Stats.add_profile('env_QTvar')
+            Stats.add_profile('env_HQTcov')
 
 
         return
@@ -95,6 +98,10 @@ cdef class EnvironmentVariables:
         Stats.write_profile('env_temperature', self.T.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         if self.use_tke:
             Stats.write_profile('env_tke', self.TKE.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+            Stats.write_profile('env_Hvar', self.Hvar.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+            Stats.write_profile('env_QTvar', self.QTvar.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+            Stats.write_profile('env_HQTcov', self.HQTcov.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+
 
         return
 
