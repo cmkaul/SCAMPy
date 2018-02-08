@@ -558,18 +558,44 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Py_ssize_t gw = self.Gr.gw
             double tau =  get_mixing_tau(self.zi, self.wstar)
             double l1, l2, z_
+            double grad, grad2, H
+
+
+        # with nogil:
+        #     for k in xrange(gw, self.Gr.nzg-gw):
+        #         l1 = tau * sqrt(fmax(self.EnvVar.TKE.values[k],0.0))
+        #         z_ = self.Gr.z_half[k]
+        #         if obukhov_length < 0.0: #unstable
+        #             l2 = vkb * z_ * ( (1.0 - 100.0 * z_/obukhov_length)**0.2 )
+        #         elif obukhov_length > 0.0: #stable
+        #             l2 = vkb * z_ /  (1. + 2.7 *z_/obukhov_length)
+        #         else:
+        #             l2 = vkb * z_
+        #         self.mixing_length[k] = fmax( 1.0/(1.0/fmax(l1,1e-10) + 1.0/l2), 1e-3)
+        #
+        # cdef:
+        #     Py_ssize_t k
+        #     Py_ssize_t gw = self.Gr.gw
+        #     double tau =  get_mixing_tau(self.zi, self.wstar)
+        #     double l1, l2, z_
+
 
         with nogil:
-            for k in xrange(gw, self.Gr.nzg-gw):
-                l1 = tau * sqrt(fmax(self.EnvVar.TKE.values[k],0.0))
-                z_ = self.Gr.z_half[k]
-                if obukhov_length < 0.0: #unstable
-                    l2 = vkb * z_ * ( (1.0 - 100.0 * z_/obukhov_length)**0.2 )
-                elif obukhov_length > 0.0: #stable
-                    l2 = vkb * z_ /  (1. + 2.7 *z_/obukhov_length)
-                else:
-                    l2 = vkb * z_
-                self.mixing_length[k] = fmax( 1.0/(1.0/fmax(l1,1e-10) + 1.0/l2), 1e-3)
+            for k in range(gw,+1):
+                grad = (self.EnvVar.H.values[k+1]-self.EnvVar.H.values[k])/(self.Gr.z[k+1]-self.Gr.z[k])
+                grad2 = pow(fmax(grad,0.001),2.0)
+                H = self.EnvVar.H.values[k]
+                self.mixing_length[k] = sqrt(H/grad2)
+            for k in xrange(gw+1, self.Gr.nzg-gw-1):
+                grad = (self.EnvVar.H.values[k+1]-self.EnvVar.H.values[k-1])/(self.Gr.z[k+1]-self.Gr.z[k-1])
+                grad2 = pow(fmax(grad,0.001),2.0)
+                H = self.EnvVar.H.values[k]
+                self.mixing_length[k] = sqrt(H/grad2)
+            for k in xrange(gw+1, self.Gr.nzg-gw-1):
+                grad = (self.EnvVar.H.values[k]-self.EnvVar.H.values[k-1])/(self.Gr.z[k]-self.Gr.z[k-1])
+                grad2 = pow(fmax(grad,0.001),2.0)
+                H = self.EnvVar.H.values[k]
+                self.mixing_length[k] = sqrt(H/grad2)
         return
 
 
@@ -637,8 +663,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
     cpdef reset_surface_covariance(self, GridMeanVariables GMV, CasesBase Case):
 
-        flux1 = Case.Sur.rho_hflux/1.2
-        flux2 = Case.Sur.rho_qtflux/1.2
+        flux1 = Case.Sur.rho_hflux
+        flux2 = Case.Sur.rho_qtflux
         cdef:
             double zLL = self.Gr.z_half[self.Gr.gw]
             double ustar = Case.Sur.ustar, oblength = Case.Sur.obukhov_length
@@ -669,7 +695,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         cdef:
             Py_ssize_t k, gw = self.Gr.gw
-            double val1, val2, au_full, wu_half, we_half, Hvar_u, QTvar_u, HQTcov_u
+            double val1, val2, au_full, wu_half, we_half
+            double Hvar_e, QTvar_e, HQTcov_e, Hvar_u, QTvar_u, HQTcov_u
 
 
         if whichvals == 'values':
@@ -686,15 +713,23 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     self.EnvVar.W.values[k] = -au_full/(1.0-au_full) * self.UpdVar.W.bulkvalues[k]
                     wu_half = interp2pt(self.UpdVar.W.bulkvalues[k-1], self.UpdVar.W.bulkvalues[k])
                     we_half = interp2pt(self.EnvVar.W.values[k-1], self.EnvVar.W.values[k])
+
+                    Hvar_e = (self.EnvVar.H.values[k] - GMV.H.values[k])*(self.EnvVar.H.values[k] - GMV.H.values[k])
+                    QTvar_e = (self.EnvVar.QT.values[k] - GMV.QT.values[k])*(self.EnvVar.QT.values[k] - GMV.QT.values[k])
+                    HQTcov_e = (self.EnvVar.H.values[k] - GMV.H.values[k])*(self.EnvVar.QT.values[k] - GMV.QT.values[k])
                     Hvar_u = (self.UpdVar.H.bulkvalues[k] - GMV.H.values[k])*(self.UpdVar.H.bulkvalues[k] - GMV.H.values[k])
                     QTvar_u = (self.UpdVar.QT.bulkvalues[k] - GMV.QT.values[k])*(self.UpdVar.QT.bulkvalues[k] - GMV.QT.values[k])
                     HQTcov_u = (self.UpdVar.H.bulkvalues[k] - GMV.H.values[k])*(self.UpdVar.QT.bulkvalues[k] - GMV.QT.values[k])
+
                     GMV.TKE.values[k] =  (self.UpdVar.Area.bulkvalues[k] * 0.5 * wu_half * wu_half
                                           + (1.0-self.UpdVar.Area.bulkvalues[k]) * 0.5 * we_half * we_half
                                           + (1.0-self.UpdVar.Area.bulkvalues[k]) * self.EnvVar.TKE.values[k])
-                    GMV.Hvar.values[k] =   (self.UpdVar.Area.bulkvalues[k] * Hvar_u + (1.0-self.UpdVar.Area.bulkvalues[k]) * self.EnvVar.Hvar.values[k])
-                    GMV.QTvar.values[k] =  (self.UpdVar.Area.bulkvalues[k] * QTvar_u + (1.0-self.UpdVar.Area.bulkvalues[k]) * self.EnvVar.QTvar.values[k])
-                    GMV.HQTcov.values[k] = (self.UpdVar.Area.bulkvalues[k] * HQTcov_u + (1.0-self.UpdVar.Area.bulkvalues[k]) * self.EnvVar.HQTcov.values[k])
+                    GMV.Hvar.values[k] =   (self.UpdVar.Area.bulkvalues[k] * Hvar_u
+                                          + (1.0-self.UpdVar.Area.bulkvalues[k]) * (Hvar_e + self.EnvVar.Hvar.values[k]) )
+                    GMV.QTvar.values[k] =  (self.UpdVar.Area.bulkvalues[k] * QTvar_u
+                                          + (1.0-self.UpdVar.Area.bulkvalues[k]) * (QTvar_e + self.EnvVar. QTvar.values[k]) )
+                    GMV.HQTcov.values[k] = (self.UpdVar.Area.bulkvalues[k] * HQTcov_u
+                                          + (1.0-self.UpdVar.Area.bulkvalues[k]) * (HQTcov_e + self.EnvVar.HQTcov.values[k]) )
 
         elif whichvals == 'mf_update':
             # same as above but replace GMV.SomeVar.values with GMV.SomeVar.mf_update
@@ -712,6 +747,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     self.EnvVar.W.values[k] = -au_full/(1.0-au_full) * self.UpdVar.W.bulkvalues[k]
                     wu_half = interp2pt(self.UpdVar.W.bulkvalues[k-1], self.UpdVar.W.bulkvalues[k])
                     we_half = interp2pt(self.EnvVar.W.values[k-1], self.EnvVar.W.values[k])
+
+                    Hvar_e = (self.EnvVar.H.values[k] - GMV.H.values[k])*(self.EnvVar.H.values[k] - GMV.H.values[k])
+                    QTvar_e = (self.EnvVar.QT.values[k] - GMV.QT.values[k])*(self.EnvVar.QT.values[k] - GMV.QT.values[k])
+                    HQTcov_e = (self.EnvVar.H.values[k] - GMV.H.values[k])*(self.EnvVar.QT.values[k] - GMV.QT.values[k])
                     Hvar_u = (self.UpdVar.H.bulkvalues[k] - GMV.H.values[k])*(self.UpdVar.H.bulkvalues[k] - GMV.H.values[k])
                     QTvar_u = (self.UpdVar.QT.bulkvalues[k] - GMV.QT.values[k])*(self.UpdVar.QT.bulkvalues[k] - GMV.QT.values[k])
                     HQTcov_u = (self.UpdVar.H.bulkvalues[k] - GMV.H.values[k])*(self.UpdVar.QT.bulkvalues[k] - GMV.QT.values[k])
@@ -719,9 +758,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     GMV.TKE.mf_update[k] =    (self.UpdVar.Area.bulkvalues[k] * 0.5 * wu_half * wu_half
                                             + (1.0-self.UpdVar.Area.bulkvalues[k]) * 0.5 * we_half * we_half
                                             + (1.0-self.UpdVar.Area.bulkvalues[k]) * self.EnvVar.TKE.values[k])
-                    GMV.Hvar.mf_update[k] =   (self.UpdVar.Area.bulkvalues[k] * Hvar_u + (1.0-self.UpdVar.Area.bulkvalues[k]) * self.EnvVar.Hvar.values[k])
-                    GMV.QTvar.mf_update[k] =  (self.UpdVar.Area.bulkvalues[k] * QTvar_u + (1.0-self.UpdVar.Area.bulkvalues[k]) * self.EnvVar.QTvar.values[k])
-                    GMV.HQTcov.mf_update[k] = (self.UpdVar.Area.bulkvalues[k] * HQTcov_u + (1.0-self.UpdVar.Area.bulkvalues[k]) * self.EnvVar.HQTcov.values[k])
+                    GMV.Hvar.mf_update[k] =   (self.UpdVar.Area.bulkvalues[k] * Hvar_u
+                                               + (1.0-self.UpdVar.Area.bulkvalues[k]) * (Hvar_e + self.EnvVar.Hvar.values[k]) )
+                    GMV.QTvar.mf_update[k] =  (self.UpdVar.Area.bulkvalues[k] * QTvar_u
+                                               + (1.0-self.UpdVar.Area.bulkvalues[k]) * (QTvar_e + self.EnvVar. QTvar.values[k]) )
+                    GMV.HQTcov.mf_update[k] = (self.UpdVar.Area.bulkvalues[k] * HQTcov_u
+                                               + (1.0-self.UpdVar.Area.bulkvalues[k]) * (HQTcov_e + self.EnvVar.HQTcov.values[k]) )
 
         return
 
@@ -1447,15 +1489,23 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         cdef:
             Py_ssize_t k
-            double z
-            #double ws= self.wstar, us = Case.Sur.ustar, zs = self.zi, z
+
+            double ws= self.wstar, us = Case.Sur.ustar, zs = self.zi, z
         self.reset_surface_covariance(GMV, Case)
+
         with nogil:
             for k in xrange(self.Gr.nzg):
                 z = self.Gr.z_half[k]
-                GMV.Hvar.values[k]   = GMV.Hvar.values[self.Gr.gw]/(1.0+z)
-                GMV.QTvar.values[k]  = GMV.QTvar.values[self.Gr.gw]/(1.0+z)
-                GMV.HQTcov.values[k] = GMV.HQTcov.values[self.Gr.gw]/(1.0+z)
+
+                GMV.Hvar.values[k]   = 0.1*0.1
+                GMV.QTvar.values[k]  = 0.001*0.001
+                GMV.HQTcov.values[k] = 0.1*0.001
+                #GMV.Hvar.values[k]   = GMV.Hvar.values[self.Gr.gw]
+                #GMV.QTvar.values[k]  = GMV.QTvar.values[self.Gr.gw]
+                #GMV.HQTcov.values[k] = GMV.HQTcov.values[self.Gr.gw]
+                #GMV.Hvar.values[k]   = GMV.Hvar.values[self.Gr.gw]*ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
+                #GMV.QTvar.values[k]  = GMV.QTvar.values[self.Gr.gw]*ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
+                #GMV.HQTcov.values[k] = GMV.HQTcov.values[self.Gr.gw]*ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
 
                 GMV.QTvar.new[k] = GMV.QTvar.values[k]
                 GMV.QTvar.mf_update[k] = GMV.QTvar.values[k]
@@ -1478,21 +1528,21 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Py_ssize_t k
             Py_ssize_t gw = self.Gr.gw
             double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),self.UpdVar.Area.bulkvalues) # area of environment
-            double dH = 0.0
-            double dQT = 0.0
+            double dH_high = 0.0
+            double dQT_high = 0.0
+            double dH_low, dQT_low
 
 
         with nogil:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                if k == self.Gr.gw:
-                    dH = 0.0
-                    dQT = 0.0
-                else:
-                    dH = (self.EnvVar.H.values[k+1] - self.EnvVar.H.values[k-1]) * self.Gr.dzi
-                    dQT = (self.EnvVar.QT.values[k+1] - self.EnvVar.QT.values[k-1]) * self.Gr.dzi
-                self.Hvar_shear[k] = 2.0*( self.Ref.rho0_half[k] * ae[k] * self.KM.values[k] *pow(dH,2.0))
-                self.QTvar_shear[k] = 2.0*( self.Ref.rho0_half[k] * ae[k] * self.KM.values[k] *pow(dQT,2.0))
-                self.HQTcov_shear[k] = 2.0*( self.Ref.rho0_half[k] * ae[k] * self.KM.values[k] *dH*dQT)
+
+                dH_low = dH_high
+                dH_high = (self.EnvVar.H.values[k+1] - self.EnvVar.H.values[k]) * self.Gr.dzi
+                dQT_low = dQT_high
+                dQT_high = (self.EnvVar.QT.values[k+1] - self.EnvVar.QT.values[k]) * self.Gr.dzi
+                self.Hvar_shear[k] = (self.Ref.rho0_half[k] * ae[k] * self.KH.values[k] *pow(interp2pt(dH_low, dH_high),2.0))
+                self.QTvar_shear[k] = (self.Ref.rho0_half[k] * ae[k] * self.KH.values[k] *pow(interp2pt(dQT_low, dQT_high),2.0))
+                self.HQTcov_shear[k] = (self.Ref.rho0_half[k] * ae[k] * self.KH.values[k] *interp2pt(dH_low, dH_high)*interp2pt(dQT_low, dQT_high))
         return
 
     cpdef compute_covariance_entr(self):
@@ -1570,14 +1620,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double HQTcov_gmv_surf =  get_surface_variance(Case.Sur.rho_hflux * alpha0LL, Case.Sur.rho_qtflux * alpha0LL, Case.Sur.ustar, zLL, Case.Sur.obukhov_length)
             double Hu_half, He_half, a_half, QTu_half, QTe_half
             double wu_half, we_half, Hvar_0_surf, QTvar_0_surf, HQTcov_0_surf
-        print Hvar_gmv_surf
-        print QTvar_gmv_surf
-        print HQTcov_gmv_surf
 
 
         with nogil:
             for k in xrange(1,nzg-1):
-                rho_ae_K_m[k] = 0.5 * (ae[k]*self.KM.values[k]+ ae[k+1]*self.KM.values[k+1]) * self.Ref.rho0[k]
+                rho_ae_K_m[k] = 0.5 * (ae[k]*self.KH.values[k]+ ae[k+1]*self.KH.values[k+1]) * self.Ref.rho0[k]
                 whalf[k] = interp2pt(self.EnvVar.W.values[k-1], self.EnvVar.W.values[k])
                 Hhalf[k] = self.EnvVar.H.values[k]
                 QThalf[k] = self.EnvVar.QT.values[k]
@@ -1586,9 +1633,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         QTu_half = self.UpdVar.QT.bulkvalues[gw]
 
         # BC  at the surface
-        Hvar_0_surf = (Hvar_gmv_surf/ae[k] - self.UpdVar.Area.bulkvalues[k]/ae[k] *Hu_half * Hu_half - Hhalf[gw] * Hhalf[gw])
-        QTvar_0_surf = (QTvar_gmv_surf/ae[k] - self.UpdVar.Area.bulkvalues[k]/ae[k] *QTu_half * QTu_half - QThalf[gw] * QThalf[gw])
-        HQTcov_0_surf = (HQTcov_gmv_surf/ae[k] - self.UpdVar.Area.bulkvalues[k]/ae[k]  * Hu_half * QTu_half - Hhalf[gw] * QThalf[gw])
+        Hvar_0_surf = (Hvar_gmv_surf/ae[k] - self.UpdVar.Area.bulkvalues[k]/ae[k] *(Hu_half * Hu_half - Hhalf[gw] * Hhalf[gw]))
+        QTvar_0_surf = (QTvar_gmv_surf/ae[k] - self.UpdVar.Area.bulkvalues[k]/ae[k] *(QTu_half * QTu_half - QThalf[gw] * QThalf[gw]))
+        HQTcov_0_surf = (HQTcov_gmv_surf/ae[k] - self.UpdVar.Area.bulkvalues[k]/ae[k]  *( Hu_half * QTu_half - Hhalf[gw] * QThalf[gw]))
 
 
         # run tridiagonal solver for Hvar
@@ -1624,8 +1671,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for kk in xrange(nz):
                 k = kk + gw
                 self.EnvVar.Hvar.values[k] = x[kk]
-                GMV.Hvar.new[k] = (ae[k] * (self.EnvVar.Hvar.values[k] + Hhalf[k] * Hhalf[k])
-                                  + self.UpdVar.Area.bulkvalues[k] * self.UpdVar.H.bulkvalues[k] * self.UpdVar.H.bulkvalues[k])
+                GMV.Hvar.new[k] = (ae[k] * (self.EnvVar.Hvar.values[k] + (Hhalf[k]-GMV.H.values[k]) * (Hhalf[k]-GMV.H.values[k]))
+                                  + self.UpdVar.Area.bulkvalues[k] * (self.UpdVar.H.bulkvalues[k]-GMV.H.values[k])  * (self.UpdVar.H.bulkvalues[k]-GMV.H.values[k]))
 
 
         # run tridiagonal solver for  QTvar
@@ -1662,8 +1709,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 k = kk + gw
                 #self.EnvVar.Hvar.values[k] = fmax(x[kk], 0.0)
                 self.EnvVar.Hvar.values[k] = x[kk]
-                GMV.QTvar.new[k] = (ae[k] * (self.EnvVar.QTvar.values[k] + QThalf[k] * QThalf[k])
-                                  + self.UpdVar.Area.bulkvalues[k] * self.UpdVar.QT.bulkvalues[k] * self.UpdVar.QT.bulkvalues[k])
+                GMV.QTvar.new[k] = (ae[k] * (self.EnvVar.QTvar.values[k] + (QThalf[k]-GMV.QT.values[k]) * (QThalf[k]-GMV.QT.values[k]))
+                                  + self.UpdVar.Area.bulkvalues[k] * (self.UpdVar.H.bulkvalues[k]-GMV.QT.values[k])  * (self.UpdVar.QT.bulkvalues[k]-GMV.QT.values[k]))
+
 
 
         # run tridiagonal solver for HQTcov
@@ -1701,6 +1749,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.EnvVar.HQTcov.values[k] = x[kk]
                 GMV.HQTcov.new[k] = (ae[k] * (self.EnvVar.HQTcov.values[k]  * Hhalf[k] * QThalf[k])
                                   + self.UpdVar.Area.bulkvalues[k] * self.UpdVar.H.bulkvalues[k] * self.UpdVar.QT.bulkvalues[k])
+                GMV.HQTcov.new[k] = (ae[k] * (self.EnvVar.HQTcov.values[k] + (Hhalf[k]-GMV.H.values[k]) * (QThalf[k]-GMV.QT.values[k]))
+                                  + self.UpdVar.Area.bulkvalues[k] * (self.UpdVar.H.bulkvalues[k]-GMV.H.values[k])  * (self.UpdVar.QT.bulkvalues[k]-GMV.QT.values[k]))
+
 
 
 
