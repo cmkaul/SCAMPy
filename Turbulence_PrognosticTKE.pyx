@@ -1178,9 +1178,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double tke_gmv_surf =  get_surface_tke(Case.Sur.ustar, self.wstar, self.Gr.z_half[gw], Case.Sur.obukhov_length)
             double wu_half, tke_0_surf
 
-        if self.use_steady_updrafts:
-            dti = 0.0
-        print(dti, TS.dti)
+        # if self.use_steady_updrafts:
+        #     dti = 0.0
+        # print(dti, TS.dti)
 
 
         with nogil:
