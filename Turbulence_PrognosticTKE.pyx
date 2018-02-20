@@ -777,7 +777,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         # input.zi = self.zi
         input.wstar = self.wstar
-
+        ##if self.UpdVar.H.name == 's':
+        #    t_to_prog_fp = t_to_entropy_c
+        #    prog_to_t_fp = eos_first_guess_entropy
+        #elif self.UpdVar.H.name == 'thetal':
+        #    t_to_prog_fp = t_to_thetali_c
+        #    prog_to_t_fp = eos_first_guess_thetal
         with nogil:
             for i in xrange(self.n_updrafts):
                 input.zi = self.UpdVar.cloud_base[i]
@@ -788,16 +793,31 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     input.af = self.UpdVar.Area.values[i,k]
                     input.tke = self.EnvVar.TKE.values[k]
                     input.ml = self.mixing_length[k]
-                    input.qt_env = self.EnvVar.QT.values[k]
-                    input.H_env = self.EnvVar.H.values[k]
                     input.b_env = self.EnvVar.B.values[k]
                     input.w_env = self.EnvVar.W.values[k]
+                    input.H_env = self.EnvVar.H.values[k]
+                    input.qt_env = self.EnvVar.QT.values[k]
+                    input.ql_env = self.EnvVar.QL.values[k]
+                    input.T_env = self.EnvVar.T.values[k]
                     input.H_up = self.UpdVar.H.values[i,k]
                     input.qt_up = self.UpdVar.QT.values[i,k]
                     input.ql_up = self.UpdVar.QL.values[i,k]
-                    input.p0 = self.UpdVar.QL.values[i,k]#Ref.p0.values[k]
+                    input.T_up = self.UpdVar.T.values[i,k]
+
+                    input.p0 = self.Ref.p0.values[k]
+                    input.alpha0 = self.Ref.alpha0.values[k]
+
                     input.tke_ed_coeff  = self.tke_ed_coeff
-                    input.T_mean = GMV.T.values[k]
+
+                    #if self.UpdVar.H.name == 's':
+                    #    input.t_to_prog_fp = t_to_prog_fp
+                    #    input.prog_to_t_fp = prog_to_t_fp
+                    #elif self.UpdVar.H.name == 'thetal':
+                    #    input.t_to_prog_fp = t_to_prog_fp
+                    #    input.prog_to_t_fp = prog_to_t_fp
+                    input.prog_to_t_fp = self.UpdThermo.prog_to_t_fp
+                    input.t_to_prog_fp = self.UpdThermo.t_to_prog_fp
+                    #input.T_mean = GMV.T.values[k]
                     input.L = 20000.0 # need to define the scale of the GCM grid resolution
 
                     ret = self.entr_detr_fp(input)

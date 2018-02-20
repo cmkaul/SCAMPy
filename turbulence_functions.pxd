@@ -11,11 +11,16 @@ cdef struct entr_in_struct:
     double af
     double tke
     double ml
-    double T_mean
+    double T_up
+    double T_env
     double p0
+    double alpha0
     double qt_up
     double ql_up
     double qt_env
+    double ql_env
+    double t_to_prog_fp
+    double prog_to_t_fp
     double H_up
     double H_env
     double b_env
