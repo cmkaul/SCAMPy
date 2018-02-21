@@ -298,6 +298,164 @@ cdef class EnvironmentThermodynamics:
                     self.t_cloudy[k]    = outer_int_T_cloudy/exner_c(self.Ref.p0_half[k])
         return
 
+    cdef void sommeria_deardorff(self, EnvironmentVariables EnvVar, VariableDiagnostic GMV_B):
+
+        a, w = np.polynomial.hermite.hermgauss(self.quadrature_order)
+        cdef:
+            Py_ssize_t gw = self.Gr.gw
+            Py_ssize_t k, m_q, m_h
+            double [:] abscissas = a
+            double [:] weights = w
+            double outer_int_ql, outer_int_T, outer_int_alpha, outer_int_cf
+            double inner_int_ql, inner_int_T, inner_int_alpha, inner_int_cf
+            double inner_int_qt_cloudy, inner_int_T_cloudy
+            double outer_int_qt_cloudy, outer_int_T_cloudy
+            double inner_int_qt_dry, inner_int_T_dry
+            double outer_int_qt_dry, outer_int_T_dry
+            double h_hat, qt_hat, sd_h, sd_q, corr, mu_h_star, sigma_h_star, qt_var
+            double sqpi_inv = 1.0/sqrt(pi)
+            double temp_m, alpha_m, qv_m, ql_m, qi_m, thetal_m
+            double sqrt2 = sqrt(2.0)
+            double sd_q_lim
+            eos_struct sa
+
+        if EnvVar.H.name == 'thetal':
+            with nogil:
+                for k in xrange(gw, self.Gr.nzg-gw):
+                    sd_q = sqrt(EnvVar.QTvar.values[k])
+                    sd_h = sqrt(EnvVar.Hvar.values[k])
+                    corr = fmax(fmin(EnvVar.HQTcov.values[k]/fmax(sd_h*sd_q, 1e-13),1.0),-1.0)
+                    # limit sd_q to prevent negative qt_hat
+                    sd_q_lim = (1e-10 - EnvVar.QT.values[k])/(sqrt2 * abscissas[0])
+                    sd_q = fmin(sd_q, sd_q_lim)
+                    qt_var = sd_q * sd_q
+                    sigma_h_star = sqrt(fmax(1.0-corr*corr,0.0)) * sd_h
+                    outer_int_alpha = 0.0
+                    outer_int_T = 0.0
+                    outer_int_ql = 0.0
+                    outer_int_cf = 0.0
+                    outer_int_qt_cloudy = 0.0
+
+                    outer_int_T_cloudy = 0.0
+                    for m_q in xrange(self.quadrature_order):
+                        qt_hat    = EnvVar.QT.values[k] + sqrt2 * sd_q * abscissas[m_q]
+                        mu_h_star = EnvVar.H.values[k]  + sqrt2 * corr * sd_h * abscissas[m_q]
+                        inner_int_T     = 0.0
+                        inner_int_ql    = 0.0
+                        inner_int_alpha = 0.0
+                        inner_int_cf    = 0.0
+                        inner_int_qt_cloudy = 0.0
+                        inner_int_T_cloudy = 0.0
+                        inner_int_qt_dry = 0.0
+                        inner_int_T_dry = 0.0
+                        for m_h in xrange(self.quadrature_order):
+                            h_hat = sqrt2 * sigma_h_star * abscissas[m_h] + mu_h_star
+                            sa = eos(self.t_to_prog_fp,self.prog_to_t_fp, self.Ref.p0_half[k], qt_hat, h_hat)
+                            temp_m = sa.T
+                            ql_m = sa.ql
+                            qv_m = EnvVar.QT.values[k] - ql_m
+                            alpha_m = alpha_c(self.Ref.p0_half[k], temp_m, qt_hat, qv_m)
+                            inner_int_ql    += ql_m    * weights[m_h] * sqpi_inv
+                            inner_int_T     += temp_m  * weights[m_h] * sqpi_inv
+                            inner_int_alpha += alpha_m * weights[m_h] * sqpi_inv
+                            if ql_m  > 0.0:
+                                inner_int_cf        +=          weights[m_h] * sqpi_inv
+                                inner_int_qt_cloudy += qt_hat * weights[m_h] * sqpi_inv
+                                inner_int_T_cloudy  += temp_m * weights[m_h] * sqpi_inv
+                            else:
+                                inner_int_qt_dry += qt_hat * weights[m_h] * sqpi_inv
+                                inner_int_T_dry  += temp_m * weights[m_h] * sqpi_inv
+
+                        outer_int_ql        += inner_int_ql        * weights[m_q] * sqpi_inv
+                        outer_int_T         += inner_int_T         * weights[m_q] * sqpi_inv
+                        outer_int_alpha     += inner_int_alpha     * weights[m_q] * sqpi_inv
+                        outer_int_cf        += inner_int_cf        * weights[m_q] * sqpi_inv
+                        outer_int_qt_cloudy += inner_int_qt_cloudy * weights[m_q] * sqpi_inv
+                        outer_int_T_cloudy  += outer_int_T_cloudy  * weights[m_q] * sqpi_inv
+                        outer_int_qt_dry    += inner_int_qt_dry    * weights[m_q] * sqpi_inv
+                        outer_int_T_dry     += outer_int_T_dry     * weights[m_q] * sqpi_inv
+
+                    EnvVar.QL.values[k] = outer_int_ql
+                    EnvVar.B.values[k]  = g * (outer_int_alpha - self.Ref.alpha0_half[k])/self.Ref.alpha0_half[k] #- GMV_B.values[k]
+                    EnvVar.T.values[k]  = outer_int_T
+                    EnvVar.CF.values[k] = outer_int_cf
+                    self.qt_dry[k]      = outer_int_qt_dry
+                    self.th_dry[k]      = outer_int_T_dry/exner_c(self.Ref.p0_half[k])
+                    self.t_cloudy[k]    = outer_int_T_cloudy
+                    self.qv_cloudy[k]   = outer_int_qt_cloudy - outer_int_ql
+                    self.qt_cloudy[k]   = outer_int_qt_cloudy
+                    self.th_cloudy[k]   = outer_int_T_cloudy/exner_c(self.Ref.p0_half[k])
+
+        elif EnvVar.H.name == 's':
+            with nogil:
+                for k in xrange(gw, self.Gr.nzg-gw):
+                    sd_q = sqrt(EnvVar.QTvar.values[k])
+                    sd_h = sqrt(EnvVar.Hvar.values[k])
+                    corr = fmax(fmin(EnvVar.HQTcov.values[k]/fmax(sd_h*sd_q, 1e-13),1.0),-1.0)
+                    # limit sd_q to prevent negative qt_hat
+                    sd_q_lim = (1e-10 - EnvVar.QT.values[k])/(sqrt2 * abscissas[0])
+                    sd_q = fmin(sd_q, sd_q_lim)
+                    qt_var = sd_q * sd_q
+                    sigma_h_star = sqrt(fmax(1.0-corr*corr,0.0)) * sd_h
+                    outer_int_alpha = 0.0
+                    outer_int_T = 0.0
+                    outer_int_ql = 0.0
+                    outer_int_cf = 0.0
+                    outer_int_qt_cloudy = 0.0
+                    outer_int_T_cloudy = 0.0
+                    outer_int_qt_dry = 0.0
+                    outer_int_T_dry = 0.0
+                    for m_q in xrange(self.quadrature_order):
+                        qt_hat    = EnvVar.QT.values[k] + sqrt2 * sd_q * abscissas[m_q]
+                        mu_h_star = EnvVar.H.values[k]  + sqrt2 * corr * sd_h * abscissas[m_q]
+                        inner_int_T     = 0.0
+                        inner_int_ql    = 0.0
+                        inner_int_alpha = 0.0
+                        inner_int_cf    = 0.0
+                        inner_int_qt_cloudy = 0.0
+                        inner_int_T_cloudy = 0.0
+                        inner_int_qt_dry = 0.0
+                        inner_int_T_dry = 0.0
+                        for m_h in xrange(self.quadrature_order):
+                            h_hat = sqrt2 * sigma_h_star * abscissas[m_h] + mu_h_star
+                            sa = eos(self.t_to_prog_fp,self.prog_to_t_fp, self.Ref.p0_half[k], qt_hat, h_hat)
+                            temp_m = sa.T
+                            ql_m = sa.ql
+                            qv_m = EnvVar.QT.values[k] - ql_m
+                            alpha_m = alpha_c(self.Ref.p0_half[k], temp_m, qt_hat, qv_m)
+                            #thetal_m = t_to_thetali_c(self.Ref.p0_half[k], temp_m, qt_hat, ql_m, 0.0)
+                            inner_int_ql    += ql_m    * weights[m_h] * sqpi_inv
+                            inner_int_T     += temp_m  * weights[m_h] * sqpi_inv
+                            inner_int_alpha += alpha_m * weights[m_h] * sqpi_inv
+                            if ql_m  > 0.0:
+                                inner_int_cf        +=          weights[m_h] * sqpi_inv
+                                inner_int_qt_cloudy += qt_hat * weights[m_h] * sqpi_inv
+                                inner_int_T_cloudy  += temp_m * weights[m_h] * sqpi_inv
+                            else:
+                                inner_int_qt_dry += qt_hat * weights[m_h] * sqpi_inv
+                                inner_int_T_dry  += temp_m * weights[m_h] * sqpi_inv
+                        outer_int_ql        += inner_int_ql        * weights[m_q] * sqpi_inv
+                        outer_int_T         += inner_int_T         * weights[m_q] * sqpi_inv
+                        outer_int_alpha     += inner_int_alpha     * weights[m_q] * sqpi_inv
+                        outer_int_cf        += inner_int_cf        * weights[m_q] * sqpi_inv
+                        outer_int_qt_cloudy += inner_int_qt_cloudy * weights[m_q] * sqpi_inv
+                        outer_int_T_cloudy  += outer_int_T_cloudy  * weights[m_q] * sqpi_inv
+                        outer_int_qt_dry    += inner_int_qt_dry    * weights[m_q] * sqpi_inv
+                        outer_int_T_dry     += outer_int_T_dry     * weights[m_q] * sqpi_inv
+
+
+                    EnvVar.QL.values[k] = outer_int_ql
+                    EnvVar.B.values[k]  = g * (outer_int_alpha - self.Ref.alpha0_half[k])/self.Ref.alpha0_half[k] # - GMV_B.values[k]
+                    EnvVar.T.values[k]  = outer_int_T
+                    EnvVar.CF.values[k] = outer_int_cf
+                    self.qt_dry[k]      = outer_int_qt_dry
+                    self.th_dry[k]      = outer_int_T_dry/exner_c(self.Ref.p0_half[k])
+                    self.t_cloudy[k]    = outer_int_T_cloudy
+                    self.qv_cloudy[k]   = outer_int_qt_cloudy - outer_int_ql
+                    self.qt_cloudy[k]   = outer_int_qt_cloudy
+                    self.t_cloudy[k]    = outer_int_T_cloudy/exner_c(self.Ref.p0_half[k])
+        return
+
     cpdef satadjust(self, EnvironmentVariables EnvVar, GridMeanVariables GMV):
         cdef:
             Py_ssize_t k
@@ -305,9 +463,11 @@ cdef class EnvironmentThermodynamics:
 
             eos_struct sa
             double qv, alpha
-
         if GMV.use_scalar_var:
-            self.eos_update_SA_sgs(EnvVar, GMV.B)
+            if self.use_sommeria_deardorff:
+                self.sommeria_deardorff(EnvVar, GMV.B)
+            else:
+                self.eos_update_SA_sgs(EnvVar, GMV.B)
         else:
             with nogil:
                 for k in xrange(gw,self.Gr.nzg-gw):
