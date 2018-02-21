@@ -3,7 +3,9 @@
   <component name="ChangeListManager">
     <list default="true" id="22c6523f-6a5b-4dfe-bf57-5f2b71f78bb8" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Turbulence_PrognosticTKE.pxd" afterPath="$PROJECT_DIR$/Turbulence_PrognosticTKE.pxd" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Turbulence_PrognosticTKE.pyx" afterPath="$PROJECT_DIR$/Turbulence_PrognosticTKE.pyx" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/generate_paramlist.py" afterPath="$PROJECT_DIR$/generate_paramlist.py" />
     </list>
     <ignored path="PySCM.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -34,11 +36,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Turbulence_PrognosticTKE.pxd" pinned="false" current-in-tab="false">
+      <file leaf-file-name="Turbulence_PrognosticTKE.pxd" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/Turbulence_PrognosticTKE.pxd">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-798">
-              <caret line="22" column="23" selection-start-line="22" selection-start-column="23" selection-end-line="22" selection-end-column="23" />
+            <state relative-caret-position="840">
+              <caret line="61" column="27" selection-start-line="61" selection-start-column="27" selection-end-line="61" selection-end-column="27" />
               <folding />
             </state>
           </provider>
@@ -64,11 +66,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Turbulence_PrognosticTKE.pyx" pinned="false" current-in-tab="true">
+      <file leaf-file-name="Turbulence_PrognosticTKE.pyx" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Turbulence_PrognosticTKE.pyx">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="221">
-              <caret line="983" column="100" selection-start-line="983" selection-start-column="97" selection-end-line="983" selection-end-column="100" />
+            <state relative-caret-position="55">
+              <caret line="950" column="23" selection-start-line="950" selection-start-column="10" selection-end-line="950" selection-end-column="23" />
               <folding />
             </state>
           </provider>
@@ -180,9 +182,9 @@
         <option value="$PROJECT_DIR$/turbulence_functions.pxd" />
         <option value="$PROJECT_DIR$/Turbulence_BulkSteady.pxd" />
         <option value="$PROJECT_DIR$/Turbulence_BulkSteady.pyx" />
+        <option value="$PROJECT_DIR$/turbulence_functions.pyx" />
         <option value="$PROJECT_DIR$/Turbulence_PrognosticTKE.pxd" />
         <option value="$PROJECT_DIR$/Turbulence_PrognosticTKE.pyx" />
-        <option value="$PROJECT_DIR$/turbulence_functions.pyx" />
       </list>
     </option>
   </component>
@@ -193,10 +195,10 @@
     <sorting>DEFINITION_ORDER</sorting>
   </component>
   <component name="ProjectFrameBounds">
-    <option name="x" value="2" />
+    <option name="x" value="-24" />
     <option name="y" value="23" />
-    <option name="width" value="1536" />
-    <option name="height" value="1003" />
+    <option name="width" value="1777" />
+    <option name="height" value="1262" />
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="true">
     <OptionsSetting value="true" id="Add" />
@@ -518,21 +520,28 @@
       <option name="project" value="LOCAL" />
       <updated>1499449787000</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="changed to prognostic TKE is used with diagnostic updrafts">
+      <created>1518825169872</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1518825169872</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="2" y="23" width="1536" height="1003" extended-state="0" />
+    <frame x="-24" y="23" width="1777" height="1262" extended-state="0" />
     <editor active="true" />
     <layout>
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.21218206" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.18270893" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32932073" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
-      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.2118551" sideWeight="0.5073628" order="9" side_tool="true" content_ui="tabs" />
+      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.16495727" sideWeight="0.5072046" order="9" side_tool="true" content_ui="tabs" />
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32875606" sideWeight="0.5" order="10" side_tool="false" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="12" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.2118551" sideWeight="0.49263722" order="11" side_tool="false" content_ui="tabs" />
+      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.16495727" sideWeight="0.49279538" order="11" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32932073" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
@@ -588,7 +597,8 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="test" />
-    <option name="LAST_COMMIT_MESSAGE" value="test" />
+    <MESSAGE value="changed to prognostic TKE is used with diagnostic updrafts" />
+    <option name="LAST_COMMIT_MESSAGE" value="changed to prognostic TKE is used with diagnostic updrafts" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager />
@@ -718,6 +728,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="530">
           <caret line="165" column="0" selection-start-line="165" selection-start-column="0" selection-end-line="165" selection-end-column="0" />
+          <folding />
         </state>
       </provider>
     </entry>
@@ -767,6 +778,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="165">
           <caret line="11" column="15" selection-start-line="11" selection-start-column="15" selection-end-line="11" selection-end-column="15" />
+          <folding />
         </state>
       </provider>
     </entry>
@@ -806,6 +818,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="578">
           <caret line="113" column="14" selection-start-line="113" selection-start-column="14" selection-end-line="113" selection-end-column="14" />
+          <folding />
         </state>
       </provider>
     </entry>
@@ -874,14 +887,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Turbulence_PrognosticTKE.pxd">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-798">
-          <caret line="22" column="23" selection-start-line="22" selection-start-column="23" selection-end-line="22" selection-end-column="23" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/Turbulence.pxd">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="233">
@@ -918,8 +923,16 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/Turbulence_PrognosticTKE.pyx">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="221">
-          <caret line="983" column="100" selection-start-line="983" selection-start-column="97" selection-end-line="983" selection-end-column="100" />
+        <state relative-caret-position="55">
+          <caret line="950" column="23" selection-start-line="950" selection-start-column="10" selection-end-line="950" selection-end-column="23" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Turbulence_PrognosticTKE.pxd">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="840">
+          <caret line="61" column="27" selection-start-line="61" selection-start-column="27" selection-end-line="61" selection-end-column="27" />
           <folding />
         </state>
       </provider>

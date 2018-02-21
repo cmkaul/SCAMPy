@@ -28,11 +28,15 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double minimum_area
         double entrainment_factor
         double detrainment_factor
-        double vel_pressure_coeff
-        double vel_buoy_coeff
+        double vel_pressure_coeff # used by diagnostic plume option; now calc'ed from Tan et al 2018 coefficient set
+        double vel_buoy_coeff # used by diagnostic plume option; now calc'ed from Tan et al 2018 coefficient set
+        double pressure_buoy_coeff # Tan et al. 2018: coefficient alpha_b in Eq. 30
+        double pressure_drag_coeff # Tan et al. 2018: coefficient alpha_d in Eq. 30
+        double pressure_plume_spacing # Tan et al. 2018: coefficient r_d in Eq. 30
         double dt_upd
         double [:,:] entr_sc
         double [:,:] detr_sc
+        double [:,:] updraft_pressure_sink
         double [:] area_surface_bc
         double [:] h_surface_bc
         double [:] qt_surface_bc
@@ -53,6 +57,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double [:] tke_entr_gain
         double [:] tke_detr_loss
         double [:] tke_shear
+        double [:] tke_pressure
         double max_area_factor
         double tke_ed_coeff
         double tke_diss_coeff
@@ -81,6 +86,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef compute_tke_entr(self)
     cpdef compute_tke_detr(self)
     cpdef compute_tke_shear(self, GridMeanVariables GMV)
+    cpdef compute_tke_pressure(self)
     # cpdef update_tke_MF(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef update_tke_ED(self, GridMeanVariables GMV, CasesBase Case,TimeStepping TS)
     cpdef update_GMV_diagnostics(self, GridMeanVariables GMV)
