@@ -100,7 +100,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         # Need to code up as paramlist option?
         self.minimum_area = 1e-3
 
-
         # Create the updraft variable class (major diagnostic and prognostic variables)
         self.UpdVar = EDMF_Updrafts.UpdraftVariables(self.n_updrafts, namelist,paramlist, Gr)
         # Create the class for updraft thermodynamics
@@ -118,7 +117,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         # Detrainment rates
         self.detr_sc = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
-
 
         # Pressure term in updraft vertical momentum equation
         self.updraft_pressure_sink = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
@@ -196,7 +194,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         Stats.add_profile('tke_pressure')
         Stats.add_profile('updraft_qt_precip')
         Stats.add_profile('updraft_thetal_precip')
-
 
         return
 
@@ -329,10 +326,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.decompose_environment(GMV, 'values')
             self.EnvThermo.satadjust(self.EnvVar, GMV)
             self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar, GMV, self.extrapolate_buoyancy)
-
-
-
-
         return
 
     cpdef compute_diagnostic_updrafts(self, GridMeanVariables GMV, CasesBase Case):
@@ -349,7 +342,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         self.set_updraft_surface_bc(GMV, Case)
         self.compute_entrainment_detrainment(GMV, Case)
-
 
         with nogil:
             for i in xrange(self.n_updrafts):
@@ -468,8 +460,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         return
 
-
-
     cpdef compute_tke(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
         if TS.nstep > 0:
             if self.similarity_diffusivity: # otherwise, we computed mixing length when we computed
@@ -534,7 +524,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.mixing_length[k] = fmax( 1.0/(1.0/fmax(l1,1e-10) + 1.0/l2), 1e-3)
         return
 
-
     cpdef compute_eddy_diffusivities_tke(self, GridMeanVariables GMV, CasesBase Case):
         cdef:
             Py_ssize_t k
@@ -558,7 +547,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         self.update_inversion(GMV, Case.inversion_option)
         self.wstar = get_wstar(Case.Sur.bflux, self.zi)
-
 
         cdef:
             Py_ssize_t i, gw = self.Gr.gw
@@ -584,8 +572,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.qt_surface_bc[i] = (GMV.QT.values[gw] + surface_scalar_coeff * sqrt(qt_var))
         return
 
-
-
     cpdef reset_surface_tke(self, GridMeanVariables GMV, CasesBase Case):
         cdef:
             double zLL = self.Gr.z_half[self.Gr.gw]
@@ -595,8 +581,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         GMV.TKE.values[self.Gr.gw] = tke_surface
         GMV.TKE.mf_update[self.Gr.gw] = tke_surface
         return
-
-
 
     # Find values of environmental variables by subtracting updraft values from grid mean values
     # whichvals used to check which substep we are on--correspondingly use 'GMV.SomeVar.value' (last timestep value)
@@ -677,8 +661,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     self.detr_sc[i,k] = ret.detr_sc * self.detrainment_factor
 
         return
-
-
 
     cpdef solve_updraft_velocity_area(self, GridMeanVariables GMV, TimeStepping TS):
         cdef:
@@ -763,9 +745,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         return
 
-
-
-
     cpdef solve_updraft_scalars(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
         cdef:
             Py_ssize_t k, i
@@ -777,10 +756,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double c1, c2, c3, c4
             eos_struct sa
             double qt_var, h_var
-
-
-        # self.compute_entrainment_detrainment(GMV, Case)
-
 
         if self.use_local_micro:
             with nogil:
@@ -869,9 +844,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.UpdVar.H.set_bcs(self.Gr)
         self.UpdVar.QT.set_bcs(self.Gr)
         return
-
-
-
 
     # After updating the updraft variables themselves:
     # 1. compute the mass fluxes (currently not stored as class members, probably will want to do this
@@ -1092,8 +1064,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         return
 
 
-
-
     # Note we need mixing length again here....
     cpdef compute_tke_dissipation(self):
         cdef:
@@ -1145,8 +1115,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.tke_detr_loss[k] *= self.Ref.rho0_half[k] * self.EnvVar.TKE.values[k]
         return
 
-
-
     cpdef compute_tke_shear(self, GridMeanVariables GMV):
         cdef:
             Py_ssize_t k
@@ -1170,7 +1138,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                       + pow(interp2pt(dw_low, dw_high),2.0)))
         return
 
-
     cpdef compute_tke_pressure(self):
         cdef:
             Py_ssize_t k
@@ -1192,7 +1159,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                   * (self.pressure_drag_coeff/self.pressure_plume_spacing* (wu_half -we_half)**2.0))
                     self.tke_pressure[k] += (we_half - wu_half) * (press_buoy + press_drag)
         return
-
 
     cpdef update_tke_ED(self, GridMeanVariables GMV, CasesBase Case,TimeStepping TS):
         cdef:
@@ -1296,6 +1262,4 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
 
         return
-
-
 
