@@ -1180,8 +1180,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double tke_gmv_surf =  get_surface_tke(Case.Sur.ustar, self.wstar, self.Gr.z_half[gw], Case.Sur.obukhov_length)
             double wu_half, tke_0_surf
 
-
-
         with nogil:
             for k in xrange(1,nzg-1):
                 rho_ae_K_m[k] = 0.5 * (ae[k]*self.KM.values[k]+ ae[k+1]*self.KM.values[k+1]) * self.Ref.rho0[k]
