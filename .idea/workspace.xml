@@ -36,11 +36,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Bomex_cosine.in" pinned="false" current-in-tab="false">
+      <file leaf-file-name="Bomex_cosine.in" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/Bomex_cosine.in">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="540">
-              <caret line="36" column="38" lean-forward="false" selection-start-line="36" selection-start-column="38" selection-end-line="36" selection-end-column="38" />
+            <state relative-caret-position="405">
+              <caret line="27" column="31" lean-forward="true" selection-start-line="27" selection-start-column="31" selection-end-line="27" selection-end-column="31" />
               <folding />
             </state>
           </provider>
@@ -56,6 +56,16 @@
           </provider>
         </entry>
       </file>
+      <file leaf-file-name="Cases.pyx" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Cases.pyx">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="207">
+              <caret line="979" column="10" lean-forward="false" selection-start-line="979" selection-start-column="0" selection-end-line="979" selection-end-column="10" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
       <file leaf-file-name="paramlist_Bomex_cosine.in" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/paramlist_Bomex_cosine.in">
           <provider selected="true" editor-type-id="text-editor">
@@ -66,21 +76,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Turbulence_PrognosticTKE.pyx" pinned="false" current-in-tab="true">
+      <file leaf-file-name="Turbulence_PrognosticTKE.pyx" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Turbulence_PrognosticTKE.pyx">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="409">
+            <state relative-caret-position="-371">
               <caret line="1304" column="49" lean-forward="true" selection-start-line="1304" selection-start-column="49" selection-end-line="1304" selection-end-column="49" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="generate_paramlist.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/generate_paramlist.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1425">
-              <caret line="139" column="4" lean-forward="false" selection-start-line="139" selection-start-column="4" selection-end-line="139" selection-end-column="4" />
               <folding />
             </state>
           </provider>
@@ -96,6 +96,7 @@
       <find>inverse</find>
       <find>pressure_buoy_coeff</find>
       <find>compute_tke_pressure</find>
+      <find>cdef class</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -104,7 +105,6 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/surface_functions.py" />
         <option value="$PROJECT_DIR$/Csrc/entropy_functions.pxd" />
         <option value="$PROJECT_DIR$/Csrc/entropy_functions.pyx" />
         <option value="$PROJECT_DIR$/Csrc/thermodynamic_functions.pyx" />
@@ -149,12 +149,13 @@
         <option value="$PROJECT_DIR$/turbulence_functions.pyx" />
         <option value="$PROJECT_DIR$/paramlist_Bomex_cosine.in" />
         <option value="$PROJECT_DIR$/Bomex_cosine.in" />
-        <option value="$PROJECT_DIR$/Cases.pyx" />
         <option value="$PROJECT_DIR$/Turbulence_PrognosticTKE.pxd" />
         <option value="$PROJECT_DIR$/Turbulence_PrognosticTKE.pyx" />
         <option value="$PROJECT_DIR$/Bomex.in" />
         <option value="$PROJECT_DIR$/paramlist_Bomex.in" />
+        <option value="$PROJECT_DIR$/Cases.pyx" />
         <option value="$PROJECT_DIR$/generate_paramlist.py" />
+        <option value="$PROJECT_DIR$/generate_namelist.py" />
       </list>
     </option>
   </component>
@@ -225,6 +226,7 @@
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
     <property name="SearchEverywhereHistoryKey" value="&#9;FILE&#9;file:///Users/cmkaul/Dropbox/SCM/SCAMPy/thermodynamic_functions.pxd" />
+    <property name="js.eslint.eslintPackage" value="" />
   </component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
@@ -262,6 +264,12 @@
       <option name="CUSTOM_SETTINGS" value="false" />
       <option name="USE_OPTIONS" value="false" />
       <option name="OPTIONS" value="" />
+      <method />
+    </configuration>
+    <configuration default="true" type="JavaScriptTestRunnerProtractor" factoryName="Protractor">
+      <config-file value="" />
+      <node-interpreter value="project" />
+      <envs />
       <method />
     </configuration>
     <configuration default="true" type="JavascriptDebugType" factoryName="JavaScript Debug">
@@ -486,9 +494,9 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="23" width="1490" height="1338" extended-state="0" />
-    <editor active="true" />
+    <editor active="false" />
     <layout>
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.22582872" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="true" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.22582872" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32932073" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.16433567" sideWeight="0.5095101" order="9" side_tool="true" content_ui="tabs" />
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
@@ -782,28 +790,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Cases.pyx">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="825">
-          <caret line="1500" column="0" lean-forward="true" selection-start-line="1500" selection-start-column="0" selection-end-line="1500" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/main.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="195">
           <caret line="14" column="0" lean-forward="false" selection-start-line="14" selection-start-column="0" selection-end-line="14" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/generate_namelist.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding>
-            <element signature="e#0#15#0" expanded="false" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -819,9 +809,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-2666">
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding>
-            <element signature="e#0#17#0" expanded="false" />
-          </folding>
+          <folding />
         </state>
       </provider>
     </entry>
@@ -865,14 +853,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/paramlist_Bomex_cosine.in">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="180">
-          <caret line="12" column="11" lean-forward="false" selection-start-line="12" selection-start-column="11" selection-end-line="12" selection-end-column="11" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/Bomex.in">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="510">
@@ -881,10 +861,42 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Bomex_cosine.in">
+    <entry file="file://$PROJECT_DIR$/generate_paramlist.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="540">
-          <caret line="36" column="38" lean-forward="false" selection-start-line="36" selection-start-column="38" selection-end-line="36" selection-end-column="38" />
+        <state relative-caret-position="360">
+          <caret line="29" column="5" lean-forward="false" selection-start-line="29" selection-start-column="5" selection-end-line="29" selection-end-column="5" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/generate_namelist.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2265">
+          <caret line="156" column="0" lean-forward="true" selection-start-line="156" selection-start-column="0" selection-end-line="156" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Turbulence_PrognosticTKE.pyx">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-371">
+          <caret line="1304" column="49" lean-forward="true" selection-start-line="1304" selection-start-column="49" selection-end-line="1304" selection-end-column="49" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/paramlist_Bomex_cosine.in">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="180">
+          <caret line="12" column="11" lean-forward="false" selection-start-line="12" selection-start-column="11" selection-end-line="12" selection-end-column="11" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Cases.pyx">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="207">
+          <caret line="979" column="10" lean-forward="false" selection-start-line="979" selection-start-column="0" selection-end-line="979" selection-end-column="10" />
           <folding />
         </state>
       </provider>
@@ -897,18 +909,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/generate_paramlist.py">
+    <entry file="file://$PROJECT_DIR$/Bomex_cosine.in">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1425">
-          <caret line="139" column="4" lean-forward="false" selection-start-line="139" selection-start-column="4" selection-end-line="139" selection-end-column="4" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Turbulence_PrognosticTKE.pyx">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="409">
-          <caret line="1304" column="49" lean-forward="true" selection-start-line="1304" selection-start-column="49" selection-end-line="1304" selection-end-column="49" />
+        <state relative-caret-position="405">
+          <caret line="27" column="31" lean-forward="true" selection-start-line="27" selection-start-column="31" selection-end-line="27" selection-end-column="31" />
           <folding />
         </state>
       </provider>
