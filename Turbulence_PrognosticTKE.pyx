@@ -1145,8 +1145,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double wu_half, we_half
             double press_buoy, press_drag
 
-
-
         with nogil:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                 self.tke_pressure[k] = 0.0
