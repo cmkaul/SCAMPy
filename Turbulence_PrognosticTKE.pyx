@@ -1181,10 +1181,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double wu_half, tke_0_surf
 
 
-        # if self.use_steady_updrafts:
-        #     dti = 0.0
-        # print(dti, TS.dti)
-
 
         with nogil:
             for k in xrange(1,nzg-1):
