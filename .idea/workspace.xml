@@ -46,7 +46,7 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="paramlist_Bomex.in" pinned="false" current-in-tab="true">
+      <file leaf-file-name="paramlist_Bomex.in" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/paramlist_Bomex.in">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="315">
@@ -66,11 +66,21 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Turbulence_PrognosticTKE.pyx" pinned="false" current-in-tab="false">
+      <file leaf-file-name="Turbulence_PrognosticTKE.pyx" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/Turbulence_PrognosticTKE.pyx">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="12255">
-              <caret line="1236" column="30" lean-forward="false" selection-start-line="1236" selection-start-column="10" selection-end-line="1236" selection-end-column="30" />
+            <state relative-caret-position="409">
+              <caret line="1304" column="49" lean-forward="true" selection-start-line="1304" selection-start-column="49" selection-end-line="1304" selection-end-column="49" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="generate_paramlist.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/generate_paramlist.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="1425">
+              <caret line="139" column="4" lean-forward="false" selection-start-line="139" selection-start-column="4" selection-end-line="139" selection-end-column="4" />
               <folding />
             </state>
           </provider>
@@ -94,7 +104,6 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/parameters.pxi" />
         <option value="$PROJECT_DIR$/surface_functions.py" />
         <option value="$PROJECT_DIR$/Csrc/entropy_functions.pxd" />
         <option value="$PROJECT_DIR$/Csrc/entropy_functions.pyx" />
@@ -145,6 +154,7 @@
         <option value="$PROJECT_DIR$/Turbulence_PrognosticTKE.pyx" />
         <option value="$PROJECT_DIR$/Bomex.in" />
         <option value="$PROJECT_DIR$/paramlist_Bomex.in" />
+        <option value="$PROJECT_DIR$/generate_paramlist.py" />
       </list>
     </option>
   </component>
@@ -156,7 +166,7 @@
   </component>
   <component name="ProjectFrameBounds">
     <option name="y" value="23" />
-    <option name="width" value="2403" />
+    <option name="width" value="1490" />
     <option name="height" value="1338" />
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
@@ -475,10 +485,10 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="0" y="23" width="2403" height="1338" extended-state="0" />
-    <editor active="false" />
+    <frame x="0" y="23" width="1490" height="1338" extended-state="0" />
+    <editor active="true" />
     <layout>
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.13850063" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.22582872" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32932073" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.16433567" sideWeight="0.5095101" order="9" side_tool="true" content_ui="tabs" />
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
@@ -797,16 +807,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/generate_paramlist.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding>
-            <element signature="e#0#15#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/Grid.pyx">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="424">
@@ -881,14 +881,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Turbulence_PrognosticTKE.pyx">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="12255">
-          <caret line="1236" column="30" lean-forward="false" selection-start-line="1236" selection-start-column="10" selection-end-line="1236" selection-end-column="30" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/Bomex_cosine.in">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="540">
@@ -901,6 +893,22 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="315">
           <caret line="21" column="31" lean-forward="true" selection-start-line="21" selection-start-column="30" selection-end-line="21" selection-end-column="31" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/generate_paramlist.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1425">
+          <caret line="139" column="4" lean-forward="false" selection-start-line="139" selection-start-column="4" selection-end-line="139" selection-end-column="4" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Turbulence_PrognosticTKE.pyx">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="409">
+          <caret line="1304" column="49" lean-forward="true" selection-start-line="1304" selection-start-column="49" selection-end-line="1304" selection-end-column="49" />
           <folding />
         </state>
       </provider>
