@@ -26,20 +26,50 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="Turbulence_BulkSteady.pyx" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/Turbulence_BulkSteady.pyx">
+      <file leaf-file-name="Bomex.in" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Bomex.in">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="10080">
-              <caret line="673" column="103" lean-forward="false" selection-start-line="673" selection-start-column="100" selection-end-line="673" selection-end-column="103" />
+            <state relative-caret-position="540">
+              <caret line="36" column="38" lean-forward="true" selection-start-line="12" selection-start-column="4" selection-end-line="36" selection-end-column="38" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Turbulence_PrognosticTKE.pxd" pinned="false" current-in-tab="true">
+      <file leaf-file-name="paramlist_Bomex.in" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/paramlist_Bomex.in">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="330">
+              <caret line="22" column="31" lean-forward="false" selection-start-line="13" selection-start-column="8" selection-end-line="22" selection-end-column="31" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="Bomex_cosine.in" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/Bomex_cosine.in">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="540">
+              <caret line="36" column="38" lean-forward="false" selection-start-line="36" selection-start-column="38" selection-end-line="36" selection-end-column="38" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="paramlist_Bomex_cosine.in" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/paramlist_Bomex_cosine.in">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="180">
+              <caret line="12" column="11" lean-forward="false" selection-start-line="12" selection-start-column="11" selection-end-line="12" selection-end-column="11" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="Turbulence_PrognosticTKE.pxd" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Turbulence_PrognosticTKE.pxd">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="840">
+            <state relative-caret-position="358">
               <caret line="61" column="27" lean-forward="false" selection-start-line="61" selection-start-column="27" selection-end-line="61" selection-end-column="27" />
               <folding />
             </state>
@@ -49,7 +79,7 @@
       <file leaf-file-name="Turbulence.pyx" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Turbulence.pyx">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="3930">
+            <state relative-caret-position="598">
               <caret line="263" column="0" lean-forward="false" selection-start-line="263" selection-start-column="0" selection-end-line="263" selection-end-column="0" />
               <folding />
             </state>
@@ -69,8 +99,8 @@
       <file leaf-file-name="Turbulence_PrognosticTKE.pyx" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Turbulence_PrognosticTKE.pyx">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="14235">
-              <caret line="950" column="23" lean-forward="false" selection-start-line="950" selection-start-column="10" selection-end-line="950" selection-end-column="23" />
+            <state relative-caret-position="300">
+              <caret line="97" column="58" lean-forward="false" selection-start-line="97" selection-start-column="39" selection-end-line="97" selection-end-column="58" />
               <folding />
             </state>
           </provider>
@@ -88,31 +118,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="turbulence_functions.pxd" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/turbulence_functions.pxd">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="90">
-              <caret line="6" column="16" lean-forward="false" selection-start-line="6" selection-start-column="16" selection-end-line="6" selection-end-column="16" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
       <file leaf-file-name="turbulence_functions.pyx" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/turbulence_functions.pyx">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="825">
               <caret line="58" column="9" lean-forward="false" selection-start-line="58" selection-start-column="9" selection-end-line="58" selection-end-column="9" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="Turbulence_BulkSteady.pxd" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/Turbulence_BulkSteady.pxd">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="405">
-              <caret line="27" column="27" lean-forward="false" selection-start-line="27" selection-start-column="27" selection-end-line="27" selection-end-column="27" />
               <folding />
             </state>
           </provider>
@@ -126,6 +136,7 @@
       <find>set_updraft_su</find>
       <find>entr_detr_fp</find>
       <find>inverse</find>
+      <find>pressure_buoy_coeff</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -134,10 +145,6 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/Csrc/thermodynamics_sa.h" />
-        <option value="$PROJECT_DIR$/Csrc/entropies.h" />
-        <option value="$PROJECT_DIR$/Csrc/thermodynamic_functions.h" />
-        <option value="$PROJECT_DIR$/Csrc/surface.h" />
         <option value="$PROJECT_DIR$/parameters.pxi" />
         <option value="$PROJECT_DIR$/surface_functions.py" />
         <option value="$PROJECT_DIR$/Csrc/entropy_functions.pxd" />
@@ -185,6 +192,10 @@
         <option value="$PROJECT_DIR$/turbulence_functions.pyx" />
         <option value="$PROJECT_DIR$/Turbulence_PrognosticTKE.pxd" />
         <option value="$PROJECT_DIR$/Turbulence_PrognosticTKE.pyx" />
+        <option value="$PROJECT_DIR$/Bomex.in" />
+        <option value="$PROJECT_DIR$/paramlist_Bomex.in" />
+        <option value="$PROJECT_DIR$/paramlist_Bomex_cosine.in" />
+        <option value="$PROJECT_DIR$/Bomex_cosine.in" />
       </list>
     </option>
   </component>
@@ -196,8 +207,8 @@
   </component>
   <component name="ProjectFrameBounds">
     <option name="y" value="23" />
-    <option name="width" value="1777" />
-    <option name="height" value="1262" />
+    <option name="width" value="1161" />
+    <option name="height" value="1338" />
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectView">
@@ -233,17 +244,11 @@
         <subPane>
           <PATH>
             <PATH_ELEMENT>
-              <option name="myItemId" value="PySCM" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-            </PATH_ELEMENT>
-          </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="PySCM" />
+              <option name="myItemId" value="scampy" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
-              <option name="myItemId" value="SCAMPy" />
+              <option name="myItemId" value="scampy" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
@@ -521,17 +526,17 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="0" y="23" width="1777" height="1262" extended-state="0" />
+    <frame x="0" y="23" width="1161" height="1338" extended-state="0" />
     <editor active="false" />
     <layout>
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.18443803" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.28596961" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32932073" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
-      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.16433567" sideWeight="0.5095101" order="9" side_tool="true" content_ui="tabs" />
+      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.16433567" sideWeight="0.5095101" order="9" side_tool="true" content_ui="tabs" />
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="false" weight="0.32875606" sideWeight="0.5" order="10" side_tool="false" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="12" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Terminal" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.16433567" sideWeight="0.4904899" order="11" side_tool="false" content_ui="tabs" />
+      <window_info id="Terminal" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.15409836" sideWeight="0.4904899" order="11" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32932073" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
@@ -595,9 +600,6 @@
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/Csrc/surface.h" />
-    <entry file="file://$PROJECT_DIR$/Csrc/entropies.h" />
-    <entry file="file://$PROJECT_DIR$/Csrc/thermodynamics_sa.h" />
     <entry file="file://$PROJECT_DIR$/Simulation1d.pxd">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
@@ -725,6 +727,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="63">
           <caret line="3" column="30" lean-forward="false" selection-start-line="3" selection-start-column="30" selection-end-line="3" selection-end-column="30" />
+          <folding />
         </state>
       </provider>
     </entry>
@@ -741,6 +744,9 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="240">
           <caret line="16" column="18" lean-forward="false" selection-start-line="16" selection-start-column="18" selection-end-line="16" selection-end-column="18" />
+          <folding>
+            <element signature="e#0#18#0" expanded="false" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -778,6 +784,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
         </state>
       </provider>
     </entry>
@@ -829,7 +836,6 @@
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/Output.Soares.31219/Soares.in" />
-    <entry file="file://$PROJECT_DIR$/Bomex.in" />
     <entry file="file://$PROJECT_DIR$/Soares.in">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="510">
@@ -869,22 +875,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Turbulence.pxd">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="300">
-          <caret line="20" column="29" lean-forward="false" selection-start-line="20" selection-start-column="29" selection-end-line="20" selection-end-column="29" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Turbulence.pyx">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="3930">
-          <caret line="263" column="0" lean-forward="false" selection-start-line="263" selection-start-column="0" selection-end-line="263" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/generate_paramlist.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
@@ -897,24 +887,72 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/Turbulence_BulkSteady.pyx">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="10080">
+        <state relative-caret-position="221">
           <caret line="673" column="103" lean-forward="false" selection-start-line="673" selection-start-column="100" selection-end-line="673" selection-end-column="103" />
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Turbulence_PrognosticTKE.pyx">
+    <entry file="file://$PROJECT_DIR$/Turbulence.pyx">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="14235">
-          <caret line="950" column="23" lean-forward="false" selection-start-line="950" selection-start-column="10" selection-end-line="950" selection-end-column="23" />
+        <state relative-caret-position="598">
+          <caret line="263" column="0" lean-forward="false" selection-start-line="263" selection-start-column="0" selection-end-line="263" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Turbulence.pxd">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="300">
+          <caret line="20" column="29" lean-forward="false" selection-start-line="20" selection-start-column="29" selection-end-line="20" selection-end-column="29" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/Turbulence_PrognosticTKE.pxd">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="840">
+        <state relative-caret-position="358">
           <caret line="61" column="27" lean-forward="false" selection-start-line="61" selection-start-column="27" selection-end-line="61" selection-end-column="27" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Turbulence_PrognosticTKE.pyx">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="300">
+          <caret line="97" column="58" lean-forward="false" selection-start-line="97" selection-start-column="39" selection-end-line="97" selection-end-column="58" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/paramlist_Bomex_cosine.in">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="180">
+          <caret line="12" column="11" lean-forward="false" selection-start-line="12" selection-start-column="11" selection-end-line="12" selection-end-column="11" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Bomex.in">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="540">
+          <caret line="36" column="38" lean-forward="true" selection-start-line="12" selection-start-column="4" selection-end-line="36" selection-end-column="38" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/paramlist_Bomex.in">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="330">
+          <caret line="22" column="31" lean-forward="false" selection-start-line="13" selection-start-column="8" selection-end-line="22" selection-end-column="31" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Bomex_cosine.in">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="540">
+          <caret line="36" column="38" lean-forward="false" selection-start-line="36" selection-start-column="38" selection-end-line="36" selection-end-column="38" />
           <folding />
         </state>
       </provider>
