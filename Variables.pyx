@@ -137,6 +137,7 @@ cdef class GridMeanVariables:
 
         # Create thermodynamic variables
         self.QT = VariablePrognostic(Gr.nzg, 'half', 'scalar','sym', 'qt', 'kg/kg')
+        print('QT in Variables.pyx 140 == ',self.QT)
 
         if namelist['thermodynamics']['thermal_variable'] == 'entropy':
             self.H = VariablePrognostic(Gr.nzg, 'half', 'scalar', 'sym','s', 'J/kg/K' )

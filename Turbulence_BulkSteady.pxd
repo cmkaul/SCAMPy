@@ -48,7 +48,7 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
     cpdef initialize(self, GridMeanVariables GMV)
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)
-    cpdef update(self,GridMeanVariables GMV, CasesBase Case, TimeStepping TS )
+    cpdef update(self,GridMeanVariables GMV, CasesBase Case, TimeStepping TS , ReferenceState Ref)
     cpdef update_inversion(self, GridMeanVariables GMV, option)
     cpdef decompose_environment(self, GridMeanVariables GMV, whichvals)
     cpdef compute_entrainment_detrainment(self, GridMeanVariables GMV, CasesBase Case)
