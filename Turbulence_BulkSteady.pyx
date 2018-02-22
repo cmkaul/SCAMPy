@@ -4,7 +4,6 @@
 #cython: initializedcheck=True
 #cython: cdivision=False
 
-import pylab as plt
 import numpy as np
 include "parameters.pxi"
 import cython
@@ -62,6 +61,8 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
                 self.entr_detr_fp = entr_detr_inverse_w
             elif namelist['turbulence']['EDMF_BulkSteady']['entrainment'] == 'b_w2':
                 self.entr_detr_fp = entr_detr_b_w2
+            elif namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] == 'buoyancy_sorting':
+                self.entr_detr_fp = entr_detr_buoyancy_sorting
 
             else:
                 print('Turbulence--EDMF_BulkSteady: Entrainment rate namelist option is not recognized')
@@ -214,7 +215,7 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
         return
 
     # Perform the update of the scheme
-    cpdef update(self,GridMeanVariables GMV, CasesBase Case, TimeStepping TS ):
+    cpdef update(self,GridMeanVariables GMV, CasesBase Case, TimeStepping TS , ReferenceState Ref):
         cdef:
             Py_ssize_t kmin= self.Gr.gw
             Py_ssize_t kmax =self.Gr.nzg-self.Gr.gw
@@ -250,7 +251,7 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
 
         # Back out the tendencies of the grid mean variables for the whole timestep by differencing GMV.new and
         # GMV.values
-        ParameterizationBase.update(self, GMV, Case, TS)
+        ParameterizationBase.update(self, GMV, Case, TS, Ref)
 
 
         # PLOTS

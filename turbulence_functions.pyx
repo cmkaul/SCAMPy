@@ -3,7 +3,7 @@ cimport numpy as np
 from libc.math cimport cbrt, sqrt, log, fabs,atan, exp, fmax, pow, fmin
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 include "parameters.pxi"
-
+from thermodynamic_functions cimport qv_star_t, latent_heat
 
 # Entrainment Rates
 
@@ -52,8 +52,46 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
     _ret.entr_sc = 1.0/(tau * fmax(entr_in.w,0.1)) #sets baseline to avoid errors
     return  _ret
 
+cdef entr_struct entr_detr_inverse_w_linear(entr_in_struct entr_in) nogil:
+    cdef:
+        entr_struct _ret
+    if entr_in.z >= entr_in.zi :
+        _ret.entr_sc = fmax(entr_in.b/fabs(entr_in.b+0.0001),0.0)/(100.0 * fmax(entr_in.w,0.1))
+        _ret.detr_sc = fmin(entr_in.b/fabs(entr_in.b+0.0001),0.0)/(100.0 * fmax(entr_in.w,0.1))
+    else:
+        _ret.entr_sc = fmax(entr_in.b/fabs(entr_in.b+0.0001),0.0)/(100.0 * fmax(entr_in.w,0.1))
+        _ret.detr_sc = fmin(entr_in.b/fabs(entr_in.b+0.0001),0.0)/(100.0 * fmax(entr_in.w,0.1))
+    return  _ret
 
-cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil:
+cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
+    cdef:
+        entr_struct _ret
+    qv_up = entr_in.qt_up - entr_in.ql_up # if ice exists add here
+    qv_mix = (qv_up + entr_in.qt_env)/2 # qv_env = qt_env
+    dql_mix = qv_mix - qv_star_t(entr_in.p0, entr_in.T_mean)
+    bmix = (entr_in.b+entr_in.b_env)/2 + latent_heat(entr_in.T_mean) * dql_mix
+    #Keddy = -entr_in.tke_ed_coeff * entr_in.ml * sqrt(fmax(entr_in.tke+entr_in.w**2/2,0.0))
+
+
+    # eps0 = -K(dphi/dx); K = -l^2(dw/dx)
+    #eps_w = Keddy * (fabs(entr_in.w-entr_in.w_env))/(fmax(entr_in.af,0.01)*entr_in.L) # eddy diffusivity
+    #eps_sc = Keddy*(entr_in.H_up-entr_in.H_env)/(fmax(entr_in.af,0.01)*entr_in.L) # eddy diffusivity
+
+    eps_w = 1.0/(500.0 * fmax(fabs(entr_in.w),0.1)) # inverse w
+
+    if entr_in.af>0.0:
+        if bmix >= 0.0:
+            _ret.entr_sc = eps_w
+            _ret.detr_sc = 0.0
+        else:
+            _ret.entr_sc = 0.0
+            _ret.detr_sc = eps_w
+    else:
+        _ret.entr_sc = 0.0
+        _ret.detr_sc = 0.0
+    return  _ret
+
+cdef entr_struct entr_detr_tke2(entr_in_struct entr_in) nogil:
     cdef entr_struct _ret
     # in cloud portion from Soares 2004
     if entr_in.z >= entr_in.zi :
@@ -66,7 +104,12 @@ cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil:
     _ret.entr_sc = (0.05 * sqrt(entr_in.tke) / fmax(entr_in.w, 0.01) / fmax(entr_in.af, 0.001) / fmax(entr_in.z, 1.0))
     return  _ret
 
-
+# yair - this is a new entr-detr function that takes entr as proportional to TKE/w and detr ~ b/w2
+cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil:
+    cdef entr_struct _ret
+    _ret.detr_sc = fabs(entr_in.b)/ fmax(entr_in.w * entr_in.w, 1e-3)
+    _ret.entr_sc = sqrt(entr_in.tke) / fmax(entr_in.w, 0.01) / fmax(sqrt(entr_in.af), 0.001) / 50000.0
+    return  _ret
 #
 # cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil:
 #     cdef entr_struct _ret
