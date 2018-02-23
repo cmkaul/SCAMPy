@@ -56,7 +56,7 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="paramlist_Bomex_cosine.in" pinned="false" current-in-tab="true">
+      <file leaf-file-name="paramlist_Bomex_cosine.in" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/paramlist_Bomex_cosine.in">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="300">
@@ -66,7 +66,7 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Turbulence_PrognosticTKE.pyx" pinned="false" current-in-tab="false">
+      <file leaf-file-name="Turbulence_PrognosticTKE.pyx" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/Turbulence_PrognosticTKE.pyx">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="199">
@@ -873,14 +873,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Turbulence_PrognosticTKE.pyx">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="199">
-          <caret line="1316" column="110" lean-forward="false" selection-start-line="1316" selection-start-column="110" selection-end-line="1316" selection-end-column="110" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/Bomex.in">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="510">
@@ -909,6 +901,14 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="300">
           <caret line="20" column="32" lean-forward="false" selection-start-line="20" selection-start-column="32" selection-end-line="20" selection-end-column="32" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Turbulence_PrognosticTKE.pyx">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="199">
+          <caret line="1316" column="110" lean-forward="false" selection-start-line="1316" selection-start-column="110" selection-end-line="1316" selection-end-column="110" />
           <folding />
         </state>
       </provider>
