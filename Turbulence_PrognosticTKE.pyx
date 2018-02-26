@@ -396,8 +396,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         entr_w = interp2pt(self.entr_sc[i,k], self.entr_sc[i,k+1])
                         detr_w = interp2pt(self.detr_sc[i,k], self.detr_sc[i,k+1])
                         B_k = interp2pt(self.UpdVar.B.values[i,k], self.UpdVar.B.values[i,k+1])
+                        # w2 = ((self.vel_buoy_coeff * B_k + 0.5 * w_km * w_km * dzi)
+                        #      /(0.5 * dzi +entr_w + self.vel_pressure_coeff/sqrt(self.UpdVar.Area.values[i,k])))
                         w2 = ((self.vel_buoy_coeff * B_k + 0.5 * w_km * w_km * dzi)
-                              /(0.5 * dzi +entr_w + self.vel_pressure_coeff/sqrt(self.UpdVar.Area.values[i,k])))
+                              /(0.5 * dzi +entr_w + self.vel_pressure_coeff/sqrt(fmax(area_k,self.minimum_area))))
                         if w2 > 0.0:
                             self.UpdVar.W.values[i,k] = sqrt(w2)
                         else:
