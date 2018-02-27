@@ -56,13 +56,13 @@ cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
 
-    qt_mix = (qt_up + qt_env)/2
-    qv_mix = (qt_up - ql_up + qt_env - ql_env)/2
-    thetali_mix = (H_up+H_env)/2
-    sa = eos(t_to_prog_fp,prog_to_t_fp, p0,
-                                 qt_mix, thetali_mix)
-    alpha_mix = alpha_c(p0, sa.T, sa.qt, sa.qt-sa.ql)
-    b_mix = buoyancy_c(entr_in.alpha0, alpha_mix)
+    #qt_mix = (qt_up + qt_env)/2
+    #qv_mix = (qt_up - ql_up + qt_env - ql_env)/2
+    #thetali_mix = (H_up+H_env)/2
+    #sa = eos(t_to_prog_fp,prog_to_t_fp, p0,
+    #                            qt_mix, thetali_mix)
+    #alpha_mix = alpha_c(p0, sa.T, sa.qt, sa.qt-sa.ql)
+    #b_mix = buoyancy_c(entr_in.alpha0, alpha_mix)
 
     #qt_mix = (qt_up + qt_env)/2
     #qv_up = entr_in.qt_up - entr_in.ql_up # if ice exists add here
@@ -79,7 +79,7 @@ cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
     eps_w = 1.0/(500.0 * fmax(fabs(entr_in.w),0.1)) # inverse w
 
     if entr_in.af>0.0:
-        if b_mix >= 0.0:
+        if entr_in.b_mix >= 0.0:
             _ret.entr_sc = eps_w
             _ret.detr_sc = 0.0
         else:

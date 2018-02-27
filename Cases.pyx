@@ -18,10 +18,6 @@ def CasesFactory(namelist, paramlist):
         return Soares(paramlist)
     elif namelist['meta']['casename'] == 'Bomex':
         return Bomex(paramlist)
-    elif namelist['meta']['casename'] == 'Bomex_pulse':
-        return Bomex_pulse(paramlist)
-    elif namelist['meta']['casename'] == 'Bomex_pulses':
-        return Bomex_pulses(paramlist)
     elif namelist['meta']['casename'] == 'Bomex_cosine':
         print namelist['meta']['casename']
         return Bomex_cosine(paramlist)
@@ -31,12 +27,8 @@ def CasesFactory(namelist, paramlist):
         return TRMM_LBA(paramlist)
     elif namelist['meta']['casename'] == 'ARM_SGP':
         return ARM_SGP(paramlist)
-    elif namelist['meta']['casename'] == 'SCMS':
-        return SCMS(paramlist)
     elif namelist['meta']['casename'] == 'GATE_III':
         return GATE_III(paramlist)
-    elif namelist['meta']['casename'][0:4] == 'Bome':
-        return Bomex(paramlist)
     else:
         print('case not recognized')
     return
@@ -279,261 +271,6 @@ cdef class Bomex(CasesBase):
         CasesBase.io(self,Stats)
         return
     cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS):
-        self.Sur.update(GMV)
-        return
-    cpdef update_forcing(self, GridMeanVariables GMV, Grid Gr, ReferenceState Ref, TimeStepping TS):
-        self.Fo.update(GMV)
-        return
-
-cdef class Bomex_pulse(CasesBase):
-    def __init__(self, paramlist):
-        self.casename = 'Bomex_pulse'
-        self.Sur = Surface.SurfaceFixedFlux(paramlist)
-        self.Fo = Forcing.ForcingStandard()
-        self.inversion_option = 'critical_Ri'
-        self.Fo.apply_coriolis = True
-        self.Fo.coriolis_param = 0.376e-4 # s^{-1}
-        return
-    cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats):
-        Ref.Pg = 1.015e5  #Pressure at ground
-        Ref.Tg = 300.4  #Temperature at ground
-        Ref.qtg = 0.02245   #Total water mixing ratio at surface
-        Ref.initialize(Gr, Stats)
-        return
-    cpdef initialize_profiles(self, Grid Gr, GridMeanVariables GMV, ReferenceState Ref):
-        cdef:
-            double [:] thetal = np.zeros((Gr.nzg,), dtype=np.double, order='c')
-            double ql=0.0, qi =0.0 # IC of Bomex is cloud-free
-
-        for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
-            #Set Thetal profile
-            if Gr.z_half[k] <= 520.:
-                thetal[k] = 298.7
-            if Gr.z_half[k] > 520.0 and Gr.z_half[k] <= 1480.0:
-                thetal[k] = 298.7 + (Gr.z_half[k] - 520)  * (302.4 - 298.7)/(1480.0 - 520.0)
-            if Gr.z_half[k] > 1480.0 and Gr.z_half[k] <= 2000:
-                thetal[k] = 302.4 + (Gr.z_half[k] - 1480.0) * (308.2 - 302.4)/(2000.0 - 1480.0)
-            if Gr.z_half[k] > 2000.0:
-                thetal[k] = 308.2 + (Gr.z_half[k] - 2000.0) * (311.85 - 308.2)/(3000.0 - 2000.0)
-
-            #Set qt profile
-            if Gr.z_half[k] <= 520:
-                GMV.QT.values[k] = (17.0 + (Gr.z_half[k]) * (16.3-17.0)/520.0)/1000.0
-            if Gr.z_half[k] > 520.0 and Gr.z_half[k] <= 1480.0:
-                GMV.QT.values[k] = (16.3 + (Gr.z_half[k] - 520.0)*(10.7 - 16.3)/(1480.0 - 520.0))/1000.0
-            if Gr.z_half[k] > 1480.0 and Gr.z_half[k] <= 2000.0:
-                GMV.QT.values[k] = (10.7 + (Gr.z_half[k] - 1480.0) * (4.2 - 10.7)/(2000.0 - 1480.0))/1000.0
-            if Gr.z_half[k] > 2000.0:
-                GMV.QT.values[k] = (4.2 + (Gr.z_half[k] - 2000.0) * (3.0 - 4.2)/(3000.0  - 2000.0))/1000.0
-
-
-            #Set u profile
-            if Gr.z_half[k] <= 700.0:
-                GMV.U.values[k] = 0.5
-            if Gr.z_half[k] > 700.0:
-                GMV.U.values[k] = 0.5
-
-        if GMV.H.name == 'thetal':
-            for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
-                GMV.H.values[k] = thetal[k]
-                GMV.T.values[k] =  thetal[k] * exner_c(Ref.p0_half[k])
-                GMV.THL.values[k] = thetal[k]
-        elif GMV.H.name == 's':
-            for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
-                GMV.T.values[k] = thetal[k] * exner_c(Ref.p0_half[k])
-                GMV.H.values[k] = t_to_entropy_c(Ref.p0_half[k],GMV.T.values[k],
-                                                 GMV.QT.values[k], ql, qi)
-                GMV.THL.values[k] = thetali_c(Ref.p0_half[k],GMV.T.values[k],
-                                                 GMV.QT.values[k], ql, qi, latent_heat(GMV.T.values[k]))
-
-        GMV.U.set_bcs(Gr)
-        GMV.QT.set_bcs(Gr)
-        GMV.H.set_bcs(Gr)
-        GMV.T.set_bcs(Gr)
-        GMV.satadjust()
-
-        return
-    cpdef initialize_surface(self, Grid Gr, ReferenceState Ref):
-        self.Sur.zrough = 1.0e-4 # not actually used, but initialized to reasonable value
-        self.Sur.Tsurface = 299.1 * exner_c(Ref.Pg)
-        self.Sur.qsurface = 22.45e-3 # kg/kg
-        self.Sur.lhf = 5.2e-5 * Ref.rho0[Gr.gw -1] * latent_heat(self.Sur.Tsurface)
-        self.Sur.shf = 8.0e-3 * cpm_c(self.Sur.qsurface) * Ref.rho0[Gr.gw-1]
-        self.Sur.lhf0 = self.Sur.lhf
-        self.Sur.shf0 = self.Sur.shf
-        self.Sur.ustar_fixed = True
-        self.Sur.ustar = 0.28 # m/s
-        self.Sur.Gr = Gr
-        self.Sur.Ref = Ref
-        self.Sur.bflux = (g * ((8.0e-3 + (eps_vi-1.0)*(299.1 * 5.2e-5  + 22.45e-3 * 8.0e-3)) /(299.1 * (1.0 + (eps_vi-1) * 22.45e-3))))
-        self.Sur.initialize()
-        return
-    cpdef initialize_forcing(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV):
-        self.Fo.Gr = Gr
-        self.Fo.Ref = Ref
-        self.Fo.initialize(GMV)
-        for k in xrange(Gr.gw, Gr.nzg-Gr.gw):
-            # Geostrophic velocity profiles. vg = 0
-            self.Fo.ug[k] = 0.5
-            # Set large-scale cooling
-            if Gr.z_half[k] <= 1500.0:
-                self.Fo.dTdt[k] =  (-2.0/(3600 * 24.0))  * exner_c(Ref.p0_half[k])
-            else:
-                self.Fo.dTdt[k] = (-2.0/(3600 * 24.0) + (Gr.z_half[k] - 1500.0)
-                                    * (0.0 - -2.0/(3600 * 24.0)) / (3000.0 - 1500.0)) * exner_c(Ref.p0_half[k])
-            # Set large-scale drying
-            if Gr.z_half[k] <= 300.0:
-                self.Fo.dqtdt[k] = -1.2e-8   #kg/(kg * s)
-            if Gr.z_half[k] > 300.0 and Gr.z_half[k] <= 500.0:
-                self.Fo.dqtdt[k] = -1.2e-8 + (Gr.z_half[k] - 300.0)*(0.0 - -1.2e-8)/(500.0 - 300.0) #kg/(kg * s)
-
-            #Set large scale subsidence
-            if Gr.z_half[k] <= 1500.0:
-                self.Fo.subsidence[k] = 0.0 + Gr.z_half[k]*(-0.65/100.0 - 0.0)/(1500.0 - 0.0)
-            if Gr.z_half[k] > 1500.0 and Gr.z_half[k] <= 2100.0:
-                self.Fo.subsidence[k] = -0.65/100 + (Gr.z_half[k] - 1500.0)* (0.0 - -0.65/100.0)/(2100.0 - 1500.0)
-        return
-
-    cpdef initialize_io(self, NetCDFIO_Stats Stats):
-        CasesBase.initialize_io(self, Stats)
-        return
-    cpdef io(self, NetCDFIO_Stats Stats):
-        CasesBase.io(self,Stats)
-        return
-    cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS):
-        if TS.t > 600.0:
-            self.Sur.lhf = 147.1*0.0001
-            self.Sur.shf = 9.5*0.0001
-            self.Sur.bflux = (g * ((8.0e-3*0.0001 + (eps_vi-1.0)*(299.1 * 5.2e-5*0.0001  + 22.45e-3 * 8.0e-3*0.0001)) /(299.1 * (1.0 + (eps_vi-1) * 22.45e-3))))
-        self.Sur.update(GMV)
-        return
-    cpdef update_forcing(self, GridMeanVariables GMV, Grid Gr, ReferenceState Ref, TimeStepping TS):
-        self.Fo.update(GMV)
-        return
-
-cdef class Bomex_pulses(CasesBase):
-    def __init__(self, paramlist):
-        self.casename = 'Bomex_pulses'
-        self.Sur = Surface.SurfaceFixedFlux(paramlist)
-        self.Fo = Forcing.ForcingStandard()
-        self.inversion_option = 'critical_Ri'
-        self.Fo.apply_coriolis = True
-        self.Fo.coriolis_param = 0.376e-4 # s^{-1}
-        return
-    cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats):
-        Ref.Pg = 1.015e5  #Pressure at ground
-        Ref.Tg = 300.4  #Temperature at ground
-        Ref.qtg = 0.02245   #Total water mixing ratio at surface
-        Ref.initialize(Gr, Stats)
-        return
-    cpdef initialize_profiles(self, Grid Gr, GridMeanVariables GMV, ReferenceState Ref):
-        cdef:
-            double [:] thetal = np.zeros((Gr.nzg,), dtype=np.double, order='c')
-            double ql=0.0, qi =0.0 # IC of Bomex is cloud-free
-
-        for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
-            #Set Thetal profile
-            if Gr.z_half[k] <= 520.:
-                thetal[k] = 298.7
-            if Gr.z_half[k] > 520.0 and Gr.z_half[k] <= 1480.0:
-                thetal[k] = 298.7 + (Gr.z_half[k] - 520)  * (302.4 - 298.7)/(1480.0 - 520.0)
-            if Gr.z_half[k] > 1480.0 and Gr.z_half[k] <= 2000:
-                thetal[k] = 302.4 + (Gr.z_half[k] - 1480.0) * (308.2 - 302.4)/(2000.0 - 1480.0)
-            if Gr.z_half[k] > 2000.0:
-                thetal[k] = 308.2 + (Gr.z_half[k] - 2000.0) * (311.85 - 308.2)/(3000.0 - 2000.0)
-
-            #Set qt profile
-            if Gr.z_half[k] <= 520:
-                GMV.QT.values[k] = (17.0 + (Gr.z_half[k]) * (16.3-17.0)/520.0)/1000.0
-            if Gr.z_half[k] > 520.0 and Gr.z_half[k] <= 1480.0:
-                GMV.QT.values[k] = (16.3 + (Gr.z_half[k] - 520.0)*(10.7 - 16.3)/(1480.0 - 520.0))/1000.0
-            if Gr.z_half[k] > 1480.0 and Gr.z_half[k] <= 2000.0:
-                GMV.QT.values[k] = (10.7 + (Gr.z_half[k] - 1480.0) * (4.2 - 10.7)/(2000.0 - 1480.0))/1000.0
-            if Gr.z_half[k] > 2000.0:
-                GMV.QT.values[k] = (4.2 + (Gr.z_half[k] - 2000.0) * (3.0 - 4.2)/(3000.0  - 2000.0))/1000.0
-
-
-            #Set u profile
-            if Gr.z_half[k] <= 700.0:
-                GMV.U.values[k] = 0.5
-            if Gr.z_half[k] > 700.0:
-                GMV.U.values[k] = 0.5
-
-        if GMV.H.name == 'thetal':
-            for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
-                GMV.H.values[k] = thetal[k]
-                GMV.T.values[k] =  thetal[k] * exner_c(Ref.p0_half[k])
-                GMV.THL.values[k] = thetal[k]
-        elif GMV.H.name == 's':
-            for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
-                GMV.T.values[k] = thetal[k] * exner_c(Ref.p0_half[k])
-                GMV.H.values[k] = t_to_entropy_c(Ref.p0_half[k],GMV.T.values[k],
-                                                 GMV.QT.values[k], ql, qi)
-                GMV.THL.values[k] = thetali_c(Ref.p0_half[k],GMV.T.values[k],
-                                                 GMV.QT.values[k], ql, qi, latent_heat(GMV.T.values[k]))
-
-        GMV.U.set_bcs(Gr)
-        GMV.QT.set_bcs(Gr)
-        GMV.H.set_bcs(Gr)
-        GMV.T.set_bcs(Gr)
-        GMV.satadjust()
-
-        return
-    cpdef initialize_surface(self, Grid Gr, ReferenceState Ref):
-        self.Sur.zrough = 1.0e-4 # not actually used, but initialized to reasonable value
-        self.Sur.Tsurface = 299.1 * exner_c(Ref.Pg)
-        self.Sur.qsurface = 22.45e-3 # kg/kg
-        self.Sur.lhf = 5.2e-5 * Ref.rho0[Gr.gw -1] * latent_heat(self.Sur.Tsurface)
-        self.Sur.shf = 8.0e-3 * cpm_c(self.Sur.qsurface) * Ref.rho0[Gr.gw-1]
-        self.Sur.ustar_fixed = True
-        self.Sur.ustar = 0.28 # m/s
-        self.Sur.Gr = Gr
-        self.Sur.Ref = Ref
-        self.Sur.bflux = (g * ((8.0e-3 + (eps_vi-1.0)*(299.1 * 5.2e-5  + 22.45e-3 * 8.0e-3)) /(299.1 * (1.0 + (eps_vi-1) * 22.45e-3))))
-        self.Sur.initialize()
-        return
-    cpdef initialize_forcing(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV):
-        self.Fo.Gr = Gr
-        self.Fo.Ref = Ref
-        self.Fo.initialize(GMV)
-        for k in xrange(Gr.gw, Gr.nzg-Gr.gw):
-            # Geostrophic velocity profiles. vg = 0
-            self.Fo.ug[k] = 0.5
-            # Set large-scale cooling
-            if Gr.z_half[k] <= 1500.0:
-                self.Fo.dTdt[k] =  (-2.0/(3600 * 24.0))  * exner_c(Ref.p0_half[k])
-            else:
-                self.Fo.dTdt[k] = (-2.0/(3600 * 24.0) + (Gr.z_half[k] - 1500.0)
-                                    * (0.0 - -2.0/(3600 * 24.0)) / (3000.0 - 1500.0)) * exner_c(Ref.p0_half[k])
-            # Set large-scale drying
-            if Gr.z_half[k] <= 300.0:
-                self.Fo.dqtdt[k] = -1.2e-8   #kg/(kg * s)
-            if Gr.z_half[k] > 300.0 and Gr.z_half[k] <= 500.0:
-                self.Fo.dqtdt[k] = -1.2e-8 + (Gr.z_half[k] - 300.0)*(0.0 - -1.2e-8)/(500.0 - 300.0) #kg/(kg * s)
-
-            #Set large scale subsidence
-            if Gr.z_half[k] <= 1500.0:
-                self.Fo.subsidence[k] = 0.0 + Gr.z_half[k]*(-0.65/100.0 - 0.0)/(1500.0 - 0.0)
-            if Gr.z_half[k] > 1500.0 and Gr.z_half[k] <= 2100.0:
-                self.Fo.subsidence[k] = -0.65/100 + (Gr.z_half[k] - 1500.0)* (0.0 - -0.65/100.0)/(2100.0 - 1500.0)
-        return
-
-    cpdef initialize_io(self, NetCDFIO_Stats Stats):
-        CasesBase.initialize_io(self, Stats)
-        return
-    cpdef io(self, NetCDFIO_Stats Stats):
-        CasesBase.io(self,Stats)
-        return
-    cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS):
-        if TS.t % 3600 > 600.0:
-            self.Sur.lhf = 0.0001
-            self.Sur.shf = 0.0001
-            self.Sur.bflux = (g * ((8.0e-3*0.0001 + (eps_vi-1.0)*(299.1 * 5.2e-5*0.0001  + 22.45e-3 * 8.0e-3*0.0001)) /(299.1 * (1.0 + (eps_vi-1) * 22.45e-3))))
-            #self.Sur.ustar_fixed = False
-        else:
-            self.Sur.lhf = self.Sur.lhf0*2.0
-            self.Sur.shf = self.Sur.shf0*2.0
-            self.Sur.bflux = (g * ((8.0e-3*2.0 + (eps_vi-1.0)*(299.1 * 5.2e-5*2.0  + 22.45e-3 * 8.0e-3*2.0)) /(299.1 * (1.0 + (eps_vi-1) * 22.45e-3))))
         self.Sur.update(GMV)
         return
     cpdef update_forcing(self, GridMeanVariables GMV, Grid Gr, ReferenceState Ref, TimeStepping TS):
@@ -873,17 +610,11 @@ cdef class TRMM_LBA(CasesBase):
 
         T = np.zeros(Gr.nzg)
         T[Gr.gw:Gr.nzg-Gr.gw] = np.interp(Gr.z_half[Gr.gw:Gr.nzg-Gr.gw],z_in,T_in)
-        #GMV.T.values[0] = T[3]
-        #GMV.T.values[1] = T[2]
         GMV.T.values = T
-        #GMV.T.values[Gr.nzg-Gr.gw+1] = GMV.T.values[Gr.nzg-Gr.gw-1]
-
-
         theta_rho = RH*0.0
         epsi = 287.1/461.5
         cdef double PV_star # here pv_star is a function
         cdef double qv_star
-
         GMV.U.set_bcs(Gr)
         GMV.T.set_bcs(Gr)
 
@@ -1137,12 +868,9 @@ cdef class ARM_SGP(CasesBase):
         Theta_in = np.array([299.0, 301.5, 302.5, 303.53, 303.7, 307.13, 314.0, 343.2]) # K
         r_in = np.array([15.2,15.17,14.98,14.8,14.7,13.5,3.0,3.0])/1000 # qt should be in kg/kg
         qt_in = np.divide(r_in,(1+r_in))
-        print qt_in
-
         # interpolate to the model grid-points
         Theta = np.interp(Gr.z_half,z_in,Theta_in)
         qt = np.interp(Gr.z_half,z_in,qt_in)
-
         GMV.QT.values = np.zeros((Gr.nzg,),dtype=np.double,order='c')
         #GMV.QT.values[0] = qt[3]
         #GMV.QT.values[1] = qt[2]
@@ -1247,148 +975,6 @@ cdef class ARM_SGP(CasesBase):
         return
 
 
-cdef class SCMS(CasesBase):
-    def __init__(self, paramlist):
-        self.casename = 'SCMS'
-        self.Sur = Surface.SurfaceFixedFlux(paramlist)
-        self.Fo = Forcing.ForcingRadiative() # it was forcing standard
-        self.inversion_option = 'thetal_maxgrad'
-
-        return
-    cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats):
-        Ref.Pg = 1013.0*100 # Pressure at surface was not stated in Neggers et al. 2003
-        Ref.Tg = 297.0    # surface values for reference state (RS) which outputs p0 rho0 alpha0
-        Ref.qtg = 17.5/1000 #Total water mixing ratio at surface
-        Ref.initialize(Gr, Stats)
-
-        return
-    cpdef initialize_profiles(self, Grid Gr, GridMeanVariables GMV, ReferenceState Ref):
-        cdef:
-
-            double [:] p1 = np.zeros((Gr.nzg,),dtype=np.double,order='c')
-            double [:] qt = np.zeros((Gr.nzg,),dtype=np.double,order='c')
-            double [:] T = np.zeros((Gr.nzg,),dtype=np.double,order='c')
-            double [:] theta_rho = np.zeros((Gr.nzg,),dtype=np.double,order='c')
-
-        for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
-            if Gr.z_half[k] <= 1500:
-                T[k] = (Ref.Tg - Gr.z_half[k]/1500*(297-303))*exner_c(Ref.p0_half[k])
-            elif Gr.z_half[k] > 1500 and Gr.z_half[k] <= 2200:
-                T[k] = (303 - (Gr.z_half[k]-1500)/700*(303 - 311))*exner_c(Ref.p0_half[k])
-            elif Gr.z_half[k] > 2200: #and Gr.z_half[k] <= 3000:
-                T[k] = (311 - (Gr.z_half[k]-2200)/800*(311 - 312))*exner_c(Ref.p0_half[k])
-        T[0] = T[3]
-        T[1] = T[2]
-        T[Gr.nzg-2]  = T[Gr.nzg-Gr.gw-2]
-        T[Gr.nzg-1]  = T[Gr.nzg-Gr.gw-3]
-        #T[Gr.nzg]    = T[Gr.nzg-Gr.gw-2]
-        for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
-            if Gr.z_half[k] <= 800:
-                qt[k] = Ref.qtg*1000 - Gr.z_half[k]/800*(17.5-16)
-            elif Gr.z_half[k] > 800 and Gr.z_half[k] <= 1500:
-                qt[k] = 16 - (Gr.z_half[k]-800)/700*(16 - 13)
-            elif Gr.z_half[k] > 1500 and Gr.z_half[k] <= 2100:
-                qt[k] = 13 - (Gr.z_half[k]-1500)/600*(13 - 3)
-            elif Gr.z_half[k] > 2100:
-                qt[k] = 3
-        qt[0] = qt[3]
-        qt[1] = qt[2]
-        qt[Gr.nzg-1]  = qt[Gr.nzg-Gr.gw-3]
-        qt[Gr.nzg-2]  = qt[Gr.nzg-Gr.gw-2]
-        qt = np.divide(qt,1000.0) # in [kg/kg]
-
-        GMV.QT.values = np.zeros((Gr.nzg,),dtype=np.double,order='c')
-        GMV.QT.values[0] = qt[3]
-        GMV.QT.values[1] = qt[2]
-        GMV.QT.values[Gr.nzg-Gr.gw+1] = qt[Gr.nzg-Gr.gw-1]
-
-        GMV.T.values = np.zeros((Gr.nzg,),dtype=np.double,order='c')
-        GMV.T.values[0] = T[3]
-        GMV.T.values[1] = T[2]
-        GMV.T.values[Gr.nzg-Gr.gw+1] = T[Gr.nzg-Gr.gw-1]
-
-        epsi = 287.1/461.5
-        cdef double PV_star # here pv_star is a function
-        cdef double qv_star
-
-        GMV.U.set_bcs(Gr)
-        GMV.T.set_bcs(Gr)
-
-        for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
-            GMV.T.values[k] = T[k]
-            GMV.QT.values[k] = qt[k]
-            qv = GMV.QT.values[k] - GMV.QL.values[k]
-            if GMV.H.name == 's':
-                GMV.H.values[k] = t_to_entropy_c(Ref.p0_half[k],GMV.T.values[k],
-                                                GMV.QT.values[k], 0.0, 0.0)
-            elif GMV.H.name == 'thetal':
-                 GMV.H.values[k] = thetali_c(Ref.p0_half[k],GMV.T.values[k],
-                                                GMV.QT.values[k], 0.0, 0.0, latent_heat(GMV.T.values[k]))
-
-            GMV.THL.values[k] = thetali_c(Ref.p0_half[k],GMV.T.values[k],
-                                                GMV.QT.values[k], 0.0, 0.0, latent_heat(GMV.T.values[k]))
-            theta_rho[k] = theta_rho_c(Ref.p0_half[k], GMV.T.values[k], GMV.QT.values[k], qv)
-
-        GMV.QT.set_bcs(Gr)
-        GMV.H.set_bcs(Gr)
-        return
-
-    cpdef initialize_surface(self, Grid Gr, ReferenceState Ref):
-        self.Sur.zrough = 1.0e-4 # not actually used, but initialized to reasonable value
-        self.Sur.Tsurface = 299.0 * exner_c(Ref.Pg)
-        self.Sur.qsurface = 15.2e-3 # kg/kg
-        self.Sur.lhf = 0.0
-        self.Sur.shf = 0.0
-        self.Sur.ustar_fixed = True
-        self.Sur.ustar = 0.1 # m/s Yair ?
-        self.Sur.Gr = Gr
-        self.Sur.Ref = Ref
-        # where is z0 inserted here
-        self.Sur.shf = 1.0
-        self.Sur.lhf = 1.0
-        self.Sur.bflux = (g * ((self.Sur.shf + (eps_vi-1.0)*(self.Sur.Tsurface * self.Sur.lhf  + self.Sur.qsurface * 8.0e-3)) /(self.Sur.Tsurface* (1.0 + (eps_vi-1) * self.Sur.qsurface))))
-        self.Sur.initialize()
-
-        return
-    cpdef initialize_forcing(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV):
-        self.Fo.Gr = Gr
-        self.Fo.Ref = Ref
-        self.Fo.initialize(GMV)
-        # only radiative forcing
-        self.Fo.subsidence = np.zeros(Gr.nzg, dtype=np.double)
-        self.Fo.dqtdt = np.zeros((Gr.nzg,),dtype=np.double,order='c')
-        self.Fo.dTdt = np.zeros((Gr.nzg,),dtype=np.double,order='c')
-        return
-
-
-    cpdef initialize_io(self, NetCDFIO_Stats Stats):
-        CasesBase.initialize_io(self, Stats)
-        return
-    cpdef io(self, NetCDFIO_Stats Stats):
-        CasesBase.io(self,Stats)
-        return
-
-    cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS):
-        self.Sur.shf = 100.0*np.sin(TS.t*np.pi/(12.0*3600.0))
-        self.Sur.lhf = 300.0*np.sin(TS.t*np.pi/(12.0*3600.0))
-        if self.Sur.shf < 1.0:
-            self.Sur.shf = 1.0
-        if self.Sur.lhf < 1.0:
-            self.Sur.lhf = 1.0
-        self.Sur.bflux = (g * ((self.Sur.shf + (eps_vi-1.0)*(self.Sur.Tsurface * self.Sur.lhf  + self.Sur.qsurface * 8.0e-3)) /(self.Sur.Tsurface* (1.0 + (eps_vi-1) * self.Sur.qsurface))))
-        self.Sur.update(GMV)
-        return
-
-    cpdef update_forcing(self, GridMeanVariables GMV, Grid Gr, ReferenceState Ref, TimeStepping TS):
-
-        for k in range(0,Gr.nzg): # ask Roel Neggers for the real zi definition
-            if Gr.z_half[k] <=self.zi:
-                self.Fo.dTdt[k] = -3.0*(1.0 + Gr.z_half[k]/self.zi)/(24.0*3600.0)
-
-        self.Fo.update(GMV)
-
-        return
-
 cdef class GATE_III(CasesBase):
     # adopted from: "Large eddy simulation of Maritime Deep Tropical Convection",
     # By Khairoutdinov et al (2009)  JAMES, vol. 1, article #15
@@ -1413,7 +999,7 @@ cdef class GATE_III(CasesBase):
             double [:] U = np.zeros((Gr.nzg,),dtype=np.double,order='c')
             double [:] theta_rho = np.zeros((Gr.nzg,),dtype=np.double,order='c')
 
-        # GATE_III inputs - I extended them to z=2.2 km
+        # GATE_III inputs - I extended them to z=22 km
         z_in  = np.array([ 0.0,   0.5,  1.0,  1.5,  2.0,   2.5,    3.0,   3.5,   4.0,   4.5,   5.0,  5.5,  6.0,  6.5, 7.0, 7.5, 8.0,  8.5,   9.0,   9.5,
                            10.0,   10.5,   11.0, 11.5, 12.0, 12.5, 13.0, 13.5, 14.0, 14.5, 15.0, 15.5, 16.0, 16.5, 17.0, 17.5, 18.0, 27.0]) * 1000.0 #z is in meters
         r_in = np.array([16.5,  16.5, 13.5, 12.0, 10.0,   8.7,    7.1,   6.1,   5.2,   4.5,   3.6,  3.0,  2.3, 1.75, 1.3, 0.9, 0.5, 0.25, 0.125, 0.065, 0.003,
@@ -1495,16 +1081,13 @@ cdef class GATE_III(CasesBase):
         self.Fo.dTdt =  np.zeros(Gr.nzg, dtype=np.double)
         # GATE_III  forcing
         self.Fo.subsidence = np.zeros(Gr.nzg, dtype=np.double)
+
         z_in     = np.array([ 0.0,   0.5,  1.0,  1.5,   2.0,   2.5,    3.0,   3.5,   4.0,   4.5,   5.0,   5.5,   6.0,   6.5,  7.0,  7.5,   8.0,  8.5,   9.0,  9.5,  10.0,  10.5,  11.0,    11.5,   12.0, 12.5,  13.0, 13.5, 14.0, 14.5, 15.0, 15.5, 16.0, 16.5, 17.0, 17.5, 18.0]) * 1000.0 #LES z is in meters
         u_in     = np.array([  -1, -1.75, -2.5, -3.6,  -6.0, -8.75, -11.75, -12.9, -13.1, -12.1, -11.0,  -8.5,  -5.0,  -2.6,  0.0,  0.5,   0.4,  0.3,   0.0, -1.0,  -3.0,  -3.5,  -4.5,    -4.6,   -5.0, -3.5,  -2.0, -1.0, -1.0, -1.0, -1.5, -2.0, -2.5, -2.6, -2.7, -3.0, -3.0])
         RAD_in   = np.array([-2.9,  -1.1, -0.8, -1.1, -1.25, -1.35,   -1.4,  -1.4, -1.44, -1.52,  -1.6, -1.54, -1.49, -1.43, -1.36, -1.3, -1.25, -1.2, -1.15, -1.1, -1.05,  -1.0,  -0.95,   -0.9,  -0.85, -0.8, -0.75, -0.7, -0.6, -0.3,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0])/(24.0*3600.0)  # Radiative forcing for T [K/d] converted to [K/sec]
         r_tend_in = np.array([ 0.0,   1.2,  2.0,  2.3,   2.2,   2.1,    1.9,   1.7,   1.5,  1.35,  1.22,  1.08,  0.95,  0.82,  0.7,  0.6,   0.5,  0.4,   0.3,  0.2,   0.1,  0.05, 0.0025, 0.0012, 0.0006,  0.0,   0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0])/(24.0*3600.0)/1000.0  # Advective qt forcing  for theta [g/kg/d] converted to [kg/kg/sec]
         Ttend_in = np.array([ 0.0,  -1.0, -2.2, -3.0,  -3.5,  -3.8,   -4.0,  -4.1,  -4.2,  -4.2,  -4.1,  -4.0, -3.85,  -3.7, -3.5, -3.25, -3.0, -2.8,  -2.5, -2.1,  -1.7,  -1.3,   -1.0,   -0.7,   -0.5, -0.4,  -0.3, -0.2, -0.1,-0.05,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0])/(24.0*3600.0)  # Radiative T forcing [K/d] converted to [K/sec]
-
         Qtend_in = np.divide(r_tend_in,(1+r_tend_in)) # convert mixing ratio to specific humidity
-
-
-
         self.Fo.dqtdt = np.interp(Gr.z_half,z_in,Qtend_in)
         self.Fo.dTdt = np.interp(Gr.z_half,z_in,Ttend_in) + np.interp(Gr.z_half,z_in,RAD_in)
         return

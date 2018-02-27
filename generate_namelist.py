@@ -16,10 +16,6 @@ def main():
 
     if case_name == 'Bomex':
         namelist = Bomex()
-    elif case_name == 'Bomex_pulse':
-        namelist = Bomex_pulse()
-    elif case_name == 'Bomex_pulses':
-        namelist = Bomex_pulses()
     elif case_name == 'Bomex_cosine':
         namelist = Bomex_cosine()
     elif case_name == 'Soares':
@@ -30,8 +26,6 @@ def main():
         namelist = TRMM_LBA()
     elif case_name == 'ARM_SGP':
         namelist = ARM_SGP()
-    elif case_name == 'SCMS':
-        namelist = SCMS()
     elif case_name == 'GATE_III':
         namelist = GATE_III()
     else:
@@ -130,88 +124,6 @@ def Bomex():
 
     return namelist
 
-def Bomex_pulse():
-
-    namelist = {}
-
-    namelist['grid'] = {}
-    namelist['grid']['dims'] = 1
-    namelist['grid']['nz'] = 75
-    namelist['grid']['gw'] = 2
-    namelist['grid']['dz'] = 100 / 2.5
-
-
-    namelist['thermodynamics'] = {}
-    namelist['thermodynamics']['thermal_variable'] = 'thetal'
-
-    namelist['time_stepping'] = {}
-    namelist['time_stepping']['dt'] = 1.0
-    namelist['time_stepping']['t_max'] = 3*3600.0
-
-
-    namelist['turbulence'] = {}
-    namelist['turbulence']['scheme'] = 'EDMF_PrognosticTKE'
-    namelist['turbulence']['EDMF_PrognosticTKE'] = {}
-    namelist['turbulence']['EDMF_PrognosticTKE']['updraft_number'] = 1
-    namelist['turbulence']['EDMF_PrognosticTKE']['constant_area'] = False
-    namelist['turbulence']['EDMF_PrognosticTKE']['surface_area'] = 0.1
-
-
-    namelist['output'] = {}
-    namelist['output']['output_root'] = './'
-
-    namelist['stats_io'] = {}
-    namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['frequency'] = 1.0
-
-    namelist['meta'] = {}
-    namelist['meta']['simname'] = 'Bomex_pulse'
-    namelist['meta']['casename'] = 'Bomex_pulse'
-
-
-    return namelist
-
-def Bomex_pulses():
-
-    namelist = {}
-
-    namelist['grid'] = {}
-    namelist['grid']['dims'] = 1
-    namelist['grid']['nz'] = 75
-    namelist['grid']['gw'] = 2
-    namelist['grid']['dz'] = 100 / 2.5
-
-
-    namelist['thermodynamics'] = {}
-    namelist['thermodynamics']['thermal_variable'] = 'thetal'
-
-    namelist['time_stepping'] = {}
-    namelist['time_stepping']['dt'] = 1.0
-    namelist['time_stepping']['t_max'] = 3*3600.0
-
-
-    namelist['turbulence'] = {}
-    namelist['turbulence']['scheme'] = 'EDMF_PrognosticTKE'
-    namelist['turbulence']['EDMF_PrognosticTKE'] = {}
-    namelist['turbulence']['EDMF_PrognosticTKE']['updraft_number'] = 1
-    namelist['turbulence']['EDMF_PrognosticTKE']['constant_area'] = False
-    namelist['turbulence']['EDMF_PrognosticTKE']['surface_area'] = 0.1
-
-
-    namelist['output'] = {}
-    namelist['output']['output_root'] = './'
-
-    namelist['stats_io'] = {}
-    namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['frequency'] = 1.0
-
-    namelist['meta'] = {}
-    namelist['meta']['simname'] = 'Bomex_pulses'
-    namelist['meta']['casename'] = 'Bomex_pulses'
-
-
-    return namelist
-
 def Bomex_cosine():
 
     namelist = {}
@@ -229,14 +141,6 @@ def Bomex_cosine():
     namelist['time_stepping'] = {}
     namelist['time_stepping']['dt'] = 30.0
     namelist['time_stepping']['t_max'] = 6*3600.0
-
-
-    #namelist['turbulence'] = {}
-    #namelist['turbulence']['scheme'] = 'EDMF_PrognosticTKE'
-    #namelist['turbulence']['EDMF_PrognosticTKE'] = {}
-    #namelist['turbulence']['EDMF_PrognosticTKE']['updraft_number'] = 1
-    #namelist['turbulence']['EDMF_PrognosticTKE']['constant_area'] = False
-    #namelist['turbulence']['EDMF_PrognosticTKE']['surface_area'] = 0.1
 
     namelist['turbulence'] = {}
     namelist['turbulence']['scheme'] = 'EDMF_PrognosticTKE'
@@ -388,50 +292,6 @@ def ARM_SGP():
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'ARM_SGP'
     namelist['meta']['casename'] = 'ARM_SGP'
-
-
-    return namelist
-
-def SCMS():
-
-    namelist = {}
-
-    namelist['grid'] = {}
-    namelist['grid']['dims'] = 1
-    namelist['grid']['nz'] = 250
-    namelist['grid']['gw'] = 2
-    namelist['grid']['dz'] = 20
-
-
-    namelist['thermodynamics'] = {}
-    namelist['thermodynamics']['thermal_variable'] = 'thetal'
-
-    namelist['time_stepping'] = {}
-    namelist['time_stepping']['dt'] = 10.0
-    namelist['time_stepping']['t_max'] = 3600.0 * 12.0
-
-    namelist['turbulence'] = {}
-    namelist['turbulence']['scheme'] = 'EDMF_PrognosticTKE'
-    namelist['turbulence']['EDMF_PrognosticTKE'] = {}
-    namelist['turbulence']['EDMF_PrognosticTKE']['updraft_number'] = 1
-    namelist['turbulence']['EDMF_PrognosticTKE']['constant_area'] = False
-    namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] = 'b_w2'
-    namelist['turbulence']['EDMF_PrognosticTKE']['use_local_micro'] = True
-    namelist['turbulence']['EDMF_PrognosticTKE']['use_similarity_diffusivity'] = False
-    namelist['turbulence']['EDMF_PrognosticTKE']['updraft_surface_height'] = 0.0
-    namelist['turbulence']['EDMF_PrognosticTKE']['extrapolate_buoyancy'] = True
-
-
-    namelist['output'] = {}
-    namelist['output']['output_root'] = './'
-
-    namelist['stats_io'] = {}
-    namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['frequency'] = 60.0
-
-    namelist['meta'] = {}
-    namelist['meta']['simname'] = 'SCMS'
-    namelist['meta']['casename'] = 'SCMS'
 
 
     return namelist

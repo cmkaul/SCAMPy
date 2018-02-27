@@ -28,11 +28,15 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double minimum_area
         double entrainment_factor
         double detrainment_factor
-        double vel_pressure_coeff
-        double vel_buoy_coeff
+        double vel_pressure_coeff # used by diagnostic plume option; now calc'ed from Tan et al 2018 coefficient set
+        double vel_buoy_coeff # used by diagnostic plume option; now calc'ed from Tan et al 2018 coefficient set
+        double pressure_buoy_coeff # Tan et al. 2018: coefficient alpha_b in Eq. 30
+        double pressure_drag_coeff # Tan et al. 2018: coefficient alpha_d in Eq. 30
+        double pressure_plume_spacing # Tan et al. 2018: coefficient r_d in Eq. 30
         double dt_upd
         double [:,:] entr_sc
         double [:,:] detr_sc
+        double [:,:] updraft_pressure_sink
         double [:] area_surface_bc
         double [:] h_surface_bc
         double [:] qt_surface_bc
@@ -53,6 +57,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double [:] tke_entr_gain
         double [:] tke_detr_loss
         double [:] tke_shear
+        double [:] tke_pressure
+        double max_area_factor
+        double tke_ed_coeff
+        double tke_diss_coeff
+
         double [:] Hvar
         double [:] QTvar
         double [:] Hvar_shear
@@ -71,10 +80,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double [:] Hvar_dissipation
         double [:] QTvar_dissipation
         double [:] HQTcov_dissipation
-        double [:,:] press #  Yair
-        double max_area_factor
-        double tke_ed_coeff
-        double tke_diss_coeff
 
     cpdef initialize(self, GridMeanVariables GMV)
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
@@ -107,6 +112,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef compute_covariance_detr(self)
     cpdef compute_tke_shear(self, GridMeanVariables GMV)
     cpdef compute_covariance_shear(self, GridMeanVariables GMV)
+    cpdef compute_tke_pressure(self)
     # cpdef update_tke_MF(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef update_tke_ED(self, GridMeanVariables GMV, CasesBase Case,TimeStepping TS)
     cpdef update_covariance_ED(self, GridMeanVariables GMV, CasesBase Case,TimeStepping TS)
