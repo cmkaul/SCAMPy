@@ -314,7 +314,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.UpdVar.set_new_with_values()
         self.UpdVar.set_old_with_values()
         self.set_updraft_surface_bc(GMV, Case)
-        self.dt_upd = np.minimum(TS.dt, 0.5 * self.Gr.dz/np.max(self.UpdVar.W.values))
+        self.dt_upd = np.minimum(TS.dt, 0.5 * self.Gr.dz/fmax(np.max(self.UpdVar.W.values),1e-10))
 
         while time_elapsed < TS.dt:
             self.compute_entrainment_detrainment(GMV, Case, Ref)
@@ -344,11 +344,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.compute_entrainment_detrainment(GMV, Case, Ref)
 
         #Fix to ensure denominators remain > 0. Choice of 0.9 is heuristic
-        with nogil:
-            for i in xrange(self.n_updrafts):
-                for k in xrange(self.Gr.nzg):
-                    self.entr_sc[i,k] = fmin(self.entr_sc[i,k], 0.9 * dzi + self.detr_sc[i,k])
 
+        # with nogil:
+        #     for i in xrange(self.n_updrafts):
+        #         for k in xrange(self.Gr.nzg):
+        #             self.entr_sc[i,k] = fmin(self.entr_sc[i,k], 0.9 * dzi + self.detr_sc[i,k])
+        #
         with nogil:
             for i in xrange(self.n_updrafts):
                 self.UpdVar.H.values[i,gw] = self.h_surface_bc[i]
@@ -437,6 +438,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     w_low = w_mid
                     w_mid = interp2pt(self.UpdVar.W.values[i,k],self.UpdVar.W.values[i,k-1])
                     if w_mid > 0.0:
+                        # self.UpdVar.Area.values[i,k] = (self.Ref.rho0_half[k-1]*self.UpdVar.Area.values[i,k-1]*w_low/
+                        #                                 (1.0-(self.entr_sc[i,k]-self.detr_sc[i,k])*dz)/w_mid/self.Ref.rho0_half[k])
+                        if self.entr_sc[i,k]>(0.9/dz):
+                            self.entr_sc[i,k] = 0.9/dz
                         self.UpdVar.Area.values[i,k] = (self.Ref.rho0_half[k-1]*self.UpdVar.Area.values[i,k-1]*w_low/
                                                         (1.0-(self.entr_sc[i,k]-self.detr_sc[i,k])*dz)/w_mid/self.Ref.rho0_half[k])
                         # # Limit the increase in updraft area when the updraft decelerates
