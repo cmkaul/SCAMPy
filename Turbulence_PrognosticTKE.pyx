@@ -1477,7 +1477,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         with nogil:
             for k in xrange(self.Gr.nzg):
                 z = self.Gr.z_half[k]
-
+                # yair check this
                 #GMV.Hvar.values[k]   = 0.1*0.1
                 #GMV.QTvar.values[k]  = 0.001*0.001
                 #GMV.HQTcov.values[k] = 0.1*0.001
