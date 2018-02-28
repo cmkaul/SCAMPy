@@ -1495,8 +1495,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 GMV.HQTcov.new[k] = GMV.HQTcov.values[k]
                 GMV.HQTcov.mf_update[k] = GMV.HQTcov.values[k]
 
-
-
         self.compute_mixing_length(Case.Sur.obukhov_length)
 
         return
@@ -1504,7 +1502,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
 
     cpdef compute_covariance_shear(self, GridMeanVariables GMV):
-
         cdef:
             Py_ssize_t k
             Py_ssize_t gw = self.Gr.gw
@@ -1513,10 +1510,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double dQT_high = 0.0
             double dH_low, dQT_low
 
-
         with nogil:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-
                 dH_low = dH_high
                 dH_high = (self.EnvVar.H.values[k+1] - self.EnvVar.H.values[k]) * self.Gr.dzi
                 dQT_low = dQT_high
@@ -1527,7 +1522,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         return
 
     cpdef compute_covariance_entr(self):
-
         cdef:
             Py_ssize_t i, k
             double H_u, H_env, QT_u, QT_env
@@ -1551,13 +1545,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.HQTcov_entr_gain[k] *= self.Ref.rho0_half[k]
         return
 
-
     cpdef compute_covariance_detr(self):
-
         cdef:
             Py_ssize_t i, k
             double Thetal_u, QT_u
-
         with nogil:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                 self.Hvar_detr_loss[k] = 0.0
@@ -1573,7 +1564,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         return
 
     cpdef update_covariance_ED(self, GridMeanVariables GMV, CasesBase Case,TimeStepping TS):
-
         cdef:
             Py_ssize_t k, kk, i
             Py_ssize_t gw = self.Gr.gw
@@ -1617,7 +1607,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         Hvar_0_surf = (Hvar_gmv_surf/ae[k] - self.UpdVar.Area.bulkvalues[k]/ae[k] *(Hu_half * Hu_half - Hhalf[gw] * Hhalf[gw]))
         QTvar_0_surf = (QTvar_gmv_surf/ae[k] - self.UpdVar.Area.bulkvalues[k]/ae[k] *(QTu_half * QTu_half - QThalf[gw] * QThalf[gw]))
         HQTcov_0_surf = (HQTcov_gmv_surf/ae[k] - self.UpdVar.Area.bulkvalues[k]/ae[k]  *( Hu_half * QTu_half - Hhalf[gw] * QThalf[gw]))
-
 
         # run tridiagonal solver for Hvar
         with nogil:
@@ -1730,14 +1719,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.EnvVar.HQTcov.values[k] = x[kk]
                 GMV.HQTcov.new[k] = (ae[k] * (self.EnvVar.HQTcov.values[k] + (Hhalf[k]-GMV.H.values[k]) * (QThalf[k]-GMV.QT.values[k]))
                                   + self.UpdVar.Area.bulkvalues[k] * (self.UpdVar.H.bulkvalues[k]-GMV.H.values[k])  * (self.UpdVar.QT.bulkvalues[k]-GMV.QT.values[k]))
-
-
-
-
         return
 
     cpdef compute_covariance_dissipation(self):
-
         cdef:
             Py_ssize_t k
             double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),self.UpdVar.Area.bulkvalues)
