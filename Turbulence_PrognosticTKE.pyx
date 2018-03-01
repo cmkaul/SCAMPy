@@ -326,9 +326,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             with nogil:
                 for k in xrange(self.Gr.nzg):
                     self.EnvVar.TKE.values[k] = GMV.TKE.values[k]
-                    self.EnvVar.Hvar.values[k] = GMV.Hvar.values[k]
-                    self.EnvVar.QTvar.values[k] = GMV.QTvar.values[k]
-                    self.EnvVar.HQTcov.values[k] = GMV.HQTcov.values[k]
+                    #self.EnvVar.Hvar.values[k] = GMV.Hvar.values[k]
+                    #self.EnvVar.QTvar.values[k] = GMV.QTvar.values[k]
+                    #self.EnvVar.HQTcov.values[k] = GMV.HQTcov.values[k]
         # self.reset_surface_tke(GMV, Case) -- I don't believe this to be needed
         self.decompose_environment(GMV, 'values')
 
@@ -393,13 +393,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.set_updraft_surface_bc(GMV, Case)
         self.compute_entrainment_detrainment(GMV, Case, Ref)
 
-        #Fix to ensure denominators remain > 0. Choice of 0.9 is heuristic
 
-        # with nogil:
-        #     for i in xrange(self.n_updrafts):
-        #         for k in xrange(self.Gr.nzg):
-        #             self.entr_sc[i,k] = fmin(self.entr_sc[i,k], 0.9 * dzi + self.detr_sc[i,k])
-        #
         with nogil:
             for i in xrange(self.n_updrafts):
                 self.UpdVar.H.values[i,gw] = self.h_surface_bc[i]
@@ -486,11 +480,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         self.UpdVar.QT.values[i,k] = GMV.QT.values[k]
                         sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[k],
                                  self.UpdVar.QT.values[i,k], self.UpdVar.H.values[i,k])
-                        self.UpdVar.QL.new[i,k] = sa.ql
-                        self.UpdVar.T.new[i,k] = sa.T
+                        #self.UpdVar.QL.new[i,k] = sa.ql
+                        #self.UpdVar.T.new[i,k] = sa.T
                         self.UpdVar.QL.values[i,k] = sa.ql
                         self.UpdVar.T.values[i,k] = sa.T
-
 
 
         self.decompose_environment(GMV, 'values')
@@ -669,11 +662,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
 
         GMV.Hvar.values[self.Gr.gw] = Hvar_sur
-        GMV.Hvar.mf_update[self.Gr.gw] = Hvar_sur
+        #GMV.Hvar.mf_update[self.Gr.gw] = Hvar_sur
         GMV.QTvar.values[self.Gr.gw] = QTvar_sur
-        GMV.QTvar.mf_update[self.Gr.gw] = QTvar_sur
+        #GMV.QTvar.mf_update[self.Gr.gw] = QTvar_sur
         GMV.HQTcov.values[self.Gr.gw] = HQTcov_sur
-        GMV.HQTcov.mf_update[self.Gr.gw] = HQTcov_sur
+        #GMV.HQTcov.mf_update[self.Gr.gw] = HQTcov_sur
 
         return
 
