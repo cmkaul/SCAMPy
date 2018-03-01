@@ -27,7 +27,7 @@ cdef class EnvironmentVariables:
         EnvironmentVariable QTvar
         EnvironmentVariable HQTcov
         EnvironmentVariable CF
-        EnvironmentVariable THVvar
+        #EnvironmentVariable THVvar
         Grid Gr
         bint use_tke
         bint use_scalar_var
@@ -49,7 +49,7 @@ cdef class EnvironmentThermodynamics:
         double [:] qv_cloudy
         double [:] qt_cloudy
         double [:] th_cloudy
-        void sommeria_deardorff(self, EnvironmentVariables EnvVar)
+        #void sommeria_deardorff(self, EnvironmentVariables EnvVar)
 
 
     cpdef satadjust(self, EnvironmentVariables EnvVar, GridMeanVariables GMV)

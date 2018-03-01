@@ -50,6 +50,7 @@ cdef class GridMeanVariables:
         VariableDiagnostic QTvar
         VariableDiagnostic Hvar
         VariableDiagnostic HQTcov
+        VariableDiagnostic THVvar
     cpdef zero_tendencies(self)
     cpdef update(self, TimeStepping TS)
     cpdef initialize_io(self, NetCDFIO_Stats Stats)

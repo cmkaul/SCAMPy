@@ -168,16 +168,16 @@ cdef class GridMeanVariables:
             self.use_scalar_var = True
         #Now add the 2nd moment variables
         if self.use_tke:
-            self.TKE = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym', 'tke','m^2/s^2' )
+            self.TKE = VariablePrognostic(Gr.nzg, 'half', 'scalar','sym', 'tke','m^2/s^2' )
         if self.use_scalar_var:
-            self.QTvar = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym', 'qt_var','kg^2/kg^2' )
-            self.THVvar = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym', 'thatav_var','K^2' )
+            self.QTvar = VariablePrognostic(Gr.nzg, 'half', 'scalar','sym', 'qt_var','kg^2/kg^2' )
+            self.THVvar = VariablePrognostic(Gr.nzg, 'half', 'scalar','sym', 'thatav_var','K^2' )
             if namelist['thermodynamics']['thermal_variable'] == 'entropy':
-                self.Hvar = VariableDiagnostic(Gr.nzg, 'half', 'scalar', 'sym', 's_var', '(J/kg/K)^2')
-                self.HQTcov = VariableDiagnostic(Gr.nzg, 'half', 'scalar', 'sym' ,'s_qt_covar', '(J/kg/K)(kg/kg)' )
+                self.Hvar = VariablePrognostic(Gr.nzg, 'half', 'scalar', 'sym', 's_var', '(J/kg/K)^2')
+                self.HQTcov = VariablePrognostic(Gr.nzg, 'half', 'scalar', 'sym' ,'s_qt_covar', '(J/kg/K)(kg/kg)' )
             elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
-                self.Hvar = VariableDiagnostic(Gr.nzg, 'half', 'scalar', 'sym' ,'thetal_var', 'K^2')
-                self.HQTcov = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym' ,'thetal_qt_covar', 'K(kg/kg)' )
+                self.Hvar = VariablePrognostic(Gr.nzg, 'half', 'scalar', 'sym' ,'thetal_var', 'K^2')
+                self.HQTcov = VariablePrognostic(Gr.nzg, 'half', 'scalar','sym' ,'thetal_qt_covar', 'K(kg/kg)' )
 
 
 
@@ -188,12 +188,12 @@ cdef class GridMeanVariables:
         self.V.zero_tendencies(self.Gr)
         self.QT.zero_tendencies(self.Gr)
         self.H.zero_tendencies(self.Gr)
-        # if self.use_tke:
-        #     self.TKE.zero_tendencies(self.Gr)
-        # if self.use_scalar_var:
-        #     self.QTvar.zero_tendencies(self.Gr)
-        #     self.Hvar.zero_tendencies(self.Gr)
-        #     self.HQTcov.zero_tendencies(self.Gr)
+        if self.use_tke:
+            self.TKE.zero_tendencies(self.Gr)
+        if self.use_scalar_var:
+            self.QTvar.zero_tendencies(self.Gr)
+            self.Hvar.zero_tendencies(self.Gr)
+            self.HQTcov.zero_tendencies(self.Gr)
 
         return
 
@@ -212,16 +212,16 @@ cdef class GridMeanVariables:
         self.QT.set_bcs(self.Gr)
 
         if self.use_tke:
-            # with nogil:
-            #     for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-            #         self.TKE.values[k]  = self.TKE.new[k]  #+=  self.TKE.tendencies[k] * TS.dt
+            with nogil:
+                for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+                    self.TKE.values[k]  = self.TKE.new[k]  #+=  self.TKE.tendencies[k] * TS.dt
             self.TKE.set_bcs(self.Gr)
         if self.use_scalar_var:
-            # with nogil:
-            #     for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-            #         self.QTvar.values[k]  +=  self.QTvar.tendencies[k] * TS.dt
-            #         self.Hvar.values[k] += self.Hvar.tendencies[k] * TS.dt
-            #         self.HQTcov.values[k] += self.HQTcov.tendencies[k] * TS.dt
+            with nogil:
+                for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+                    self.QTvar.values[k]  +=  self.QTvar.tendencies[k] * TS.dt
+                    self.Hvar.values[k] += self.Hvar.tendencies[k] * TS.dt
+                    self.HQTcov.values[k] += self.HQTcov.tendencies[k] * TS.dt
             self.QTvar.set_bcs(self.Gr)
             self.Hvar.set_bcs(self.Gr)
             self.HQTcov.set_bcs(self.Gr)

@@ -21,7 +21,7 @@ from turbulence_functions cimport *
 from utility_functions cimport *
 from libc.math cimport fmax, sqrt, exp, pow, cbrt, fmin
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
-from Turbulence_BulkSteady cimport EDMF_BulkSteady
+#from Turbulence_BulkSteady cimport EDMF_BulkSteady
 
 
 cdef class EDMF_PrognosticTKE(ParameterizationBase):
@@ -40,11 +40,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         except:
             self.use_steady_updrafts = False
 
-        try:
-            self.const_area = namelist['turbulence']['EDMF_PrognosticTKE']['constant_area']
-        except:
-            self.const_area = False
-            print('Turbulence--EDMF_PrognosticTKE: defaulting to variable area fraction')
+        # try:
+        #     self.const_area = namelist['turbulence']['EDMF_PrognosticTKE']['constant_area']
+        # except:
+        #     self.const_area = False
+        #     print('Turbulence--EDMF_PrognosticTKE: defaulting to variable area fraction')
         try:
             self.use_local_micro = namelist['turbulence']['EDMF_PrognosticTKE']['use_local_micro']
         except:
@@ -337,7 +337,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.compute_diagnostic_updrafts(GMV, Case, Ref)
         else:
             self.compute_prognostic_updrafts(GMV, Case, TS, Ref)
-
 
         self.decompose_environment(GMV, 'values')
         self.update_GMV_MF(GMV, TS)
