@@ -343,16 +343,15 @@ cdef class EnvironmentThermodynamics:
             eos_struct sa
             double qv, alpha
         self.sommeria_deardorff(EnvVar)
+        #if GMV.use_scalar_var:
+        #    self.sommeria_deardorff(EnvVar)
+        #    self.eos_update_SA_sgs(EnvVar, GMV.B)
         if GMV.use_scalar_var:
-            self.sommeria_deardorff(EnvVar)
-            self.eos_update_SA_sgs(EnvVar, GMV.B)
-        # if GMV.use_scalar_var:
-        #     if self.use_sommeria_deardorff:
-        #         self.sommeria_deardorff(EnvVar)
-        #     else:
-        #         self.sommeria_deardorff(EnvVar)
-        #         self.eos_update_SA_sgs(EnvVar, GMV.B)
-        #
+            if GMV.use_sommeria_deardorff:
+                self.sommeria_deardorff(EnvVar)
+            else:
+                self.eos_update_SA_sgs(EnvVar, GMV.B)
+
         else:
             with nogil:
                 for k in xrange(gw,self.Gr.nzg-gw):

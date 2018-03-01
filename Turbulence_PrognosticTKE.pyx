@@ -525,15 +525,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for k in xrange(self.Gr.nzg):
                 z = self.Gr.z_half[k]
                 GMV.TKE.values[k] = ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
-                #GMV.TKE.values[k] = 0.01
-                #GMV.TKE.new[k] = GMV.TKE.values[k]
-                #GMV.TKE.mf_update[k] = GMV.TKE.values[k]
         self.reset_surface_tke(GMV, Case)
         self.compute_mixing_length(Case.Sur.obukhov_length)
-
-        # plt.figure('Init TKE')
-        # plt.plot(GMV.TKE.values, self.Gr.z_half)
-        # plt.show()
         return
 
     cpdef update_inversion(self,GridMeanVariables GMV, option):
@@ -561,30 +554,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 else:
                     l2 = vkb * z_
                 self.mixing_length[k] = fmax( 1.0/(1.0/fmax(l1,1e-10) + 1.0/l2), 1e-3)
-
-        # cdef:
-        #     Py_ssize_t k
-        #     Py_ssize_t gw = self.Gr.gw
-        #     double tau =  get_mixing_tau(self.zi, self.wstar)
-        #     double l1, l2, z_
-
-
-        # with nogil:
-        #     for k in range(gw,+1):
-        #         grad = (self.EnvVar.H.values[k+1]-self.EnvVar.H.values[k])/(self.Gr.z[k+1]-self.Gr.z[k])
-        #         grad2 = pow(fmax(grad,0.001),2.0)
-        #         H = self.EnvVar.H.values[k]
-        #         self.mixing_length[k] = sqrt(H/grad2)
-        #     for k in xrange(gw+1, self.Gr.nzg-gw-1):
-        #         grad = (self.EnvVar.H.values[k+1]-self.EnvVar.H.values[k-1])/(self.Gr.z[k+1]-self.Gr.z[k-1])
-        #         grad2 = pow(fmax(grad,0.001),2.0)
-        #         H = self.EnvVar.H.values[k]
-        #         self.mixing_length[k] = sqrt(H/grad2)
-        #     for k in xrange(gw+1, self.Gr.nzg-gw-1):
-        #         grad = (self.EnvVar.H.values[k]-self.EnvVar.H.values[k-1])/(self.Gr.z[k]-self.Gr.z[k-1])
-        #         grad2 = pow(fmax(grad,0.001),2.0)
-        #         H = self.EnvVar.H.values[k]
-        #         self.mixing_length[k] = sqrt(H/grad2)
         return
 
     cpdef compute_eddy_diffusivities_tke(self, GridMeanVariables GMV, CasesBase Case):

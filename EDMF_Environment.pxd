@@ -31,6 +31,7 @@ cdef class EnvironmentVariables:
         Grid Gr
         bint use_tke
         bint use_scalar_var
+        bint use_sommeria_deardorff
 
     cpdef initialize_io(self, NetCDFIO_Stats Stats )
     cpdef io(self, NetCDFIO_Stats Stats)

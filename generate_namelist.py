@@ -109,6 +109,7 @@ def Bomex():
     namelist['turbulence']['EDMF_PrognosticTKE']['use_similarity_diffusivity'] = False
     namelist['turbulence']['EDMF_PrognosticTKE']['extrapolate_buoyancy'] = True
     namelist['turbulence']['EDMF_PrognosticTKE']['use_steady_updrafts'] = False
+    namelist['turbulence']['EDMF_PrognosticTKE']['use_sommeria_deardorff'] = False
 
     namelist['output'] = {}
     namelist['output']['output_root'] = './'

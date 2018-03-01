@@ -165,6 +165,7 @@ cdef class GridMeanVariables:
         else:
             self.use_tke = False
             self.use_scalar_var = True
+        self.use_sommeria_deardorff = namelist['turbulence']['EDMF_PrognosticTKE']['use_sommeria_deardorff']
         #Now add the 2nd moment variables
         if self.use_tke:
             self.TKE = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym', 'tke','m^2/s^2' )
@@ -219,20 +220,13 @@ cdef class GridMeanVariables:
         self.QT.set_bcs(self.Gr)
 
         if self.use_tke:
-            #with nogil:
-            #    for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-            #        self.TKE.values[k]  = self.TKE.new[k]  #+=  self.TKE.tendencies[k] * TS.dt
             self.TKE.set_bcs(self.Gr)
         if self.use_scalar_var:
-            #with nogil:
-            #    for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-            #        self.QTvar.values[k]  +=  self.QTvar.tendencies[k] * TS.dt
-            #        self.Hvar.values[k] += self.Hvar.tendencies[k] * TS.dt
-            #        self.HQTcov.values[k] += self.HQTcov.tendencies[k] * TS.dt
             self.QTvar.set_bcs(self.Gr)
             self.Hvar.set_bcs(self.Gr)
             self.HQTcov.set_bcs(self.Gr)
-            self.THVvar.set_bcs(self.Gr)
+            if self.use_sommeria_deardorff:
+                self.THVvar.set_bcs(self.Gr)
 
 
         self.zero_tendencies()
