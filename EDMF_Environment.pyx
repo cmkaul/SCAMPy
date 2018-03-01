@@ -344,7 +344,7 @@ cdef class EnvironmentThermodynamics:
             eos_struct sa
             double qv, alpha
         if GMV.use_scalar_var:
-            self.sommeria_deardorff(EnvVar)
+            #self.sommeria_deardorff(EnvVar)
             self.eos_update_SA_sgs(EnvVar, GMV.B)
         # if GMV.use_scalar_var:
         #     if self.use_sommeria_deardorff:

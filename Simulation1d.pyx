@@ -36,16 +36,23 @@ class Simulation1d:
         return
 
     def run(self):
-
+        print 'run'
         while self.TS.t <= self.TS.t_max:
             self.GMV.zero_tendencies()
+            print 'self.GMV.zero_tendencies()'
             self.Case.update_surface(self.GMV, self.TS)
+            print 'self.Case.update_surface(self.GMV, self.TS)'
             self.Case.update_forcing(self.GMV, self.Gr, self.Ref, self.TS)
+            print 'self.Case.update_forcing(self.GMV, self.Gr, self.Ref, self.TS)'
             self.Turb.update(self.GMV, self.Case, self.TS, self.Ref )
+            print 'self.Turb.update(self.GMV, self.Case, self.TS, self.Ref )'
             self.TS.update()
+            print 'self.TS.update()'
             # Apply the tendencies, also update the BCs and diagnostic thermodynamics
             self.GMV.update(self.TS)
+            print 'self.GMV.update(self.TS)'
             self.Turb.update_GMV_diagnostics(self.GMV)
+            print 'self.Turb.update_GMV_diagnostics(self.GMV)'
             if np.mod(self.TS.t, self.Stats.frequency) == 0:
                 self.io()
 
