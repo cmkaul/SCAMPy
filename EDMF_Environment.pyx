@@ -10,7 +10,7 @@ import cython
 from Grid cimport  Grid
 from ReferenceState cimport ReferenceState
 from Variables cimport VariableDiagnostic, GridMeanVariables
-from libc.math cimport fmax, fmin, sqrt, exp
+from libc.math cimport fmax, fmin, sqrt, exp, erf
 from thermodynamic_functions cimport  *
 
 cdef class EnvironmentVariable:
@@ -58,14 +58,7 @@ cdef class EnvironmentVariables:
         #Now add the 2nd moment variables
         if self.use_tke:
             self.TKE = EnvironmentVariable( nz, 'half', 'scalar', 'tke','m^2/s^2' )
-            #self.QTvar = EnvironmentVariable( nz, 'half', 'scalar', 'qt_var','kg^2/kg^2' )
-            #if namelist['thermodynamics']['thermal_variable'] == 'entropy':
-            #    self.Hvar = EnvironmentVariable(nz, 'half', 'scalar', 's_var', '(J/kg/K)^2')
-            #    self.HQTcov = EnvironmentVariable(nz, 'half', 'scalar', 's_qt_covar', '(J/kg/K)(kg/kg)' )
-            #elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
-            #    self.Hvar = EnvironmentVariable(nz, 'half', 'scalar', 'thetal_var', 'K^2')
-            #    self.HQTcov = EnvironmentVariable(nz, 'half', 'scalar', 'thetal_qt_covar', 'K(kg/kg)' )
-        #
+
         if self.use_scalar_var:
             self.QTvar = EnvironmentVariable( nz, 'half', 'scalar', 'qt_var','kg^2/kg^2' )
             if namelist['thermodynamics']['thermal_variable'] == 'entropy':
@@ -74,7 +67,7 @@ cdef class EnvironmentVariables:
             elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
                 self.Hvar = EnvironmentVariable(nz, 'half', 'scalar', 'thetal_var', 'K^2')
                 self.HQTcov = EnvironmentVariable(nz, 'half', 'scalar', 'thetal_qt_covar', 'K(kg/kg)' )
-                #self.THVvar = EnvironmentVariable(nz, 'half', 'scalar', 'thetal_var', 'K^2')
+                self.THVvar = EnvironmentVariable(nz, 'half', 'scalar', 'thetal_var', 'K^2')
 
         #
         return
@@ -112,7 +105,7 @@ cdef class EnvironmentVariables:
             Stats.write_profile('env_Hvar', self.Hvar.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
             Stats.write_profile('env_QTvar', self.QTvar.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
             Stats.write_profile('env_HQTcov', self.HQTcov.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
-            #Stats.write_profile('env_THVvar', self.THVvar.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+            Stats.write_profile('env_THVvar', self.THVvar.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
 
 
         return
@@ -302,39 +295,45 @@ cdef class EnvironmentThermodynamics:
                     self.t_cloudy[k]    = outer_int_T_cloudy/exner_c(self.Ref.p0_half[k])
         return
 
-    # cdef void sommeria_deardorff(self, EnvironmentVariables EnvVar):
-    #     # this function follows the derivation in
-    #     # Sommeria and Deardorff 1977: Sub grid scale condensation in models of non-precipitating clouds.
-    #     # J. Atmos. Sci., 34, 344-355.
-    #     cdef:
-    #         Py_ssize_t gw = self.Gr.gw
-    #         double Lv, Tl, q_sl, beta1, lambda1, alpha1, sigma1, Q1, R, C0, C1, C2
-    #
-    #     if EnvVar.H.name == 'thetal':
-    #         print 'doing Sommeria Deardorff'
-    #         with nogil:
-    #             for k in xrange(gw, self.Gr.nzg-gw):
-    #                 Lv = latent_heat(EnvVar.T.values[k])
-    #                 cp = cpd
-    #                 Tl = EnvVar.THL.values[k]*exner_c(self.Ref.p0_half[k])
-    #                 q_sl = qv_star_t(self.Ref.p0[k], Tl) # using the qv_star_c function instead of the approximation in eq. (4) in SD
-    #                 beta1 = 0.622*Lv**2/(Rd*cp*Tl**2) # eq. (8) in SD
-    #                 lambda1 = 1/(1+beta1*q_sl) # text under eq. (20) in SD
-    #                 alpha1 = (self.Ref.p0[k]/1000.0)**0.288*0.622*Lv*q_sl/Rd/Tl**2 # eq. (14) and eq. (6) in SD
-    #                 sigma1 = EnvVar.QTvar.values[k]-2*alpha1*EnvVar.HQTcov.values[k]+alpha1**2*EnvVar.Hvar.values[k] # eq. (18) in SD , with r from (11)
-    #                 Q1 = (EnvVar.QT.values[k]-q_sl)/sigma1 # eq. (17) in SD
-    #                 R = 0.5*(1+erf(Q1/sqrt(2.0))) # approximation in eq. (16) in SD
-    #                 #R1 = 0.5*(1+Q1/1.6) # approximation in eq. (22) in SD
-    #                 C0 = 1.0+0.61*q_sl-alpha1*lambda1*EnvVar.THL.values[k]*(Lv/cp/Tl*(1.0+0.61*q_sl)-1.61) # eq. (37) in SD
-    #                 C1 = (1.0-R)*(1+0.61*q_sl)+R*C0 # eq. (42a) in SD
-    #                 C2 = (1.0-R)*0.61+R*(C0*Lv/cp/Tl-1.0) # eq. (42b) in SD
-    #                 # the THVvar is given as a function of THVTHLcov and THVQTcov from eq. (41) in SD.
-    #                 # these covariances with THL are obtained by substituting w for THL or QT in eq. (41),
-    #                 # i.e. applying eq. (41) twice. The resulting expression yields:
-    #                 EnvVar.THVvar.values[k] = C1**2*EnvVar.Hvar.values[k] + 2*C1*C2*EnvVar.HQTcov.values[k] + C2**2*EnvVar.QTvar.values[k]
-    #     elif EnvVar.H.name == 's':
-    #         print 'Sommeria Deardorff is not defined for in that case'
-    #     return
+    cdef void sommeria_deardorff(self, EnvironmentVariables EnvVar):
+        # this function follows the derivation in
+        # Sommeria and Deardorff 1977: Sub grid scale condensation in models of non-precipitating clouds.
+        # J. Atmos. Sci., 34, 344-355.
+        cdef:
+            Py_ssize_t gw = self.Gr.gw
+            double Lv, Tl, q_sl, beta1, lambda1, alpha1, sigma1, Q1, R, C0, C1, C2
+        if EnvVar.H.name == 'thetal':
+            with nogil:
+                for k in xrange(gw, self.Gr.nzg-gw):
+                    Lv = latent_heat(EnvVar.T.values[k])
+                    cp = cpd
+                    Tl = EnvVar.THL.values[k]*exner_c(self.Ref.p0_half[k])
+                    q_sl = qv_star_t(self.Ref.p0[k], Tl) # using the qv_star_c function instead of the approximation in eq. (4) in SD
+                    beta1 = 0.622*Lv**2/(Rd*cp*Tl**2) # eq. (8) in SD
+                    lambda1 = 1/(1+beta1*q_sl) # text under eq. (20) in SD
+                    alpha1 = (self.Ref.p0[k]/1000.0)**0.288*0.622*Lv*q_sl/Rd/Tl**2 # eq. (14) and eq. (6) in SD
+                    sigma1 = EnvVar.QTvar.values[k]-2*alpha1*EnvVar.HQTcov.values[k]+alpha1**2*EnvVar.Hvar.values[k] # eq. (18) in SD , with r from (11)
+                    Q1 = (EnvVar.QT.values[k]-q_sl)/sigma1 # eq. (17) in SD
+                    R = 0.5*(1+erf(Q1/sqrt(2.0))) # approximation in eq. (16) in SD
+                    #R1 = 0.5*(1+Q1/1.6) # approximation in eq. (22) in SD
+                    C0 = 1.0+0.61*q_sl-alpha1*lambda1*EnvVar.THL.values[k]*(Lv/cp/Tl*(1.0+0.61*q_sl)-1.61) # eq. (37) in SD
+                    C1 = (1.0-R)*(1+0.61*q_sl)+R*C0 # eq. (42a) in SD
+                    C2 = (1.0-R)*0.61+R*(C0*Lv/cp/Tl-1.0) # eq. (42b) in SD
+                    # the THVvar is given as a function of THVTHLcov and THVQTcov from eq. (41) in SD.
+                    # these covariances with THL are obtained by substituting w for THL or QT in eq. (41),
+                    # i.e. applying eq. (41) twice. The resulting expression yields:
+                    EnvVar.THVvar.values[k] = C1**2*EnvVar.Hvar.values[k] + 2*C1*C2*EnvVar.HQTcov.values[k] + C2**2*EnvVar.QTvar.values[k]
+                    # using eq. (25) in SD, noting thbat there is a typo in the first condition and 1.6 there should be -1.6
+                    if Q1<-1.6:
+                        EnvVar.QL.values[k] = 0.0
+                    elif Q1>-1.6 and Q1<1.6:
+                        EnvVar.QL.values[k] = (Q1+1.6)**2/6.4
+                    elif Q1>1.6:
+                        EnvVar.QL.values[k] = Q1
+                    EnvVar.T.values[k] = Tl +Lv/cp*EnvVar.QL.values[k]
+        elif EnvVar.H.name == 's':
+            print 'Sommeria Deardorff is not defined for in that case'
+        return
 
     cpdef satadjust(self, EnvironmentVariables EnvVar, GridMeanVariables GMV):
         cdef:
@@ -343,8 +342,9 @@ cdef class EnvironmentThermodynamics:
 
             eos_struct sa
             double qv, alpha
+        self.sommeria_deardorff(EnvVar)
         if GMV.use_scalar_var:
-            #self.sommeria_deardorff(EnvVar)
+            self.sommeria_deardorff(EnvVar)
             self.eos_update_SA_sgs(EnvVar, GMV.B)
         # if GMV.use_scalar_var:
         #     if self.use_sommeria_deardorff:
