@@ -139,9 +139,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.tke_shear = np.zeros((Gr.nzg,),dtype=np.double, order='c')
         self.tke_pressure = np.zeros((Gr.nzg,),dtype=np.double, order='c')
 
-        self.Hvar = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-        self.QTvar = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-        self.HQTcov = np.zeros((Gr.nzg,),dtype=np.double, order='c')
+        #self.Hvar = np.zeros((Gr.nzg,),dtype=np.double, order='c')
+        #self.QTvar = np.zeros((Gr.nzg,),dtype=np.double, order='c')
+        #self.HQTcov = np.zeros((Gr.nzg,),dtype=np.double, order='c')
         self.Hvar_dissipation = np.zeros((Gr.nzg,),dtype=np.double, order='c')
         self.QTvar_dissipation = np.zeros((Gr.nzg,),dtype=np.double, order='c')
         self.HQTcov_dissipation = np.zeros((Gr.nzg,),dtype=np.double, order='c')
@@ -288,9 +288,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         Stats.write_profile('tke_pressure', self.tke_pressure[kmin:kmax])
         Stats.write_profile('updraft_qt_precip', self.UpdMicro.prec_source_qt_tot[kmin:kmax])
         Stats.write_profile('updraft_thetal_precip', self.UpdMicro.prec_source_h_tot[kmin:kmax])
-        Stats.write_profile('Hvar', self.Hvar[kmin:kmax])
-        Stats.write_profile('QTvar', self.QTvar[kmin:kmax])
-        Stats.write_profile('HQTcov', self.HQTcov[kmin:kmax])
+        #Stats.write_profile('Hvar', self.Hvar[kmin:kmax])
+        #Stats.write_profile('QTvar', self.QTvar[kmin:kmax])
+        #Stats.write_profile('HQTcov', self.HQTcov[kmin:kmax])
         self.compute_covariance_dissipation()
         Stats.write_profile('Hvar_dissipation', self.Hvar_dissipation[kmin:kmax])
         Stats.write_profile('QTvar_dissipation', self.QTvar_dissipation[kmin:kmax])
@@ -648,9 +648,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
 
     cpdef reset_surface_covariance(self, GridMeanVariables GMV, CasesBase Case):
-
         flux1 = Case.Sur.rho_hflux
         flux2 = Case.Sur.rho_qtflux
+        print'654'
         cdef:
             double zLL = self.Gr.z_half[self.Gr.gw]
             double ustar = Case.Sur.ustar, oblength = Case.Sur.obukhov_length
@@ -660,14 +660,17 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double QTvar_sur = get_surface_variance(flux2*alpha0LL,flux2*alpha0LL, ustar, zLL, oblength)
             double HQTcov_sur = get_surface_variance(flux1 * alpha0LL,flux2 * alpha0LL, ustar, zLL, oblength)
 
-
-        GMV.Hvar.values[self.Gr.gw] = Hvar_sur
+        print Hvar_sur
+        #GMV.Hvar.values[self.Gr.gw] = Hvar_sur
+        print '666'
         #GMV.Hvar.mf_update[self.Gr.gw] = Hvar_sur
         GMV.QTvar.values[self.Gr.gw] = QTvar_sur
+        print '669'
         #GMV.QTvar.mf_update[self.Gr.gw] = QTvar_sur
         GMV.HQTcov.values[self.Gr.gw] = HQTcov_sur
+        print '672'
         #GMV.HQTcov.mf_update[self.Gr.gw] = HQTcov_sur
-
+        print 'end reset_surface_covariance(self, GridMeanVariables GMV, CasesBase Case):'
         return
 
 
@@ -1450,15 +1453,15 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for k in xrange(self.Gr.nzg):
                 z = self.Gr.z_half[k]
                 # yair check this
-                #GMV.Hvar.values[k]   = 0.1*0.1
-                #GMV.QTvar.values[k]  = 0.001*0.001
-                #GMV.HQTcov.values[k] = 0.1*0.001
+                GMV.Hvar.values[k]   = 0.1*0.1
+                GMV.QTvar.values[k]  = 0.001*0.001
+                GMV.HQTcov.values[k] = 0.1*0.001
                 #GMV.Hvar.values[k]   = GMV.Hvar.values[self.Gr.gw]
                 #GMV.QTvar.values[k]  = GMV.QTvar.values[self.Gr.gw]
                 #GMV.HQTcov.values[k] = GMV.HQTcov.values[self.Gr.gw]
-                GMV.Hvar.values[k]   = GMV.Hvar.values[self.Gr.gw]*ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
-                GMV.QTvar.values[k]  = GMV.QTvar.values[self.Gr.gw]*ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
-                GMV.HQTcov.values[k] = GMV.HQTcov.values[self.Gr.gw]*ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
+                #GMV.Hvar.values[k]   = GMV.Hvar.values[self.Gr.gw]*ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
+                #GMV.QTvar.values[k]  = GMV.QTvar.values[self.Gr.gw]*ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
+                #GMV.HQTcov.values[k] = GMV.HQTcov.values[self.Gr.gw]*ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
 
                 GMV.QTvar.values[k] = GMV.QTvar.values[k]
                 GMV.Hvar.values[k] = GMV.Hvar.values[k]
