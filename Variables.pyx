@@ -158,11 +158,12 @@ cdef class GridMeanVariables:
         self.T = VariableDiagnostic(Gr.nzg,'half', 'scalar','sym', 'temperature', 'K')
         self.B = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym', 'buoyancy', 'm^2/s^3')
         self.THL = VariableDiagnostic(Gr.nzg, 'half', 'scalar', 'sym', 'thetal','K')
+        self.THVvar = VariableDiagnostic(Gr.nzg, 'half', 'scalar', 'sym', 'thetav_var','K^2')
 
         # Determine whether we need 2nd moment variables
         if  namelist['turbulence']['scheme'] == 'EDMF_PrognosticTKE':
             self.use_tke = True
-            self.use_scalar_var = False
+            self.use_scalar_var = True # yair
         else:
             self.use_tke = False
             self.use_scalar_var = True
@@ -174,9 +175,11 @@ cdef class GridMeanVariables:
             if namelist['thermodynamics']['thermal_variable'] == 'entropy':
                 self.Hvar = VariablePrognostic(Gr.nzg, 'half', 'scalar', 'sym', 's_var', '(J/kg/K)^2')
                 self.HQTcov = VariablePrognostic(Gr.nzg, 'half', 'scalar', 'sym' ,'s_qt_covar', '(J/kg/K)(kg/kg)' )
+                #self.THVvar = VariablePrognostic(Gr.nzg, 'half', 'scalar', 'sym' 'thetav_var', 'K^2')
             elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
                 self.Hvar = VariablePrognostic(Gr.nzg, 'half', 'scalar', 'sym' ,'thetal_var', 'K^2')
                 self.HQTcov = VariablePrognostic(Gr.nzg, 'half', 'scalar','sym' ,'thetal_qt_covar', 'K(kg/kg)' )
+                #self.THVvar = VariablePrognostic(Gr.nzg, 'half', 'scalar', 'sym' 'thetav_var', 'K^2')
 
         # if self.use_scalar_var:
         #     self.QTvar = VariablePrognostic(Gr.nzg, 'half', 'scalar','sym', 'qt_var','kg^2/kg^2' )
@@ -202,11 +205,13 @@ cdef class GridMeanVariables:
             self.QTvar.zero_tendencies(self.Gr)
             self.Hvar.zero_tendencies(self.Gr)
             self.HQTcov.zero_tendencies(self.Gr)
+            self.THVvar.zero_tendencies(self.Gr)
 
         if self.use_scalar_var:
             self.QTvar.zero_tendencies(self.Gr)
             self.Hvar.zero_tendencies(self.Gr)
             self.HQTcov.zero_tendencies(self.Gr)
+            self.THVvar.zero_tendencies(self.Gr)
 
         return
 
@@ -231,6 +236,7 @@ cdef class GridMeanVariables:
                     self.Hvar.values[k]  = self.Hvar.new[k]  #+=  self.TKE.tendencies[k] * TS.dt
                     self.QTvar.values[k]  = self.QTvar.new[k]  #+=  self.TKE.tendencies[k] * TS.dt
                     self.HQTcov.values[k]  = self.HQTcov.new[k]  #+=  self.TKE.tendencies[k] * TS.dt
+                    self.THVvar.values[k]  = self.THVvar.new[k]  #+=  self.TKE.tendencies[k] * TS.dt
                     #self.QTvar.values[k]  +=  self.QTvar.tendencies[k] * TS.dt
                     #self.Hvar.values[k] += self.Hvar.tendencies[k] * TS.dt
                     #self.HQTcov.values[k] += self.HQTcov.tendencies[k] * TS.dt
@@ -238,6 +244,7 @@ cdef class GridMeanVariables:
             self.QTvar.set_bcs(self.Gr)
             self.Hvar.set_bcs(self.Gr)
             self.HQTcov.set_bcs(self.Gr)
+            self.THVvar.set_bcs(self.Gr)
 
 
         if self.use_scalar_var:
@@ -246,9 +253,11 @@ cdef class GridMeanVariables:
                     self.QTvar.values[k]  +=  self.QTvar.tendencies[k] * TS.dt
                     self.Hvar.values[k] += self.Hvar.tendencies[k] * TS.dt
                     self.HQTcov.values[k] += self.HQTcov.tendencies[k] * TS.dt
+                    #self.THVvar.values[k] += self.THVvar.tendencies[k] * TS.dt
             self.QTvar.set_bcs(self.Gr)
             self.Hvar.set_bcs(self.Gr)
             self.HQTcov.set_bcs(self.Gr)
+            self.THVvar.set_bcs(self.Gr)
 
 
         self.zero_tendencies()
@@ -297,6 +306,7 @@ cdef class GridMeanVariables:
             Stats.write_profile('Hvar_mean',self.Hvar.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
             Stats.write_profile('QTvar_mean',self.QTvar.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
             Stats.write_profile('HQTcov_mean',self.HQTcov.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+            Stats.write_profile('THVvar_mean',self.THVvar.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
             lwp += self.Ref.rho0_half[k]*self.QL.values[k]*self.Gr.dz
         Stats.write_ts('lwp', lwp)

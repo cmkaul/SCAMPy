@@ -42,6 +42,7 @@ cdef class GridMeanVariables:
         VariableDiagnostic T
         VariableDiagnostic B
         VariableDiagnostic THL
+        VariableDiagnostic THVvar
         double (*t_to_prog_fp)(double p0, double T,  double qt, double ql, double qi)   nogil
         double (*prog_to_t_fp)(double H, double pd, double pv, double qt ) nogil
         bint use_tke
