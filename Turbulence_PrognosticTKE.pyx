@@ -661,7 +661,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double HQTcov_sur = get_surface_variance(flux1 * alpha0LL,flux2 * alpha0LL, ustar, zLL, oblength)
 
         print Hvar_sur
-        #GMV.Hvar.values[self.Gr.gw] = Hvar_sur
+        GMV.Hvar.values[self.Gr.gw] = Hvar_sur
         print '666'
         #GMV.Hvar.mf_update[self.Gr.gw] = Hvar_sur
         GMV.QTvar.values[self.Gr.gw] = QTvar_sur
