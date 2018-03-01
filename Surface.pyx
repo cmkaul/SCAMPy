@@ -1,5 +1,5 @@
 #!python
-#cython: boundscheck=True
+#cython: boundscheck=False
 #cython: wraparound=False
 #cython: initializedcheck=True
 #cython: cdivision=False
@@ -55,7 +55,7 @@ cdef class SurfaceFixedFlux(SurfaceBase):
         if not self.ustar_fixed:
             # Correction to windspeed for free convective cases (Beljaars, QJRMS (1994), 121, pp. 255-270)
             # Value 1.2 is empirical, but should be O(1)
-            if windspeed < 0.1:  #???? Not sure of the limit here
+            if windspeed < 0.1:  # Limit here is heuristic
                 if self.bflux > 0.0:
                     # Need to get theta_rho
                     with nogil:
@@ -68,7 +68,7 @@ cdef class SurfaceFixedFlux(SurfaceBase):
                         print('zi was too small and replaced', zi)
                         zi=500
 
-                    wstar = get_wstar(self.bflux, zi) # yair here zi in TRMM should be hacked
+                    wstar = get_wstar(self.bflux, zi) # yair here zi in TRMM should be adjusted
                     windspeed = np.sqrt(windspeed*windspeed  + (1.2 *wstar)*(1.2 * wstar) )
                 else:
                     print('WARNING: Low windspeed + stable conditions, need to check ustar computation')
@@ -124,7 +124,6 @@ cdef class SurfaceFixedCoeffs(SurfaceBase):
             sd = sd_c(pd, GMV.T.values[gw])
             self.shf = (self.rho_hflux - self.lhf/lv * (sv-sd)) * GMV.T.values[gw]
 
-        ## where I left off
 
         self.bflux = buoyancy_flux(self.shf, self.lhf, GMV.T.values[gw], GMV.QT.values[gw],self.Ref.alpha0[gw-1]  )
 

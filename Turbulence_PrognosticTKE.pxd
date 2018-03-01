@@ -20,7 +20,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         EDMF_Environment.EnvironmentVariables EnvVar
         EDMF_Environment.EnvironmentThermodynamics EnvThermo
         entr_struct (*entr_detr_fp) (entr_in_struct entr_in) nogil
-        bint const_area
         bint use_local_micro
         bint similarity_diffusivity
         bint use_steady_updrafts
@@ -87,7 +86,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef compute_tke_detr(self)
     cpdef compute_tke_shear(self, GridMeanVariables GMV)
     cpdef compute_tke_pressure(self)
-    # cpdef update_tke_MF(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef update_tke_ED(self, GridMeanVariables GMV, CasesBase Case,TimeStepping TS)
     cpdef update_GMV_diagnostics(self, GridMeanVariables GMV)
 

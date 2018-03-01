@@ -7,10 +7,6 @@
 import numpy as np
 include "parameters.pxi"
 from thermodynamic_functions cimport  *
-# eos_struct, eos, t_to_entropy_c, t_to_thetali_c, eos_first_guess_thetal, \
-# eos_first_guess_entropy, alpha_c, buoyancy_c, latent_heat
-
-
 import cython
 cimport Grid
 cimport ReferenceState
@@ -311,6 +307,7 @@ cdef class UpdraftThermodynamics:
 
         UpdVar.Area.bulkvalues = np.sum(UpdVar.Area.values,axis=0)
 
+
         if not extrap:
             with nogil:
                 for i in xrange(self.n_updraft):
@@ -322,7 +319,7 @@ cdef class UpdraftThermodynamics:
             with nogil:
                 for i in xrange(self.n_updraft):
                     for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                        if UpdVar.Area.values[i,k] > 1e-10:
+                        if UpdVar.Area.values[i,k] > 1e-3:
                             qt = UpdVar.QT.values[i,k]
                             qv = UpdVar.QT.values[i,k] - UpdVar.QL.values[i,k]
                             h = UpdVar.H.values[i,k]
@@ -350,7 +347,7 @@ cdef class UpdraftThermodynamics:
         return
 
 
-
+#Implements a simple "microphysics" that clips excess humidity above a user-specified level
 cdef class UpdraftMicrophysics:
     def __init__(self, paramlist, n_updraft, Grid.Grid Gr, ReferenceState.ReferenceState Ref):
         self.Gr = Gr
