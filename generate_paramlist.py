@@ -122,7 +122,6 @@ def Bomex():
 
     return  paramlist
 
-
 def life_cycle_Tan2018():
 
     paramlist = {}
