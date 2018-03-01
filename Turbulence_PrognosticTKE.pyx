@@ -455,7 +455,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         self.UpdVar.H.values[i,k] = GMV.H.values[k]
                         self.UpdVar.QT.values[i,k] = GMV.QT.values[k]
                         sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[k],
-                                 self.UpdVar.QT.new[i,k], self.UpdVar.H.new[i,k])
+                                 self.UpdVar.QT.values[i,k], self.UpdVar.H.values[i,k])
                         self.UpdVar.QL.new[i,k] = sa.ql
                         self.UpdVar.T.new[i,k] = sa.T
                         self.UpdVar.QL.values[i,k] = sa.ql
