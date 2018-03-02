@@ -27,6 +27,8 @@ def main():
         namelist = ARM_SGP()
     elif case_name == 'GATE_III':
         namelist = GATE_III()
+    elif case_name == 'DYCOMS_RF01':
+        namelist = DYCOMS_RF01()
     else:
         print('Not a vaild case name')
         exit()
@@ -304,6 +306,43 @@ def GATE_III(): # yair
 
     return namelist
 
+def DYCOMS_RF01():
+
+    namelist = {}
+
+    namelist['grid'] = {}
+    namelist['grid']['dims'] = 1
+    namelist['grid']['nz'] = 120
+    namelist['grid']['gw'] = 2
+    namelist['grid']['dz'] = 10
+
+    namelist['thermodynamics'] = {}
+    namelist['thermodynamics']['thermal_variable'] = 'thetal'
+
+    namelist['time_stepping'] = {}
+    namelist['time_stepping']['dt'] = 10.0
+    namelist['time_stepping']['t_max'] = 60 * 60 * 4.
+
+
+    namelist['turbulence'] = {}
+    namelist['turbulence']['scheme'] = 'EDMF_PrognosticTKE'
+    namelist['turbulence']['EDMF_PrognosticTKE'] = {}
+    namelist['turbulence']['EDMF_PrognosticTKE']['updraft_number'] = 1
+    namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] = 'b_w2'
+    namelist['turbulence']['EDMF_PrognosticTKE']['use_steady_updrafts'] = False
+
+    namelist['output'] = {}
+    namelist['output']['output_root'] = './'
+
+    namelist['stats_io'] = {}
+    namelist['stats_io']['stats_dir'] = 'stats'
+    namelist['stats_io']['frequency'] = 60.0
+
+    namelist['meta'] = {}
+    namelist['meta']['simname'] = 'DYCOMS_RF01'
+    namelist['meta']['casename'] = 'DYCOMS_RF01'
+
+    return namelist
 
 def write_file(namelist):
 

@@ -14,7 +14,7 @@ cdef  double sv_c(double pv, double T) nogil  :
 cdef  double sc_c(double L, double T) nogil  :
     return -L/T
 
-cdef double exner_c(double p0) nogil  :
+cdef double exner_c(double p0, double kappa = kappa) nogil  :
     return (p0/p_tilde)**kappa
 
 

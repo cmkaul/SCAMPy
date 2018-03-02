@@ -24,3 +24,8 @@ cdef double beta_m = 4.8
 cdef double beta_h = 7.8
 cdef double gamma_m = 15.0
 cdef double gamma_h = 9.0
+# constants defined in Stevens et al 2005 (that are different from scampy)
+# needed for DYCOMS case setup
+cdef double dycoms_cp = 1015.
+cdef double dycoms_L = 2.47 * 1e6
+cdef double dycoms_Rd = 287.
