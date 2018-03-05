@@ -179,13 +179,16 @@ cdef class GridMeanVariables:
 
         if self.use_scalar_var:
             self.QTvar = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym', 'qt_var','kg^2/kg^2' )
-            self.THVvar = VariablePrognostic(Gr.nzg, 'half', 'scalar','sym', 'thatav_var','K^2' )
             if namelist['thermodynamics']['thermal_variable'] == 'entropy':
                 self.Hvar = VariableDiagnostic(Gr.nzg, 'half', 'scalar', 'sym', 's_var', '(J/kg/K)^2')
                 self.HQTcov = VariableDiagnostic(Gr.nzg, 'half', 'scalar', 'sym' ,'s_qt_covar', '(J/kg/K)(kg/kg)' )
             elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
                 self.Hvar = VariableDiagnostic(Gr.nzg, 'half', 'scalar', 'sym' ,'thetal_var', 'K^2')
                 self.HQTcov = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym' ,'thetal_qt_covar', 'K(kg/kg)' )
+                if self.use_sommeria_deardorff:
+                    self.THVvar = VariablePrognostic(Gr.nzg, 'half', 'scalar','sym', 'thatav_var','K^2' )
+
+
 
 
 

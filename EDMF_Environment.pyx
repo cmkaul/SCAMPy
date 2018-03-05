@@ -56,6 +56,8 @@ cdef class EnvironmentVariables:
             self.use_tke = False
             self.use_scalar_var = True
         #Now add the 2nd moment variables
+        if namelist['turbulence']['EDMF_PrognosticTKE']['use_sommeria_deardorff']:
+            self.use_sommeria_deardorff = True
         if self.use_tke:
             self.TKE = EnvironmentVariable( nz, 'half', 'scalar', 'tke','m^2/s^2' )
 
@@ -67,7 +69,8 @@ cdef class EnvironmentVariables:
             elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
                 self.Hvar = EnvironmentVariable(nz, 'half', 'scalar', 'thetal_var', 'K^2')
                 self.HQTcov = EnvironmentVariable(nz, 'half', 'scalar', 'thetal_qt_covar', 'K(kg/kg)' )
-                self.THVvar = EnvironmentVariable(nz, 'half', 'scalar', 'thetal_var', 'K^2')
+                if self.use_sommeria_deardorff:
+                    self.THVvar = EnvironmentVariable(nz, 'half', 'scalar', 'thetav_var', 'K^2' )
 
         #
         return
@@ -86,7 +89,8 @@ cdef class EnvironmentVariables:
             Stats.add_profile('env_Hvar')
             Stats.add_profile('env_QTvar')
             Stats.add_profile('env_HQTcov')
-            Stats.add_profile('env_THVvar')
+            if self.use_sommeria_deardorff:
+                Stats.add_profile('env_THVvar')
 
 
         return
@@ -342,7 +346,7 @@ cdef class EnvironmentThermodynamics:
 
             eos_struct sa
             double qv, alpha
-        self.sommeria_deardorff(EnvVar)
+        #self.sommeria_deardorff(EnvVar)
         #if GMV.use_scalar_var:
         #    self.sommeria_deardorff(EnvVar)
         #    self.eos_update_SA_sgs(EnvVar, GMV.B)
