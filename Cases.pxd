@@ -42,6 +42,9 @@ cdef class Bomex(CasesBase):
     cpdef update_forcing(self, GridMeanVariables GMV,  TimeStepping TS)
 
 cdef class life_cycle_Tan2018(CasesBase):
+    cdef:
+        double shf0
+        double lhf0
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats)
     cpdef initialize_profiles(self, Grid Gr, GridMeanVariables GMV, ReferenceState Ref )
     cpdef initialize_surface(self, Grid Gr,  ReferenceState Ref )
@@ -62,6 +65,10 @@ cdef class Rico(CasesBase):
     cpdef update_forcing(self, GridMeanVariables GMV, TimeStepping TS)
 
 cdef class TRMM_LBA(CasesBase):
+    cdef:
+        double [:] rad_time
+        double [:,:] rad
+
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats)
     cpdef initialize_profiles(self, Grid Gr, GridMeanVariables GMV, ReferenceState Ref )
     cpdef initialize_surface(self, Grid Gr,  ReferenceState Ref )

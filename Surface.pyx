@@ -11,7 +11,7 @@ from thermodynamic_functions cimport latent_heat, cpm_c, exner_c, qv_star_t, sd_
 from surface_functions cimport entropy_flux, compute_ustar, buoyancy_flux
 from turbulence_functions cimport get_wstar, get_inversion
 from Variables cimport GridMeanVariables
-from libc.math cimport cbrt
+from libc.math cimport cbrt,fabs
 
 
 
@@ -129,8 +129,11 @@ cdef class SurfaceFixedCoeffs(SurfaceBase):
 
 
         self.ustar =  np.sqrt(self.cm) * windspeed
-
-        self.obukhov_length = -self.ustar *self.ustar *self.ustar /self.bflux /vkb
+        # CK--testing this--EDMF scheme checks greater or less than zero,
+        if fabs(self.bflux) < 1e-10:
+            self.obukhov_length = 0.0
+        else:
+            self.obukhov_length = -self.ustar *self.ustar *self.ustar /self.bflux /vkb
 
         self.rho_uflux = - self.Ref.rho0[gw-1] *  self.ustar * self.ustar / windspeed * GMV.U.values[gw]
         self.rho_vflux = - self.Ref.rho0[gw-1] *  self.ustar * self.ustar / windspeed * GMV.V.values[gw]

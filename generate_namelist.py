@@ -30,7 +30,7 @@ def main():
     elif case_name == 'DYCOMS_RF01':
         namelist = DYCOMS_RF01()
     else:
-        print('Not a vaild case name')
+        print('Not a valid case name')
         exit()
 
     write_file(namelist)

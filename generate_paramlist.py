@@ -17,6 +17,11 @@ import ast
 # paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = 1.0
 # paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = 1.0
 
+
+
+#NB: except for Bomex and life_cycle_Tan2018 cases, the parameters listed have not been thoroughly tuned/tested
+# and should be regarded as placeholders only. Optimal parameters may also depend on namelist options, such as
+# entrainment/detrainment rate formulation, diagnostic vs. prognostic updrafts, and vertical resolution
 def main():
     parser = argparse.ArgumentParser(prog='Paramlist Generator')
     parser.add_argument('case_name')

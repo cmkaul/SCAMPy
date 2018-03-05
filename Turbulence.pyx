@@ -126,7 +126,7 @@ cdef class ParameterizationBase:
             Py_ssize_t gw = self.Gr.gw
             Py_ssize_t nzg = self.Gr.nzg
             Py_ssize_t nz = self.Gr.nz
-        print('self.wstar  =  ',self.wstar)
+
         with nogil:
             for k in xrange(gw,nzg-gw):
                 zzi = self.Gr.z_half[k]/self.zi
@@ -153,9 +153,9 @@ cdef class ParameterizationBase:
 
 
 cdef class SimilarityED(ParameterizationBase):
-    def __init__(self, namelist, Grid Gr, ReferenceState Ref):
+    def __init__(self, namelist, paramlist, Grid Gr, ReferenceState Ref):
         self.extrapolate_buoyancy = False
-        ParameterizationBase.__init__(self, Gr, Ref)
+        ParameterizationBase.__init__(self, paramlist, Gr, Ref)
         return
     cpdef initialize(self, GridMeanVariables GMV):
         return
@@ -244,7 +244,7 @@ cdef class SimilarityED(ParameterizationBase):
             for k in xrange(nz):
                 GMV.V.new[k+gw] = x[k]
 
-        self.update_GMV_diagnostic(GMV)
+        self.update_GMV_diagnostics(GMV)
         ParameterizationBase.update(self, GMV,Case, TS)
 
         return

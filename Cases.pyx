@@ -28,6 +28,9 @@ def CasesFactory(namelist, paramlist):
         return ARM_SGP(paramlist)
     elif namelist['meta']['casename'] == 'GATE_III':
         return GATE_III(paramlist)
+    elif namelist['meta']['casename'] == 'DYCOMS_RF01':
+        return DYCOMS_RF01(paramlist)
+
     else:
         print('case not recognized')
     return
@@ -68,6 +71,8 @@ cdef class Soares(CasesBase):
         self.Sur = Surface.SurfaceFixedFlux(paramlist)
         self.Fo = Forcing.ForcingNone()
         self.inversion_option = 'critical_Ri'
+        self.Fo.apply_coriolis = False
+        self.Fo.apply_subsidence = False
         return
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats):
         Ref.Pg = 1000.0 * 100.0
@@ -93,8 +98,6 @@ cdef class Soares(CasesBase):
 
         GMV.U.set_bcs(Gr)
         GMV.QT.set_bcs(Gr)
-
-
 
         if GMV.H.name == 'thetal':
             for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
@@ -156,6 +159,7 @@ cdef class Bomex(CasesBase):
         self.inversion_option = 'critical_Ri'
         self.Fo.apply_coriolis = True
         self.Fo.coriolis_param = 0.376e-4 # s^{-1}
+        self.Fo.apply_subsidence = True
         return
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats):
         Ref.Pg = 1.015e5  #Pressure at ground
@@ -281,6 +285,7 @@ cdef class life_cycle_Tan2018(CasesBase):
         self.inversion_option = 'critical_Ri'
         self.Fo.apply_coriolis = True
         self.Fo.coriolis_param = 0.376e-4 # s^{-1}
+        self.Fo.apply_subsidence = True
         return
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats):
         Ref.Pg = 1.015e5  #Pressure at ground
@@ -347,8 +352,8 @@ cdef class life_cycle_Tan2018(CasesBase):
         self.Sur.qsurface = 22.45e-3 # kg/kg
         self.Sur.lhf = 5.2e-5 * Ref.rho0[Gr.gw -1] * latent_heat(self.Sur.Tsurface)
         self.Sur.shf = 8.0e-3 * cpm_c(self.Sur.qsurface) * Ref.rho0[Gr.gw-1]
-        self.Sur.lhf0 = self.Sur.lhf
-        self.Sur.shf0 = self.Sur.shf
+        self.lhf0 = self.Sur.lhf
+        self.shf0 = self.Sur.shf
         self.Sur.ustar_fixed = True
         self.Sur.ustar = 0.28 # m/s
         self.Sur.Gr = Gr
@@ -392,8 +397,8 @@ cdef class life_cycle_Tan2018(CasesBase):
         weight = 1.0
         weight_factor = 0.01 + 0.99 *(np.cos(2.0*pi * TS.t /3600.0) + 1.0)/2.0
         weight = weight * weight_factor
-        self.Sur.lhf = self.Sur.lhf0*weight
-        self.Sur.shf = self.Sur.shf0*weight
+        self.Sur.lhf = self.lhf0*weight
+        self.Sur.shf = self.shf0*weight
         self.Sur.bflux = (g * ((8.0e-3*weight + (eps_vi-1.0)*(299.1 * 5.2e-5*weight  + 22.45e-3 * 8.0e-3*weight)) /(299.1 * (1.0 + (eps_vi-1) * 22.45e-3))))
         self.Sur.update(GMV)
         return
@@ -410,6 +415,7 @@ cdef class Rico(CasesBase):
         self.Fo.apply_coriolis = True
         cdef double latitude = 18.0
         self.Fo.coriolis_param = 2.0 * omega * np.sin(latitude * pi / 180.0 ) # s^{-1}
+        self.Fo.apply_subsidence = True
         return
 
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats):
@@ -524,9 +530,10 @@ cdef class TRMM_LBA(CasesBase):
     def __init__(self, paramlist):
         self.casename = 'TRMM_LBA'
         self.Sur = Surface.SurfaceFixedFlux(paramlist)
-        self.Fo = Forcing.ForcingRadiative() # it was forcing standard
+        self.Fo = Forcing.ForcingStandard() # it was forcing standard
         self.inversion_option = 'thetal_maxgrad'
-
+        self.Fo.apply_coriolis = False
+        self.Fo.apply_subsidence = False
         return
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats):
         Ref.Pg = 991.3*100  #Pressure at ground
@@ -654,12 +661,12 @@ cdef class TRMM_LBA(CasesBase):
         # only radiative forcing
 
         # radiative tendencies from the paper  are interpolated to model vertical and time resolutions
-        self.Fo.rad_time     = np.linspace(10,360,36)*60
-        self.Fo.z_in         = np.array([42.5, 200.92, 456.28, 743, 1061.08, 1410.52, 1791.32, 2203.48, 2647,
+        self.rad_time     = np.linspace(10,360,36)*60
+        z_in         = np.array([42.5, 200.92, 456.28, 743, 1061.08, 1410.52, 1791.32, 2203.48, 2647,
                                       3121.88, 3628.12, 4165.72, 4734.68, 5335, 5966.68, 6629.72, 7324.12,
                                       8049.88, 8807, 9595.48, 10415.32, 11266.52, 12149.08, 13063, 14008.28,
                                       14984.92, 15992.92, 17032.28, 18103, 19205.08, 20338.52, 21503.32, 22699.48])
-        self.Fo.rad_in   = np.array([[-1.386, -1.927, -2.089, -1.969, -1.805, -1.585, -1.406, -1.317, -1.188, -1.106, -1.103, -1.025,
+        rad_in   = np.array([[-1.386, -1.927, -2.089, -1.969, -1.805, -1.585, -1.406, -1.317, -1.188, -1.106, -1.103, -1.025,
                               -0.955, -1.045, -1.144, -1.119, -1.068, -1.092, -1.196, -1.253, -1.266, -1.306,  -0.95,  0.122,
                                0.255,  0.258,  0.322,  0.135,      0,      0,      0,      0,      0],
                              [ -1.23, -1.824, -2.011, -1.895, -1.729, -1.508, -1.331, -1.241, -1.109, -1.024, -1.018,  -0.94,
@@ -770,19 +777,19 @@ cdef class TRMM_LBA(CasesBase):
 
         cdef:
             Py_ssize_t tt, k, ind1, ind2
-        A = np.interp(Gr.z_half,self.Fo.z_in,self.Fo.rad_in[0,:])
-        for tt in range(1,36):
-            A = np.vstack((A, np.interp(Gr.z_half,self.Fo.z_in,self.Fo.rad_in[tt,:])))
-        self.Fo.rad = np.multiply(A,1.0) # store matrix in self
+        A = np.interp(Gr.z_half,z_in,rad_in[0,:])
+        for tt in xrange(1,36):
+            A = np.vstack((A, np.interp(Gr.z_half,z_in,rad_in[tt,:])))
+        self.rad = np.multiply(A,1.0) # store matrix in self
 
         ind1 = int(mt.trunc(10.0/600.0))
         ind2 = int(mt.ceil(10.0/600.0))
-        for k in range(0,Gr.nzg):
+        for k in xrange(Gr.nzg):
             if 10%600.0 == 0:
-                self.Fo.dTdt[k] = self.Fo.rad[ind1,k]
+                self.Fo.dTdt[k] = self.rad[ind1,k]
             else:
-                self.Fo.dTdt[k]    = (self.Fo.rad[ind2,k]-self.Fo.rad[ind1,k])/\
-                                      (self.Fo.rad_time[ind2]-self.Fo.rad_time[ind1])*(10.0)+self.Fo.rad[ind1,k]
+                self.Fo.dTdt[k]    = (self.rad[ind2,k]-self.rad[ind1,k])/\
+                                      (self.rad_time[ind2]-self.rad_time[ind1])*(10.0)+self.rad[ind1,k]
 
 
         return
@@ -811,25 +818,25 @@ cdef class TRMM_LBA(CasesBase):
         ind2 = int(mt.ceil(TS.t/600.0))
         ind1 = int(mt.trunc(TS.t/600.0))
         if TS.t<600.0: # first 10 min use the radiative forcing of t=10min (as in the paper)
-            for k in range(self.Gr.nzg):
-                self.Fo.rad_cool[k] = self.Fo.rad[0,k]
+            for k in xrange(self.Fo.Gr.nzg):
+                self.Fo.dTdt[k] = self.rad[0,k]
         elif TS.t>18900.0:
-            for k in range(self.Gr.nzg):
-                self.Fo.rad_cool[k] = (self.Fo.rad[31,k]-self.Fo.rad[30,k])/(self.Fo.rad_time[31]-self.Fo.rad_time[30])\
-                                      *(18900.0/60.0-self.Fo.rad_time[30])+self.Fo.rad[30,k]
+            for k in xrange(self.Fo.Gr.nzg):
+                self.Fo.dTdt[k] = (self.rad[31,k]-self.rad[30,k])/(self.rad_time[31]-self.rad_time[30])\
+                                      *(18900.0/60.0-self.rad_time[30])+self.rad[30,k]
 
         else:
             if TS.t%600.0 == 0:
-                for k in range(self.Gr.nzg):
-                    self.Fo.rad_cool[k] = self.Fo.rad[ind1,k]
+                for k in xrange(self.Fo.Gr.nzg):
+                    self.Fo.dTdt[k] = self.rad[ind1,k]
             else: # in all other cases - interpolate
-                for kk in range(self.Gr.nzg):
-                    if self.Gr.z_half[k] < 22699.48:
-                        self.Fo.rad_cool[k]    = (self.Fo.rad[ind2,k]-self.Fo.rad[ind1,k])\
-                                                 /(self.Fo.rad_time[ind2]-self.Fo.rad_time[ind1])\
-                                                 *(TS.t/60.0-self.Fo.rad_time[ind1])+self.Fo.rad[ind1,k]
+                for k in xrange(self.Fo.Gr.nzg):
+                    if self.Fo.Gr.z_half[k] < 22699.48:
+                        self.Fo.dTdt[k]    = (self.rad[ind2,k]-self.rad[ind1,k])\
+                                                 /(self.rad_time[ind2]-self.rad_time[ind1])\
+                                                 *(TS.t/60.0-self.rad_time[ind1])+self.rad[ind1,k]
                     else:
-                        self.Fo.rad_cool[k] = 0.1
+                        self.Fo.dTdt[k] = 0.1  # CK==> Is this sign correct?
         self.Fo.update(GMV)
 
         return
@@ -840,8 +847,11 @@ cdef class ARM_SGP(CasesBase):
     def __init__(self, paramlist):
         self.casename = 'ARM_SGP'
         self.Sur = Surface.SurfaceFixedFlux(paramlist)
-        self.Fo = Forcing.ForcingRadiative() # it was forcing standard
+        self.Fo = Forcing.ForcingStandard() # it was forcing standard
         self.inversion_option = 'thetal_maxgrad'
+        self.Fo.apply_coriolis = True
+        self.Fo.coriolis_param = 8.5e-5
+        self.Fo.apply_subsidence =False
 
         return
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats):
@@ -852,7 +862,7 @@ cdef class ARM_SGP(CasesBase):
         return
     cpdef initialize_profiles(self, Grid Gr, GridMeanVariables GMV, ReferenceState Ref):
         cdef:
-
+            Py_ssize_t k
             double [:] p1 = np.zeros((Gr.nzg,),dtype=np.double,order='c')
 
         # ARM_SGP inputs
@@ -866,10 +876,9 @@ cdef class ARM_SGP(CasesBase):
         Theta = np.interp(Gr.z_half,z_in,Theta_in)
         qt = np.interp(Gr.z_half,z_in,qt_in)
 
-        GMV.U.values = np.ones((Gr.nzg,),dtype=np.double,order='c') * 10.0
-
 
         for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
+            GMV.U.values[k] = 10.0
             GMV.QT.values[k] = qt[k]
             GMV.T.values[k] = Theta[k]*exner_c(Ref.p0_half[k])
             if GMV.H.name == 's':
@@ -907,6 +916,11 @@ cdef class ARM_SGP(CasesBase):
         self.Fo.Gr = Gr
         self.Fo.Ref = Ref
         self.Fo.initialize(GMV)
+        cdef:
+            Py_ssize_t k
+        for k in xrange(Gr.nzg):
+            self.Fo.ug[k] = 10.0
+            self.Fo.vg[k] = 0.0
 
         return
 
@@ -919,16 +933,19 @@ cdef class ARM_SGP(CasesBase):
         return
 
     cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS):
-        t_Sur_in = np.array([0.0, 4.0, 6.5, 7.5, 10.0, 12.5, 14.5]) * 3600 #LES time is in sec
-        SH = np.array([-30.0, 90.0, 140.0, 140.0, 100.0, -10, -10]) # W/m^2
-        LH = np.array([5.0, 250.0, 450.0, 500.0, 420.0, 180.0, 0.0]) # W/m^2
+        cdef:
+            double [:] t_Sur_in = np.array([0.0, 4.0, 6.5, 7.5, 10.0, 12.5, 14.5]) * 3600 #LES time is in sec
+            double [:] SH = np.array([-30.0, 90.0, 140.0, 140.0, 100.0, -10, -10]) # W/m^2
+            double [:] LH = np.array([5.0, 250.0, 450.0, 500.0, 420.0, 180.0, 0.0]) # W/m^2
         self.Sur.shf = np.interp(TS.t,t_Sur_in,SH)
         self.Sur.lhf = np.interp(TS.t,t_Sur_in,LH)
         # if fluxes vanish bflux vanish and wstar and obukov length are NaNs
-        if self.Sur.shf < 1.0:
-            self.Sur.shf = 1.0
-        if self.Sur.lhf < 1.0:
-            self.Sur.lhf = 1.0
+        ## CK +++ I commented out the lines below as I don't think this is how we want to fix things!
+        # if self.Sur.shf < 1.0:
+        #     self.Sur.shf = 1.0
+        # if self.Sur.lhf < 1.0:
+        #     self.Sur.lhf = 1.0
+        #+++++++++
         self.Sur.update(GMV)
         # fix momentum fluxes to zero as they are not used in the paper
         self.Sur.rho_uflux = 0.0
@@ -936,19 +953,21 @@ cdef class ARM_SGP(CasesBase):
         return
 
     cpdef update_forcing(self, GridMeanVariables GMV,  TimeStepping TS):
-        t_in = np.array([0.0, 3.0, 6.0, 9.0, 12.0, 14.5]) * 3600.0 #LES time is in sec
-        AT_in = np.array([0.0, 0.0, 0.0, -0.08, -0.016, -0.016])/3600.0 # Advective forcing for theta [K/h] converted to [K/sec]
-        RT_in = np.array([-0.125, 0.0, 0.0, 0.0, 0.0, -0.1])/3600.0  # Radiative forcing for theta [K/h] converted to [K/sec]
-        Rqt_in = np.array([0.08, 0.02, 0.04, -0.1, -0.16, -0.3])/1000.0/3600.0 # Radiative forcing for qt converted to [kg/kg/sec]
-        dTdt = np.interp(TS.t,t_in,AT_in) + np.interp(TS.t,t_in,RT_in)
-        dqtdt =  np.interp(TS.t,t_in,Rqt_in)
-        for k in range(self.Gr.nzg): # correct dims
-                if self.Gr.z_half[k] <=1000.0:
+        cdef:
+            double [:] t_in = np.array([0.0, 3.0, 6.0, 9.0, 12.0, 14.5]) * 3600.0 #LES time is in sec
+            double [:] AT_in = np.array([0.0, 0.0, 0.0, -0.08, -0.016, -0.016])/3600.0 # Advective forcing for theta [K/h] converted to [K/sec]
+            double [:] RT_in = np.array([-0.125, 0.0, 0.0, 0.0, 0.0, -0.1])/3600.0  # Radiative forcing for theta [K/h] converted to [K/sec]
+            double [:] Rqt_in = np.array([0.08, 0.02, 0.04, -0.1, -0.16, -0.3])/1000.0/3600.0 # Radiative forcing for qt converted to [kg/kg/sec]
+            double dTdt = np.interp(TS.t,t_in,AT_in) + np.interp(TS.t,t_in,RT_in)
+            double dqtdt =  np.interp(TS.t,t_in,Rqt_in)
+        for k in xrange(self.Fo.Gr.nzg): # correct dims
+                if self.Fo.Gr.z_half[k] <=1000.0:
                     self.Fo.dTdt[k] = dTdt
-                    self.Fo.dqtdt[k]  = dqtdt * exner_c(self.Ref.p0_half[k])
-                elif self.Gr.z_half[k] > 1000.0  and self.Gr.z_half[k] <= 2000.0:
-                    self.Fo.dTdt[k] = dTdt*(1-(self.Gr.z_half[k]-1000.0)/1000.0)
-                    self.Fo.dqtdt[k]  = dqtdt * exner_c(self.Ref.p0_half[k])*(1-(self.Gr.z_half[k]-1000.0)/1000.0)
+                    self.Fo.dqtdt[k]  = dqtdt * exner_c(self.Fo.Ref.p0_half[k])
+                elif self.Fo.Gr.z_half[k] > 1000.0  and self.Fo.Gr.z_half[k] <= 2000.0:
+                    self.Fo.dTdt[k] = dTdt*(1-(self.Fo.Gr.z_half[k]-1000.0)/1000.0)
+                    self.Fo.dqtdt[k]  = dqtdt * exner_c(self.Fo.Ref.p0_half[k])\
+                                        *(1-(self.Fo.Gr.z_half[k]-1000.0)/1000.0)
         self.Fo.update(GMV)
 
         return
@@ -960,8 +979,10 @@ cdef class GATE_III(CasesBase):
     def __init__(self, paramlist):
         self.casename = 'GATE_III'
         self.Sur = Surface.SurfaceFixedCoeffs(paramlist)
-        self.Fo = Forcing.ForcingRadiative() # it was forcing standard
+        self.Fo = Forcing.ForcingStandard() # it was forcing standard
         self.inversion_option = 'thetal_maxgrad'
+        self.Fo.apply_subsidence = False
+        self.Fo.apply_coriolis = False
 
         return
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats):
