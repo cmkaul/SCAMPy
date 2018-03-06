@@ -10,7 +10,7 @@ Tan, Z., C. M. Kaul, K. G. Pressel, Y. Cohen, T. Schneider, and J. Teixeira, 201
 The code is written in Python and Cython.
 
 Code Contributors:
-	Colleen Kaul (Caltech)--initial and primary developer. Inquiries may be sent to cmkaul@caltech.edu
+	Colleen Kaul (Caltech)--initial and primary developer. Inquiries may be sent to cmkaul@caltech.edu \n
 	Yair Cohen (Caltech)
 	Anna Jaruga (JPL/Caltech)
 	Kyle Pressel (Caltech)
