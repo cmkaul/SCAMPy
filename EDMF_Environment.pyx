@@ -315,7 +315,9 @@ cdef class EnvironmentThermodynamics:
                     q_sl = qv_star_t(self.Ref.p0[k], Tl) # using the qv_star_c function instead of the approximation in eq. (4) in SD
                     beta1 = 0.622*Lv**2/(Rd*cp*Tl**2) # eq. (8) in SD
                     lambda1 = 1/(1+beta1*q_sl) # text under eq. (20) in SD
-                    alpha1 = (self.Ref.p0[k]/1000.0)**0.288*0.622*Lv*q_sl/Rd/Tl**2 # eq. (14) and eq. (6) in SD
+                    # check the pressure units - mb vs hpa
+                    alpha1 = (self.Ref.p0[k]/100000.0)**0.286*0.622*Lv*q_sl/Rd/Tl**2 # eq. (14) and eq. (6) in SD
+                    # see if there is another way to calculate dq/dT from scmapy
                     sigma1 = EnvVar.QTvar.values[k]-2*alpha1*EnvVar.HQTcov.values[k]+alpha1**2*EnvVar.Hvar.values[k] # eq. (18) in SD , with r from (11)
                     Q1 = (EnvVar.QT.values[k]-q_sl)/sigma1 # eq. (17) in SD
                     R = 0.5*(1+erf(Q1/sqrt(2.0))) # approximation in eq. (16) in SD
@@ -326,15 +328,16 @@ cdef class EnvironmentThermodynamics:
                     # the THVvar is given as a function of THVTHLcov and THVQTcov from eq. (41) in SD.
                     # these covariances with THL are obtained by substituting w for THL or QT in eq. (41),
                     # i.e. applying eq. (41) twice. The resulting expression yields:
-                    EnvVar.THVvar.values[k] = C1**2*EnvVar.Hvar.values[k] + 2*C1*C2*EnvVar.HQTcov.values[k] + C2**2*EnvVar.QTvar.values[k]
+                    C2_THL = C2*EnvVar.THL.values[k] # the defacto coefficient in eq(41) is C2*THLza
+                    EnvVar.THVvar.values[k] = C1**2*EnvVar.Hvar.values[k] + 2*C1*C2_THL*EnvVar.HQTcov.values[k]+ C2_THL**2*EnvVar.QTvar.values[k]
                     # using eq. (25) in SD, noting thbat there is a typo in the first condition and 1.6 there should be -1.6
                     if Q1<-1.6:
-                        EnvVar.QL.values[k] = 0.0
+                        EnvVar.QL.values[k] = 0.0*lambda1*sigma1
                     elif Q1>-1.6 and Q1<1.6:
-                        EnvVar.QL.values[k] = (Q1+1.6)**2/6.4
+                        EnvVar.QL.values[k] = ((Q1+1.6)**2/6.4)*lambda1*sigma1
                     elif Q1>1.6:
-                        EnvVar.QL.values[k] = Q1
-                    EnvVar.T.values[k] = Tl +Lv/cp*EnvVar.QL.values[k]
+                        EnvVar.QL.values[k] = Q1*lambda1*sigma1
+                    EnvVar.T.values[k] = Tl + Lv/cp*EnvVar.QL.values[k] # should this be the differnece in ql - would it work for evaporation as well ?
         elif EnvVar.H.name == 's':
             print 'Sommeria Deardorff is not defined for in that case'
         return
