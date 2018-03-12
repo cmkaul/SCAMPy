@@ -26,10 +26,10 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="Turbulence_PrognosticTKE.pyx" pinned="false" current-in-tab="false">
+      <file leaf-file-name="Turbulence_PrognosticTKE.pyx" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/Turbulence_PrognosticTKE.pyx">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="10215">
+            <state relative-caret-position="15">
               <caret line="681" column="42" lean-forward="false" selection-start-line="681" selection-start-column="42" selection-end-line="681" selection-end-column="42" />
               <folding />
             </state>
@@ -48,7 +48,7 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="turbulence_functions.pxd" pinned="false" current-in-tab="true">
+      <file leaf-file-name="turbulence_functions.pxd" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/turbulence_functions.pxd">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="32">
@@ -535,7 +535,7 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="23" width="2000" height="1334" extended-state="0" />
-    <editor active="true" />
+    <editor active="false" />
     <layout>
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.17517875" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32932073" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
@@ -634,6 +634,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="391">
           <caret line="17" column="15" lean-forward="false" selection-start-line="17" selection-start-column="15" selection-end-line="17" selection-end-column="15" />
+          <folding />
         </state>
       </provider>
     </entry>
@@ -721,6 +722,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-371">
           <caret line="9" column="24" lean-forward="false" selection-start-line="9" selection-start-column="24" selection-end-line="9" selection-end-column="24" />
+          <folding />
         </state>
       </provider>
     </entry>
@@ -728,6 +730,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="249">
           <caret line="27" column="27" lean-forward="false" selection-start-line="27" selection-start-column="27" selection-end-line="27" selection-end-column="27" />
+          <folding />
         </state>
       </provider>
     </entry>
@@ -763,6 +766,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="21" lean-forward="true" selection-start-line="0" selection-start-column="21" selection-end-line="0" selection-end-column="21" />
+          <folding />
         </state>
       </provider>
     </entry>
@@ -770,6 +774,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="360">
           <caret line="24" column="40" lean-forward="false" selection-start-line="24" selection-start-column="40" selection-end-line="24" selection-end-column="40" />
+          <folding />
         </state>
       </provider>
     </entry>
@@ -812,6 +817,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-9773">
           <caret line="63" column="45" lean-forward="false" selection-start-line="63" selection-start-column="45" selection-end-line="63" selection-end-column="45" />
+          <folding />
         </state>
       </provider>
     </entry>
@@ -833,6 +839,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="300">
           <caret line="20" column="14" lean-forward="false" selection-start-line="20" selection-start-column="14" selection-end-line="20" selection-end-column="14" />
+          <folding />
         </state>
       </provider>
     </entry>
@@ -909,14 +916,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Turbulence_PrognosticTKE.pyx">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="10215">
-          <caret line="681" column="42" lean-forward="false" selection-start-line="681" selection-start-column="42" selection-end-line="681" selection-end-column="42" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/thermodynamic_functions.pxd">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
@@ -947,6 +946,14 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="32">
           <caret line="29" column="23" lean-forward="false" selection-start-line="29" selection-start-column="23" selection-end-line="29" selection-end-column="23" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Turbulence_PrognosticTKE.pyx">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="15">
+          <caret line="681" column="42" lean-forward="false" selection-start-line="681" selection-start-column="42" selection-end-line="681" selection-end-column="42" />
           <folding />
         </state>
       </provider>
