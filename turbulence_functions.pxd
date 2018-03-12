@@ -2,6 +2,10 @@ cdef struct entr_struct:
     double entr_sc
     double detr_sc
 
+cdef struct evap_struct:
+    double T
+    double ql
+
 cdef struct entr_in_struct:
     double zi
     double wstar
@@ -13,17 +17,17 @@ cdef struct entr_in_struct:
     double ml
     double T_mean
     double p0
+    double alpha0
     double qt_up
     double ql_up
     double qt_env
+    double ql_env
     double H_up
     double H_env
     double b_env
     double w_env
     double L
     double tke_ed_coeff
-
-
 
 cdef entr_struct entr_detr_cloudy(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_dry(entr_in_struct entr_in) nogil
@@ -33,6 +37,7 @@ cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_inverse_w_linear(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil
+cdef evap_struct evap_sat_adjst(double p0, double thetal_, double qt_mix, double T_1, double qs_1, double ql_mix) nogil
 
 
 cdef double get_wstar(double bflux, double zi )

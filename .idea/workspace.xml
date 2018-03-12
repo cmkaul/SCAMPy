@@ -3,9 +3,9 @@
   <component name="ChangeListManager">
     <list default="true" id="22c6523f-6a5b-4dfe-bf57-5f2b71f78bb8" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Turbulence_PrognosticTKE.pyx" afterPath="$PROJECT_DIR$/Turbulence_PrognosticTKE.pyx" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Turbulence_PrognosticTKE.pxd" afterPath="$PROJECT_DIR$/Turbulence_PrognosticTKE.pxd" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/generate_paramlist.py" afterPath="$PROJECT_DIR$/generate_paramlist.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Turbulence_PrognosticTKE.pxd" afterPath="$PROJECT_DIR$/Turbulence_PrognosticTKE.pxd" />
     </list>
     <ignored path="PySCM.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -26,81 +26,11 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="Bomex.in" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/Bomex.in">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="510">
-              <caret line="34" column="40" lean-forward="false" selection-start-line="34" selection-start-column="40" selection-end-line="34" selection-end-column="40" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="paramlist_Bomex.in" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/paramlist_Bomex.in">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="240">
-              <caret line="16" column="34" lean-forward="false" selection-start-line="16" selection-start-column="34" selection-end-line="16" selection-end-column="34" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="Bomex_cosine.in" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/Bomex_cosine.in">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="510">
-              <caret line="34" column="40" lean-forward="false" selection-start-line="34" selection-start-column="40" selection-end-line="34" selection-end-column="40" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="paramlist_Bomex_cosine.in" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/paramlist_Bomex_cosine.in">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="450">
-              <caret line="30" column="1" lean-forward="true" selection-start-line="30" selection-start-column="1" selection-end-line="30" selection-end-column="1" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="Turbulence_PrognosticTKE.pyx" pinned="false" current-in-tab="true">
+      <file leaf-file-name="Turbulence_PrognosticTKE.pyx" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Turbulence_PrognosticTKE.pyx">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="222">
-              <caret line="317" column="8" lean-forward="false" selection-start-line="317" selection-start-column="8" selection-end-line="317" selection-end-column="8" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="EDMF_Environment.pyx" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/EDMF_Environment.pyx">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="4185">
-              <caret line="279" column="33" lean-forward="false" selection-start-line="279" selection-start-column="25" selection-end-line="279" selection-end-column="33" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="surface_functions.pyx" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/surface_functions.pyx">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="660">
-              <caret line="45" column="0" lean-forward="false" selection-start-line="45" selection-start-column="0" selection-end-line="45" selection-end-column="0" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="EDMF_Updrafts.pyx" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/EDMF_Updrafts.pyx">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1410">
-              <caret line="94" column="33" lean-forward="false" selection-start-line="94" selection-start-column="17" selection-end-line="94" selection-end-column="33" />
+            <state relative-caret-position="10215">
+              <caret line="681" column="42" lean-forward="false" selection-start-line="681" selection-start-column="42" selection-end-line="681" selection-end-column="42" />
               <folding />
             </state>
           </provider>
@@ -109,18 +39,70 @@
       <file leaf-file-name="turbulence_functions.pyx" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/turbulence_functions.pyx">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2790">
-              <caret line="189" column="58" lean-forward="false" selection-start-line="189" selection-start-column="58" selection-end-line="189" selection-end-column="58" />
+            <state relative-caret-position="2100">
+              <caret line="143" column="18" lean-forward="false" selection-start-line="143" selection-start-column="18" selection-end-line="143" selection-end-column="18" />
+              <folding>
+                <element signature="e#0#18#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="turbulence_functions.pxd" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/turbulence_functions.pxd">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="32">
+              <caret line="29" column="23" lean-forward="false" selection-start-line="29" selection-start-column="23" selection-end-line="29" selection-end-column="23" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Surface.pyx" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/Surface.pyx">
+      <file leaf-file-name="thermodynamic_functions.pyx" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/thermodynamic_functions.pyx">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="300">
-              <caret line="20" column="14" lean-forward="false" selection-start-line="20" selection-start-column="14" selection-end-line="20" selection-end-column="14" />
+            <state relative-caret-position="1800">
+              <caret line="122" column="24" lean-forward="false" selection-start-line="122" selection-start-column="0" selection-end-line="123" selection-end-column="0" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="thermodynamic_functions.pxd" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/thermodynamic_functions.pxd">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="0">
+              <caret line="0" column="17" lean-forward="false" selection-start-line="0" selection-start-column="17" selection-end-line="0" selection-end-column="17" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="TRMM_LBA.in" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/TRMM_LBA.in">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="540">
+              <caret line="36" column="38" lean-forward="false" selection-start-line="36" selection-start-column="38" selection-end-line="36" selection-end-column="38" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="EDMF_Environment.pyx" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/EDMF_Environment.pyx">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="4410">
+              <caret line="294" column="34" lean-forward="false" selection-start-line="294" selection-start-column="17" selection-end-line="294" selection-end-column="34" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="EDMF_Updrafts.pyx" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/EDMF_Updrafts.pyx">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="4500">
+              <caret line="300" column="57" lean-forward="false" selection-start-line="300" selection-start-column="57" selection-end-line="300" selection-end-column="57" />
               <folding />
             </state>
           </provider>
@@ -153,6 +135,9 @@
       <find>HEAD</find>
       <find>t_cloudy</find>
       <find>dt_upd</find>
+      <find>eos_update_SA_sgs</find>
+      <find>satadjust</find>
+      <find>entr_struct</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -161,7 +146,6 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/Csrc/entropy_functions.pyx" />
         <option value="$PROJECT_DIR$/Csrc/thermodynamic_functions.pyx" />
         <option value="$PROJECT_DIR$/Csrc/entropies.pyx" />
         <option value="$PROJECT_DIR$/Csrc/entropies.pxd" />
@@ -198,20 +182,21 @@
         <option value="$PROJECT_DIR$/Turbulence.pxd" />
         <option value="$PROJECT_DIR$/EDMF_Updrafts.pxd" />
         <option value="$PROJECT_DIR$/Turbulence.pyx" />
-        <option value="$PROJECT_DIR$/turbulence_functions.pxd" />
         <option value="$PROJECT_DIR$/Turbulence_BulkSteady.pxd" />
         <option value="$PROJECT_DIR$/Turbulence_BulkSteady.pyx" />
-        <option value="$PROJECT_DIR$/turbulence_functions.pyx" />
         <option value="$PROJECT_DIR$/Turbulence_PrognosticTKE.pxd" />
         <option value="$PROJECT_DIR$/Cases.pyx" />
-        <option value="$PROJECT_DIR$/generate_namelist.py" />
         <option value="$PROJECT_DIR$/generate_paramlist.py" />
         <option value="$PROJECT_DIR$/.gitignore" />
         <option value="$PROJECT_DIR$/paramlist_Bomex_cosine.in" />
         <option value="$PROJECT_DIR$/Bomex_cosine.in" />
         <option value="$PROJECT_DIR$/paramlist_Bomex.in" />
         <option value="$PROJECT_DIR$/Bomex.in" />
+        <option value="$PROJECT_DIR$/generate_namelist.py" />
+        <option value="$PROJECT_DIR$/TRMM_LBA.in" />
         <option value="$PROJECT_DIR$/Turbulence_PrognosticTKE.pyx" />
+        <option value="$PROJECT_DIR$/turbulence_functions.pxd" />
+        <option value="$PROJECT_DIR$/turbulence_functions.pyx" />
       </list>
     </option>
   </component>
@@ -223,8 +208,8 @@
   </component>
   <component name="ProjectFrameBounds">
     <option name="y" value="23" />
-    <option name="width" value="1257" />
-    <option name="height" value="1336" />
+    <option name="width" value="2000" />
+    <option name="height" value="1334" />
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectView">
@@ -242,20 +227,6 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scope">
-        <subPane subId="Project Files">
-          <PATH>
-            <PATH_ELEMENT USER_OBJECT="Root">
-              <option name="myItemId" value="" />
-              <option name="myItemType" value="" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT USER_OBJECT="SCAMPy">
-              <option name="myItemId" value="" />
-              <option name="myItemType" value="" />
-            </PATH_ELEMENT>
-          </PATH>
-        </subPane>
-      </pane>
       <pane id="Scratches" />
       <pane id="ProjectPane">
         <subPane>
@@ -267,6 +238,20 @@
             <PATH_ELEMENT>
               <option name="myItemId" value="scampy" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+        </subPane>
+      </pane>
+      <pane id="Scope">
+        <subPane subId="Project Files">
+          <PATH>
+            <PATH_ELEMENT USER_OBJECT="Root">
+              <option name="myItemId" value="" />
+              <option name="myItemType" value="" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT USER_OBJECT="SCAMPy">
+              <option name="myItemId" value="" />
+              <option name="myItemType" value="" />
             </PATH_ELEMENT>
           </PATH>
         </subPane>
@@ -549,17 +534,17 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="0" y="23" width="1257" height="1336" extended-state="0" />
+    <frame x="0" y="23" width="2000" height="1334" extended-state="0" />
     <editor active="true" />
     <layout>
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.27572018" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.17517875" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32932073" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.16433567" sideWeight="0.5095101" order="9" side_tool="true" content_ui="tabs" />
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="false" weight="0.32875606" sideWeight="0.5" order="10" side_tool="false" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="12" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.4449918" sideWeight="0.4904899" order="11" side_tool="false" content_ui="tabs" />
+      <window_info id="Terminal" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.44490132" sideWeight="0.4904899" order="11" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32932073" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
@@ -623,32 +608,10 @@
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/Simulation1d.c" />
-    <entry file="file://$PROJECT_DIR$/surface_functions.pxd">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="345">
-          <caret line="23" column="2" lean-forward="false" selection-start-line="23" selection-start-column="2" selection-end-line="23" selection-end-column="2" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Grid.pxd">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="240">
-          <caret line="16" column="0" lean-forward="false" selection-start-line="16" selection-start-column="0" selection-end-line="16" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/ReferenceState.pxd">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="270">
           <caret line="18" column="0" lean-forward="false" selection-start-line="18" selection-start-column="0" selection-end-line="18" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/thermodynamic_functions.pxd">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="643">
-          <caret line="51" column="5" lean-forward="false" selection-start-line="51" selection-start-column="5" selection-end-line="51" selection-end-column="5" />
         </state>
       </provider>
     </entry>
@@ -671,7 +634,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="391">
           <caret line="17" column="15" lean-forward="false" selection-start-line="17" selection-start-column="15" selection-end-line="17" selection-end-column="15" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -741,14 +703,6 @@
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/paramlist.in" />
-    <entry file="file://$PROJECT_DIR$/turbulence_functions.pxd">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="90">
-          <caret line="6" column="16" lean-forward="false" selection-start-line="6" selection-start-column="16" selection-end-line="6" selection-end-column="16" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/Turbulence_BulkSteady.pxd">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="405">
@@ -767,7 +721,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-371">
           <caret line="9" column="24" lean-forward="false" selection-start-line="9" selection-start-column="24" selection-end-line="9" selection-end-column="24" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -775,7 +728,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="249">
           <caret line="27" column="27" lean-forward="false" selection-start-line="27" selection-start-column="27" selection-end-line="27" selection-end-column="27" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -783,7 +735,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="64">
           <caret line="60" column="0" lean-forward="false" selection-start-line="60" selection-start-column="0" selection-end-line="60" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -812,7 +763,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="21" lean-forward="true" selection-start-line="0" selection-start-column="21" selection-end-line="0" selection-end-column="21" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -820,14 +770,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="360">
           <caret line="24" column="40" lean-forward="false" selection-start-line="24" selection-start-column="40" selection-end-line="24" selection-end-column="40" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/generate_namelist.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2265">
-          <caret line="156" column="0" lean-forward="true" selection-start-line="156" selection-start-column="0" selection-end-line="156" selection-end-column="0" />
         </state>
       </provider>
     </entry>
@@ -870,7 +812,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-9773">
           <caret line="63" column="45" lean-forward="false" selection-start-line="63" selection-start-column="45" selection-end-line="63" selection-end-column="45" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -881,27 +822,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/thermodynamic_functions.pyx">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="870">
-          <caret line="60" column="79" lean-forward="false" selection-start-line="60" selection-start-column="79" selection-end-line="60" selection-end-column="79" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/EDMF_Updrafts.pyx">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1410">
-          <caret line="94" column="33" lean-forward="false" selection-start-line="94" selection-start-column="17" selection-end-line="94" selection-end-column="33" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/surface_functions.pyx">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="660">
           <caret line="45" column="0" lean-forward="false" selection-start-line="45" selection-start-column="0" selection-end-line="45" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -909,23 +833,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="300">
           <caret line="20" column="14" lean-forward="false" selection-start-line="20" selection-start-column="14" selection-end-line="20" selection-end-column="14" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/turbulence_functions.pyx">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2790">
-          <caret line="189" column="58" lean-forward="false" selection-start-line="189" selection-start-column="58" selection-end-line="189" selection-end-column="58" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/EDMF_Environment.pyx">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="4185">
-          <caret line="279" column="33" lean-forward="false" selection-start-line="279" selection-start-column="25" selection-end-line="279" selection-end-column="33" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -933,15 +840,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="510">
           <caret line="34" column="40" lean-forward="false" selection-start-line="34" selection-start-column="40" selection-end-line="34" selection-end-column="40" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/paramlist_Bomex_cosine.in">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="450">
-          <caret line="30" column="1" lean-forward="true" selection-start-line="30" selection-start-column="1" selection-end-line="30" selection-end-column="1" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -949,7 +847,42 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="240">
           <caret line="16" column="34" lean-forward="false" selection-start-line="16" selection-start-column="34" selection-end-line="16" selection-end-column="34" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/TRMM_LBA.in">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="540">
+          <caret line="36" column="38" lean-forward="false" selection-start-line="36" selection-start-column="38" selection-end-line="36" selection-end-column="38" />
           <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/paramlist_ARM_SGP.in">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/ARM_SGP.in">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/paramlist_Bomex_cosine.in">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="450">
+          <caret line="30" column="1" lean-forward="false" selection-start-line="30" selection-start-column="1" selection-end-line="30" selection-end-column="1" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/generate_namelist.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="422">
+          <caret line="323" column="81" lean-forward="false" selection-start-line="323" selection-start-column="81" selection-end-line="323" selection-end-column="81" />
         </state>
       </provider>
     </entry>
@@ -957,14 +890,63 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="510">
           <caret line="34" column="40" lean-forward="false" selection-start-line="34" selection-start-column="40" selection-end-line="34" selection-end-column="40" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/EDMF_Environment.pyx">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="4410">
+          <caret line="294" column="34" lean-forward="false" selection-start-line="294" selection-start-column="17" selection-end-line="294" selection-end-column="34" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/EDMF_Updrafts.pyx">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="4500">
+          <caret line="300" column="57" lean-forward="false" selection-start-line="300" selection-start-column="57" selection-end-line="300" selection-end-column="57" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/Turbulence_PrognosticTKE.pyx">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="222">
-          <caret line="317" column="8" lean-forward="false" selection-start-line="317" selection-start-column="8" selection-end-line="317" selection-end-column="8" />
+        <state relative-caret-position="10215">
+          <caret line="681" column="42" lean-forward="false" selection-start-line="681" selection-start-column="42" selection-end-line="681" selection-end-column="42" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/thermodynamic_functions.pxd">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="17" lean-forward="false" selection-start-line="0" selection-start-column="17" selection-end-line="0" selection-end-column="17" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/thermodynamic_functions.pyx">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1800">
+          <caret line="122" column="24" lean-forward="false" selection-start-line="122" selection-start-column="0" selection-end-line="123" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/turbulence_functions.pyx">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2100">
+          <caret line="143" column="18" lean-forward="false" selection-start-line="143" selection-start-column="18" selection-end-line="143" selection-end-column="18" />
+          <folding>
+            <element signature="e#0#18#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/turbulence_functions.pxd">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="32">
+          <caret line="29" column="23" lean-forward="false" selection-start-line="29" selection-start-column="23" selection-end-line="29" selection-end-column="23" />
           <folding />
         </state>
       </provider>

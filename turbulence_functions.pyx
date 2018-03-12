@@ -3,7 +3,7 @@ cimport numpy as np
 from libc.math cimport cbrt, sqrt, log, fabs,atan, exp, fmax, pow, fmin
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 include "parameters.pxi"
-from thermodynamic_functions cimport qv_star_t, latent_heat
+from thermodynamic_functions cimport *
 
 # Entrainment Rates
 
@@ -66,17 +66,18 @@ cdef entr_struct entr_detr_inverse_w_linear(entr_in_struct entr_in) nogil:
 cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
-    qv_up = entr_in.qt_up - entr_in.ql_up # if ice exists add here
-    qv_mix = (qv_up + entr_in.qt_env)/2 # qv_env = qt_env
-    dql_mix = qv_mix - qv_star_t(entr_in.p0, entr_in.T_mean)
-    bmix = (entr_in.b+entr_in.b_env)/2 + latent_heat(entr_in.T_mean) * dql_mix
-    #Keddy = -entr_in.tke_ed_coeff * entr_in.ml * sqrt(fmax(entr_in.tke+entr_in.w**2/2,0.0))
 
+    qt_mix = (entr_in.qt_up+entr_in.qt_env)/2
+    ql_mix = (entr_in.ql_up+entr_in.ql_env)/2
+    qv_mix = qt_mix-ql_mix
+    T_1 = entr_in.T_mean - latent_heat(entr_in.T_mean) * ql_mix/cpd(entr_in.p0,qt_mix,qv_mix)
+    qs_1 =qv_star_t(entr_in.p0, T_1)
+    thetal_ = t_to_thetali_c(entr_in.p0, T_1,  qt_mix, ql_mix, 0.0)
+    evap = evap_sat_adjst(entr_in.p0, thetal_, qt_mix) # evaporation_adjust
+    qv_2 = qt_mix-evap.ql_2
 
-    # eps0 = -K(dphi/dx); K = -l^2(dw/dx)
-    #eps_w = Keddy * (fabs(entr_in.w-entr_in.w_env))/(fmax(entr_in.af,0.01)*entr_in.L) # eddy diffusivity
-    #eps_sc = Keddy*(entr_in.H_up-entr_in.H_env)/(fmax(entr_in.af,0.01)*entr_in.L) # eddy diffusivity
-
+    alpha_mix = alpha_c(entr_in.p0, evap.T_2, qt_mix, qv_2)
+    bmix = buoyancy_c(entr_in.alpha0, alpha_mix)
     eps_w = 1.0/(500.0 * fmax(fabs(entr_in.w),0.1)) # inverse w
 
     if entr_in.af>0.0:
@@ -90,6 +91,7 @@ cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
         _ret.entr_sc = 0.0
         _ret.detr_sc = 0.0
     return  _ret
+
 
 cdef entr_struct entr_detr_tke2(entr_in_struct entr_in) nogil:
     cdef entr_struct _ret
@@ -138,6 +140,31 @@ cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil:
     return  _ret
 
 
+cdef evap_struct evap_sat_adjst(p0, thetal_, qt_mix, T_1, qs_1, ql_mix):
+    cdef evap_struct evap
+    if qt_mix > qs_1:
+        ql_1 = qt_mix - qs_1
+        f_1 = thetal_ - t_to_thetali_c(p0, T_1,  qt_mix, ql_1, 0.0)
+        T_2 = T_1 + latent_heat(T_1) * ql_1 / cpd(p0,qt_mix,qt_mix-ql_mix)
+        pv_star_2 = pv_star(T_2)
+        qs_2 = qv_star_c(p0, qt_mix, pv_star_2)
+        ql_2 = qt_mix - qs_2
+
+        while np.fabs(T_2 - T_1) >= 1e-9:
+            pv_star_2 = pv_star(T_2)
+            qs_2 = qv_star_c(p0, qt_mix, pv_star_2)
+            ql_2 = qt_mix - qs_2
+            f_2 = thetal_ - t_to_thetali_c(p0, T_2,  qt_mix, ql_1, 0.0)
+            T_n = T_2 - f_2 * (T_2 - T_1)/(f_2 - f_1)
+            T_1 = T_2
+            T_2 = T_n
+            f_1 = f_2
+
+        evap.T  = T_2
+        qv = qs_2
+        evap.ql = ql_2
+
+        return evap
 
 
 # convective velocity scale
