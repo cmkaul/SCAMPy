@@ -66,17 +66,21 @@ cdef entr_struct entr_detr_inverse_w_linear(entr_in_struct entr_in) nogil:
 cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
+        double  cp_d, Lv
 
     qt_mix = (entr_in.qt_up+entr_in.qt_env)/2
     ql_mix = (entr_in.ql_up+entr_in.ql_env)/2
     qv_mix = qt_mix-ql_mix
-    T_1 = entr_in.T_mean - latent_heat(entr_in.T_mean) * ql_mix/cpd(entr_in.p0,qt_mix,qv_mix)
+    Lv = latent_heat(entr_in.T_mean)
+    cp_d = cpm_c(qt_mix)
+    T_1 = entr_in.T_mean -  Lv* ql_mix/cp_d
     qs_1 =qv_star_t(entr_in.p0, T_1)
     thetal_ = t_to_thetali_c(entr_in.p0, T_1,  qt_mix, ql_mix, 0.0)
-    evap = evap_sat_adjst(entr_in.p0, thetal_, qt_mix) # evaporation_adjust
-    qv_2 = qt_mix-evap.ql_2
+    #evap = evap_sat_adjst(entr_in.p0, thetal_, qt_mix) # evaporation_adjust
+    evap = evap_sat_adjust(entr_in.p0, thetal_, qt_mix, T_1, qs_1, ql_mix)
+    qv_2 = qt_mix-evap.ql
 
-    alpha_mix = alpha_c(entr_in.p0, evap.T_2, qt_mix, qv_2)
+    alpha_mix = alpha_c(entr_in.p0, evap.T, qt_mix, qv_2)
     bmix = buoyancy_c(entr_in.alpha0, alpha_mix)
     eps_w = 1.0/(500.0 * fmax(fabs(entr_in.w),0.1)) # inverse w
 
@@ -140,17 +144,21 @@ cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil:
     return  _ret
 
 
-cdef evap_struct evap_sat_adjst(p0, thetal_, qt_mix, T_1, qs_1, ql_mix):
-    cdef evap_struct evap
+cdef evap_struct evap_sat_adjust(double p0, double thetal_, double qt_mix, double T_1, double qs_1, double ql_mix) nogil:
+    cdef:
+        evap_struct evap
+        double ql_1, T_2, ql_2, f_1, f_2, cp_d, Lv
     if qt_mix > qs_1:
         ql_1 = qt_mix - qs_1
         f_1 = thetal_ - t_to_thetali_c(p0, T_1,  qt_mix, ql_1, 0.0)
-        T_2 = T_1 + latent_heat(T_1) * ql_1 / cpd(p0,qt_mix,qt_mix-ql_mix)
+        cp_d  = cpm_c(qt_mix)
+        Lv = latent_heat(T_1)
+        T_2 = T_1 +  Lv* ql_1 / cp_d
         pv_star_2 = pv_star(T_2)
         qs_2 = qv_star_c(p0, qt_mix, pv_star_2)
         ql_2 = qt_mix - qs_2
 
-        while np.fabs(T_2 - T_1) >= 1e-9:
+        while fabs(T_2 - T_1) >= 1e-9:
             pv_star_2 = pv_star(T_2)
             qs_2 = qv_star_c(p0, qt_mix, pv_star_2)
             ql_2 = qt_mix - qs_2
@@ -164,7 +172,7 @@ cdef evap_struct evap_sat_adjst(p0, thetal_, qt_mix, T_1, qs_1, ql_mix):
         qv = qs_2
         evap.ql = ql_2
 
-        return evap
+    return evap
 
 
 # convective velocity scale
