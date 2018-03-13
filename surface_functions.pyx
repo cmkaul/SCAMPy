@@ -32,9 +32,6 @@ cdef inline double psi_h_stable(double zeta, double zeta0):
     return  psi_h
 
 
-
-# The two below are fillers for putting in the full formulation
-
 cpdef double entropy_flux(tflux,qtflux, p0_1, T_1, qt_1):
         cdef:
             double cp_1 = cpm_c(qt_1)

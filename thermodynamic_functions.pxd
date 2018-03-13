@@ -5,7 +5,7 @@ cdef struct eos_struct:
 cdef double sd_c(double pd, double T)   nogil
 cdef double sv_c(double pv, double T)   nogil
 cdef double sc_c(double L, double T)   nogil
-cdef double exner_c(double p0)   nogil
+cdef double exner_c(double p0, double kappa=?)   nogil
 cdef double theta_c(double p0, double T)   nogil
 cdef double thetali_c(double p0, double T, double qt, double ql, double qi, double L)  nogil
 cdef double pd_c(double p0, double qt, double qv)   nogil

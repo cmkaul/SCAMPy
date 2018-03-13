@@ -1,0 +1,16 @@
+.DS_Store
+*.pkl
+*.pyc
+*.so
+*.o
+*.c
+*.idea
+*.in
+*.idea/workspace.xml
+build/
+*.txt
+figs/
+_static/
+_templates/
+*.png
+*.mod

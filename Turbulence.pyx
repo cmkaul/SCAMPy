@@ -4,7 +4,6 @@
 #cython: initializedcheck=True
 #cython: cdivision=False
 
-import pylab as plt
 import numpy as np
 include "parameters.pxi"
 import cython
@@ -20,17 +19,12 @@ from NetCDFIO cimport NetCDFIO_Stats
 from thermodynamic_functions cimport  *
 from turbulence_functions cimport *
 from utility_functions cimport interp2pt
-from libc.math cimport fmax, sqrt, exp, pow
-from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
-from Turbulence_BulkSteady cimport EDMF_BulkSteady
 from Turbulence_PrognosticTKE cimport EDMF_PrognosticTKE
 
 
 def ParameterizationFactory(namelist, paramlist, Grid Gr, ReferenceState Ref):
     scheme = namelist['turbulence']['scheme']
-    if scheme == 'EDMF_BulkSteady':
-        return  EDMF_BulkSteady(namelist, paramlist, Gr, Ref)
-    elif scheme == 'EDMF_PrognosticTKE':
+    if scheme == 'EDMF_PrognosticTKE':
         return  EDMF_PrognosticTKE(namelist, paramlist, Gr, Ref)
     elif scheme == 'SimilarityED':
         return SimilarityED(namelist, paramlist, Gr, Ref)
@@ -63,7 +57,7 @@ cdef class ParameterizationBase:
 
     # Calculate the tendency of the grid mean variables due to turbulence as the difference between the values at the beginning
     # and  end of all substeps taken
-    cpdef update(self,GridMeanVariables GMV, CasesBase Case, TimeStepping TS ):
+    cpdef update(self,GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
         cdef:
             Py_ssize_t gw = self.Gr.gw
             Py_ssize_t nzg = self.Gr.nzg
@@ -75,16 +69,7 @@ cdef class ParameterizationBase:
                 GMV.QT.tendencies[k] += (GMV.QT.new[k] - GMV.QT.values[k]) * TS.dti
                 GMV.U.tendencies[k] += (GMV.U.new[k] - GMV.U.values[k]) * TS.dti
                 GMV.V.tendencies[k] += (GMV.V.new[k] - GMV.V.values[k]) * TS.dti
-        # if GMV.use_tke:
-        #     with nogil:
-        #         for k in xrange(gw,nzg-gw):
-        #             GMV.TKE.tendencies[k] += (GMV.TKE.new[k] - GMV.TKE.values[k]) * TS.dti
-        # if GMV.use_scalar_var:
-        #     with nogil:
-        #         for k in xrange(gw,nzg-gw):
-        #             GMV.QTvar.tendencies[k] += (GMV.QTvar.new[k] - GMV.QTvar.values[k]) * TS.dti
-        #             GMV.Hvar.tendencies[k] += (GMV.Hvar.new[k] - GMV.Hvar.values[k]) * TS.dti
-        #             GMV.HQTcov.tendencies[k] += (GMV.HQTcov.new[k] - GMV.HQTcov.values[k]) * TS.dti
+
         return
 
     # Update the diagnosis of the inversion height, using the maximum temperature gradient method
@@ -141,6 +126,7 @@ cdef class ParameterizationBase:
             Py_ssize_t gw = self.Gr.gw
             Py_ssize_t nzg = self.Gr.nzg
             Py_ssize_t nz = self.Gr.nz
+
         with nogil:
             for k in xrange(gw,nzg-gw):
                 zzi = self.Gr.z_half[k]/self.zi
@@ -167,9 +153,9 @@ cdef class ParameterizationBase:
 
 
 cdef class SimilarityED(ParameterizationBase):
-    def __init__(self, namelist, Grid Gr, ReferenceState Ref):
+    def __init__(self, namelist, paramlist, Grid Gr, ReferenceState Ref):
         self.extrapolate_buoyancy = False
-        ParameterizationBase.__init__(self, Gr, Ref)
+        ParameterizationBase.__init__(self, paramlist, Gr, Ref)
         return
     cpdef initialize(self, GridMeanVariables GMV):
         return
@@ -258,7 +244,7 @@ cdef class SimilarityED(ParameterizationBase):
             for k in xrange(nz):
                 GMV.V.new[k+gw] = x[k]
 
-        self.update_GMV_diagnostic(GMV)
+        self.update_GMV_diagnostics(GMV)
         ParameterizationBase.update(self, GMV,Case, TS)
 
         return

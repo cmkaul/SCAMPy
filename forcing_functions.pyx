@@ -10,5 +10,3 @@ cdef double convert_forcing_entropy(double p0, double qt, double qv, double T, d
 
 cdef double convert_forcing_thetal(double p0, double qt, double qv, double T, double qt_tendency, double T_tendency) nogil:
     return T_tendency/exner_c(p0)
-
-
