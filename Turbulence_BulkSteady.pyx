@@ -51,9 +51,7 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
             self.use_local_micro = True
 
         try:
-            if namelist['turbulence']['EDMF_BulkSteady']['entrainment'] == 'cloudy':
-                self.entr_detr_fp = entr_detr_cloudy
-            elif namelist['turbulence']['EDMF_BulkSteady']['entrainment'] == 'dry':
+            if namelist['turbulence']['EDMF_BulkSteady']['entrainment'] == 'dry':
                 self.entr_detr_fp = entr_detr_dry
             elif namelist['turbulence']['EDMF_BulkSteady']['entrainment'] == 'inverse_z':
                 self.entr_detr_fp = entr_detr_inverse_z
@@ -68,7 +66,6 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
                 print('Turbulence--EDMF_BulkSteady: Entrainment rate namelist option is not recognized')
         except:
 
-            self.entr_detr_fp = entr_detr_cloudy
             print('Turbulence--EDMF_BulkSteady: defaulting to cloudy entrainment formulation')
 
 

@@ -6,21 +6,6 @@ include "parameters.pxi"
 from thermodynamic_functions cimport *
 
 # Entrainment Rates
-
-cdef entr_struct entr_detr_cloudy(entr_in_struct entr_in) nogil:
-    cdef entr_struct _ret
-
-    # in cloud portion from Soares 2004
-    if entr_in.z >= entr_in.zi :
-        _ret.entr_sc = 2.0e-3
-        _ret.detr_sc= 3.0e-3
-    else:
-        _ret.entr_sc = 2.0e-3 * (1.0 - log(entr_in.z/entr_in.zi))
-        _ret.detr_sc = 0.0
-
-    return  _ret
-
-
 cdef entr_struct entr_detr_dry(entr_in_struct entr_in)nogil:
     cdef entr_struct _ret
     cdef double eps = 1.0 # to avoid division by zero when z = 0 or z_i
@@ -55,31 +40,22 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
 cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
+        double  cp_d, Lv
 
-    #qt_mix = (qt_up + qt_env)/2
-    #qv_mix = (qt_up - ql_up + qt_env - ql_env)/2
-    #thetali_mix = (H_up+H_env)/2
-    #sa = eos(t_to_prog_fp,prog_to_t_fp, p0,
-    #                            qt_mix, thetali_mix)
-    #alpha_mix = alpha_c(p0, sa.T, sa.qt, sa.qt-sa.ql)
-    #b_mix = buoyancy_c(entr_in.alpha0, alpha_mix)
+    qt_mix = (entr_in.qt_up+entr_in.qt_env)/2
+    ql_mix = (entr_in.ql_up+entr_in.ql_env)/2
+    qv_mix = qt_mix-ql_mix
+    thetal_ = t_to_thetali_c(entr_in.p0, entr_in.T_mean,  qt_mix, ql_mix, 0.0)
+    qs_1 =qv_star_t(entr_in.p0, entr_in.T_mean)
+    evap = evap_sat_adjust(entr_in.p0, thetal_, qt_mix, entr_in.T_mean, qs_1, ql_mix)
 
-    #qt_mix = (qt_up + qt_env)/2
-    #qv_up = entr_in.qt_up - entr_in.ql_up # if ice exists add here
-    #qv_mix = (qv_up + entr_in.qt_env)/2 # qv_env = qt_env
-    #ql_mix = (ql_up + ql_env)/2 - qv_star_t(entr_in.p0, entr_in.T_mean)
-    #qt_mix = ql_mix + qv_mix
-    #T_mix = T_up + T_in
-    #bmix = (entr_in.b+entr_in.b_env)/2 + latent_heat(entr_in.T_mean) * dql_mix
-    #Keddy = -entr_in.tke_ed_coeff * entr_in.ml * sqrt(fmax(entr_in.tke+entr_in.w**2/2,0.0))
-    # eps0 = -K(dphi/dx); K = -l^2(dw/dx)
-    #eps_w = Keddy * (fabs(entr_in.w-entr_in.w_env))/(fmax(entr_in.af,0.01)*entr_in.L) # eddy diffusivity
-    #eps_sc = Keddy*(entr_in.H_up-entr_in.H_env)/(fmax(entr_in.af,0.01)*entr_in.L) # eddy diffusivity
-
+    qv_2 = qt_mix-evap.ql
+    alpha_mix = alpha_c(entr_in.p0, evap.T, qt_mix, qv_2)
+    bmix = buoyancy_c(entr_in.alpha0, alpha_mix)
     eps_w = 1.0/(500.0 * fmax(fabs(entr_in.w),0.1)) # inverse w
 
     if entr_in.af>0.0:
-        if entr_in.b_mix >= 0.0:
+        if bmix >= 0.0:
             _ret.entr_sc = eps_w
             _ret.detr_sc = 0.0
         else:
@@ -89,6 +65,7 @@ cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
         _ret.entr_sc = 0.0
         _ret.detr_sc = 0.0
     return  _ret
+
 
 cdef entr_struct entr_detr_tke2(entr_in_struct entr_in) nogil:
     cdef entr_struct _ret
@@ -123,20 +100,58 @@ cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil:
 #     return  _ret
 
 
+
 cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil:
     cdef entr_struct _ret
     # in cloud portion from Soares 2004
     if entr_in.z >= entr_in.zi :
-        # _ret.detr_sc= 4.0e-3 +  0.12 * fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-4)
         _ret.detr_sc= 4.0e-3 +  0.12* fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
     else:
         _ret.detr_sc = 0.0
 
     _ret.entr_sc = 0.12 * fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
-    # or add to detrainment when buoyancy is negative
+
     return  _ret
 
 
+cdef evap_struct evap_sat_adjust(double p0, double thetal_, double qt_mix, double T_1, double qs_1, double ql_mix) nogil:
+    cdef:
+        evap_struct evap
+        double ql_1, T_2, ql_2, f_1, f_2, cp, Lv
+
+    evap.T  = T_1
+    evap.ql = ql_mix
+    cp  = cpm_c(qt_mix)
+    Lv = latent_heat(T_1)
+
+    # evaporate and cool
+    T_1 = T_1 + ql_mix * Lv  / cp
+
+    if qt_mix >= qs_1: # is the mixture is saturated - run saturation adjust
+        ql_1 = qt_mix - qs_1
+        f_1 = thetal_ - t_to_thetali_c(p0, T_1,  qt_mix, ql_1, 0.0)
+        cp  = cpm_c(qt_mix)
+        Lv = latent_heat(T_1)
+        T_2 = T_1 +  Lv* ql_1 / cp
+        pv_star_2 = pv_star(T_2)
+        qs_2 = qv_star_c(p0, qt_mix, pv_star_2)
+        ql_2 = qt_mix - qs_2
+
+        while fabs(T_2 - T_1) >= 1e-9:
+            pv_star_2 = pv_star(T_2)
+            qs_2 = qv_star_c(p0, qt_mix, pv_star_2)
+            ql_2 = qt_mix - qs_2
+            f_2 = thetal_ - t_to_thetali_c(p0, T_2,  qt_mix, ql_1, 0.0)
+            T_n = T_2 - f_2 * (T_2 - T_1)/(f_2 - f_1)
+            T_1 = T_2
+            T_2 = T_n
+            f_1 = f_2
+
+        evap.T  = T_2
+        qv = qs_2
+        evap.ql = ql_2
+
+    return evap
 
 
 # convective velocity scale

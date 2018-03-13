@@ -54,24 +54,17 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         try:
             if namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] == 'inverse_z':
                 self.entr_detr_fp = entr_detr_inverse_z
-            elif namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] == 'cloudy':
-                self.entr_detr_fp = entr_detr_cloudy
             elif namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] == 'dry':
                 self.entr_detr_fp = entr_detr_dry
             elif namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] == 'inverse_w':
                 self.entr_detr_fp = entr_detr_inverse_w
             elif namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] == 'b_w2':
                 self.entr_detr_fp = entr_detr_b_w2
-            elif namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] == 'tke':
-                self.entr_detr_fp = entr_detr_tke
-            elif namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] == 'tke2':
-                self.entr_detr_fp = entr_detr_tke
             elif namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] == 'buoyancy_sorting':
                 self.entr_detr_fp = entr_detr_buoyancy_sorting
             else:
                 print('Turbulence--EDMF_PrognosticTKE: Entrainment rate namelist option is not recognized')
         except:
-            self.entr_detr_fp = entr_detr_cloudy
             print('Turbulence--EDMF_PrognosticTKE: defaulting to cloudy entrainment formulation')
         try:
             self.similarity_diffusivity = namelist['turbulence']['EDMF_PrognosticTKE']['use_similarity_diffusivity']
@@ -724,18 +717,13 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             entr_struct ret
             entr_in_struct input
             eos_struct sa
-            double qt_mix, qv_mix, thetali_mix, alpha_mix
+
 
         self.UpdVar.get_cloud_base_top()
 
         # input.zi = self.zi
         input.wstar = self.wstar
-        ##if self.UpdVar.H.name == 's':
-        #    t_to_prog_fp = t_to_entropy_c
-        #    prog_to_t_fp = eos_first_guess_entropy
-        #elif self.UpdVar.H.name == 'thetal':
-        #    t_to_prog_fp = t_to_thetali_c
-        #    prog_to_t_fp = eos_first_guess_thetal
+
         with nogil:
             for i in xrange(self.n_updrafts):
                 input.zi = self.UpdVar.cloud_base[i]
@@ -746,42 +734,19 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     input.af = self.UpdVar.Area.values[i,k]
                     input.tke = self.EnvVar.TKE.values[k]
                     input.ml = self.mixing_length[k]
-
-                    # input.b_env = self.EnvVar.B.values[k]
-                    # input.w_env = self.EnvVar.W.values[k]
-                    # input.H_env = self.EnvVar.H.values[k]
-                    # input.qt_up = self.UpdVar.QT.values[i,k]
-                    # input.ql_env = self.EnvVar.QL.values[k]
-                    # input.T_env = self.EnvVar.T.values[k]
-                    # input.H_up = self.UpdVar.H.values[i,k]
-                    # input.qt_env = self.EnvVar.QT.values[k]
-                    # input.ql_up = self.UpdVar.QL.values[i,k]
-                    # input.T_up = self.UpdVar.T.values[i,k]
-                    # input.p0 = self.Ref.p0_half[k]
-                    # input.alpha0 = self.Ref.alpha0[k]
+                    input.qt_env = self.EnvVar.QT.values[k]
+                    input.ql_env = self.EnvVar.QL.values[k]
+                    input.H_env = self.EnvVar.H.values[k]
+                    input.b_env = self.EnvVar.B.values[k]
+                    input.w_env = self.EnvVar.W.values[k]
+                    input.H_up = self.UpdVar.H.values[i,k]
+                    input.qt_up = self.UpdVar.QT.values[i,k]
+                    input.ql_up = self.UpdVar.QL.values[i,k]
+                    input.p0 = self.Ref.p0_half[k]
+                    input.alpha0 = self.Ref.alpha0_half[k]
                     input.tke_ed_coeff  = self.tke_ed_coeff
-
-                    # saturation adjust for buoyancy sorting
-                    qt_mix = (self.UpdVar.QT.values[i,k] + self.EnvVar.QT.values[k])/2
-                    qv_mix = (self.UpdVar.QT.values[i,k] - self.UpdVar.QL.values[i,k] + self.EnvVar.QT.values[k] - self.EnvVar.QL.values[k])/2
-                    thetali_mix = (self.UpdVar.H.values[i,k]+self.EnvVar.H.values[k])/2
-                    sa = eos(self.UpdThermo.t_to_prog_fp, self.UpdThermo.prog_to_t_fp,self.Ref.p0_half[k],qt_mix, thetali_mix)
-
-                    alpha_mix = alpha_c(self.Ref.p0_half[k], sa.T, qt_mix, qt_mix-sa.ql)
-                    input.b_mix = buoyancy_c(self.Ref.alpha0[k], alpha_mix)
-
-                    #if self.UpdVar.H.name == 's':
-                    #    input.t_to_prog_fp = t_to_prog_fp
-                    #    input.prog_to_t_fp = prog_to_t_fp
-                    #elif self.UpdVar.H.name == 'thetal':
-                    #    input.t_to_prog_fp = t_to_prog_fp
-                    #    input.prog_to_t_fp = prog_to_t_fp
-
-                    #input.prog_to_t_fp = self.UpdThermo.prog_to_t_fp
-                    #input.t_to_prog_fp = self.UpdThermo.t_to_prog_fp
-                    #input.T_mean = GMV.T.values[k]
+                    input.T_mean = (self.EnvVar.T.values[k]+self.UpdVar.T.values[i,k])/2
                     input.L = 20000.0 # need to define the scale of the GCM grid resolution
-
                     ret = self.entr_detr_fp(input)
                     self.entr_sc[i,k] = ret.entr_sc * self.entrainment_factor
                     self.detr_sc[i,k] = ret.detr_sc * self.detrainment_factor
