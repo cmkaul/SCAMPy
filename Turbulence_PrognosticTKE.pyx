@@ -323,11 +323,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.set_updraft_surface_bc(GMV, Case)
         self.compute_entrainment_detrainment(GMV, Case)
 
-<<<<<<< HEAD
-        #Fix to ensure denominators remain > 0. Choice of 0.9 is heuristic
-=======
->>>>>>> f86ccfc4addb471b0a158e4b61190eec1ac15141
-
         # with nogil:
         #     for i in xrange(self.n_updrafts):
         #         for k in xrange(self.Gr.nzg):
@@ -405,16 +400,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     w_low = w_mid
                     w_mid = interp2pt(self.UpdVar.W.values[i,k],self.UpdVar.W.values[i,k-1])
                     if w_mid > 0.0:
-<<<<<<< HEAD
-                        # self.UpdVar.Area.values[i,k] = (self.Ref.rho0_half[k-1]*self.UpdVar.Area.values[i,k-1]*w_low/
-                        #                                 (1.0-(self.entr_sc[i,k]-self.detr_sc[i,k])*dz)/w_mid/self.Ref.rho0_half[k])
-                        if self.entr_sc[i,k]>(0.9/dz):
-                            self.entr_sc[i,k] = 0.9/dz
-=======
                         if self.entr_sc[i,k]>(0.9/dz):
                             self.entr_sc[i,k] = 0.9/dz
 
->>>>>>> f86ccfc4addb471b0a158e4b61190eec1ac15141
                         self.UpdVar.Area.values[i,k] = (self.Ref.rho0_half[k-1]*self.UpdVar.Area.values[i,k-1]*w_low/
                                                         (1.0-(self.entr_sc[i,k]-self.detr_sc[i,k])*dz)/w_mid/self.Ref.rho0_half[k])
                         # # Limit the increase in updraft area when the updraft decelerates
@@ -429,11 +417,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         self.UpdVar.QT.values[i,k] = GMV.QT.values[k]
                         sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[k],
                                  self.UpdVar.QT.values[i,k], self.UpdVar.H.values[i,k])
-<<<<<<< HEAD
-                        self.UpdVar.QL.new[i,k] = sa.ql
-                        self.UpdVar.T.new[i,k] = sa.T
-=======
->>>>>>> f86ccfc4addb471b0a158e4b61190eec1ac15141
                         self.UpdVar.QL.values[i,k] = sa.ql
                         self.UpdVar.T.values[i,k] = sa.T
 
@@ -644,7 +627,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     input.af = self.UpdVar.Area.values[i,k]
                     input.tke = self.EnvVar.TKE.values[k]
                     input.ml = self.mixing_length[k]
-<<<<<<< HEAD
                     input.qt_env = self.EnvVar.QT.values[k]
                     input.ql_env = self.EnvVar.QL.values[k]
                     input.H_env = self.EnvVar.H.values[k]
@@ -653,14 +635,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     input.H_up = self.UpdVar.H.values[i,k]
                     input.qt_up = self.UpdVar.QT.values[i,k]
                     input.ql_up = self.UpdVar.QL.values[i,k]
-                    input.p0 = Ref.p0_half[k]
-                    input.alpha0 = Ref.alpha0_half[k]
+                    input.p0 = self.Ref.p0_half[k]
+                    input.alpha0 = self.Ref.alpha0_half[k]
                     input.tke_ed_coeff  = self.tke_ed_coeff
                     input.T_mean = (self.EnvVar.T.values[k]+self.UpdVar.T.values[i,k])/2
                     input.L = 20000.0 # need to define the scale of the GCM grid resolution
-=======
->>>>>>> f86ccfc4addb471b0a158e4b61190eec1ac15141
-
                     ret = self.entr_detr_fp(input)
                     self.entr_sc[i,k] = ret.entr_sc * self.entrainment_factor
                     self.detr_sc[i,k] = ret.detr_sc * self.detrainment_factor
