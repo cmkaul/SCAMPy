@@ -212,15 +212,7 @@ def TRMM_LBA(): # yair
     namelist['turbulence']['EDMF_PrognosticTKE'] = {}
     namelist['turbulence']['EDMF_PrognosticTKE']['updraft_number'] = 1
     namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] = 'b_w2'
-<<<<<<< HEAD
-    namelist['turbulence']['EDMF_PrognosticTKE']['use_local_micro'] = True
-    namelist['turbulence']['EDMF_PrognosticTKE']['use_similarity_diffusivity'] = False
-    namelist['turbulence']['EDMF_PrognosticTKE']['updraft_surface_height'] = 0.0
-    namelist['turbulence']['EDMF_PrognosticTKE']['extrapolate_buoyancy'] = True
-=======
     namelist['turbulence']['EDMF_PrognosticTKE']['use_steady_updrafts'] = False
-
->>>>>>> f86ccfc4addb471b0a158e4b61190eec1ac15141
 
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
@@ -298,14 +290,7 @@ def GATE_III(): # yair
     namelist['turbulence']['EDMF_PrognosticTKE'] = {}
     namelist['turbulence']['EDMF_PrognosticTKE']['updraft_number'] = 1
     namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] = 'b_w2'
-<<<<<<< HEAD
-    namelist['turbulence']['EDMF_PrognosticTKE']['use_local_micro'] = True
-    namelist['turbulence']['EDMF_PrognosticTKE']['use_similarity_diffusivity'] = False
-    namelist['turbulence']['EDMF_PrognosticTKE']['updraft_surface_height'] = 0.0
-    namelist['turbulence']['EDMF_PrognosticTKE']['extrapolate_buoyancy'] = True
-=======
     namelist['turbulence']['EDMF_PrognosticTKE']['use_steady_updrafts'] = False
->>>>>>> f86ccfc4addb471b0a158e4b61190eec1ac15141
 
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
