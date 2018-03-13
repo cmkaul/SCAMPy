@@ -46,10 +46,6 @@ else:
     print('Unknown system platform: ' + sys.platform  + 'or unknown system name: ' + platform.node())
     sys.exit()
 
-# _ext = Extension('entropy_functions', ['entropy_functions.pyx'], include_dirs=include_path,
-#                      extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
-#                      runtime_library_dirs=library_dirs)
-# extensions.append(_ext)
 
 _ext = Extension('thermodynamic_functions', ['thermodynamic_functions.pyx'], include_dirs=include_path,
                  extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
@@ -109,11 +105,6 @@ _ext = Extension('Turbulence', ['Turbulence.pyx'], include_dirs=include_path,
                  runtime_library_dirs=library_dirs)
 extensions.append(_ext)
 
-_ext = Extension('Turbulence_BulkSteady', ['Turbulence_BulkSteady.pyx'], include_dirs=include_path,
-                 extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
-                 runtime_library_dirs=library_dirs)
-extensions.append(_ext)
-
 _ext = Extension('Turbulence_PrognosticTKE', ['Turbulence_PrognosticTKE.pyx'], include_dirs=include_path,
                  extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
                  runtime_library_dirs=library_dirs)
@@ -150,12 +141,6 @@ _ext = Extension('Cases', ['Cases.pyx'], include_dirs=include_path,
                  extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
                  runtime_library_dirs=library_dirs)
 extensions.append(_ext)
-
-# _ext = Extension('entropy_functions', ['entropy_functions.pyx'], include_dirs=include_path,
-#                  extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
-#                  runtime_library_dirs=library_dirs)
-# extensions.append(_ext)
-
 
 
 #Build RRTMG

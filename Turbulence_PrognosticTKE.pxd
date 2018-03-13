@@ -20,7 +20,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         EDMF_Environment.EnvironmentVariables EnvVar
         EDMF_Environment.EnvironmentThermodynamics EnvThermo
         entr_struct (*entr_detr_fp) (entr_in_struct entr_in) nogil
-        bint const_area
         bint use_local_micro
         bint similarity_diffusivity
         bint use_steady_updrafts
@@ -65,16 +64,16 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef initialize(self, GridMeanVariables GMV)
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)
-    cpdef update(self,GridMeanVariables GMV, CasesBase Case, TimeStepping TS, ReferenceState Ref)
-    cpdef compute_prognostic_updrafts(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS, ReferenceState Ref)
-    cpdef compute_diagnostic_updrafts(self, GridMeanVariables GMV, CasesBase Case,  ReferenceState Ref)
+    cpdef update(self,GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
+    cpdef compute_prognostic_updrafts(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
+    cpdef compute_diagnostic_updrafts(self, GridMeanVariables GMV, CasesBase Case)
     cpdef update_inversion(self, GridMeanVariables GMV, option)
     cpdef compute_mixing_length(self, double obukhov_length)
     cpdef compute_eddy_diffusivities_tke(self, GridMeanVariables GMV, CasesBase Case)
     cpdef reset_surface_tke(self, GridMeanVariables GMV, CasesBase Case)
     cpdef set_updraft_surface_bc(self, GridMeanVariables GMV, CasesBase Case)
     cpdef decompose_environment(self, GridMeanVariables GMV, whichvals)
-    cpdef compute_entrainment_detrainment(self, GridMeanVariables GMV, CasesBase Case, ReferenceState Ref)
+    cpdef compute_entrainment_detrainment(self, GridMeanVariables GMV, CasesBase Case)
     cpdef solve_updraft_velocity_area(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef solve_updraft_scalars(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
     cpdef update_GMV_MF(self, GridMeanVariables GMV, TimeStepping TS)
@@ -87,7 +86,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef compute_tke_detr(self)
     cpdef compute_tke_shear(self, GridMeanVariables GMV)
     cpdef compute_tke_pressure(self)
-    # cpdef update_tke_MF(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef update_tke_ED(self, GridMeanVariables GMV, CasesBase Case,TimeStepping TS)
     cpdef update_GMV_diagnostics(self, GridMeanVariables GMV)
 

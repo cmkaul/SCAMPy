@@ -6,21 +6,6 @@ include "parameters.pxi"
 from thermodynamic_functions cimport *
 
 # Entrainment Rates
-
-cdef entr_struct entr_detr_cloudy(entr_in_struct entr_in) nogil:
-    cdef entr_struct _ret
-
-    # in cloud portion from Soares 2004
-    if entr_in.z >= entr_in.zi :
-        _ret.entr_sc = 2.0e-3
-        _ret.detr_sc= 3.0e-3
-    else:
-        _ret.entr_sc = 2.0e-3 * (1.0 - log(entr_in.z/entr_in.zi))
-        _ret.detr_sc = 0.0
-
-    return  _ret
-
-
 cdef entr_struct entr_detr_dry(entr_in_struct entr_in)nogil:
     cdef entr_struct _ret
     cdef double eps = 1.0 # to avoid division by zero when z = 0 or z_i
@@ -52,6 +37,7 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
     _ret.entr_sc = 1.0/(tau * fmax(entr_in.w,0.1)) #sets baseline to avoid errors
     return  _ret
 
+<<<<<<< HEAD
 cdef entr_struct entr_detr_inverse_w_linear(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
@@ -124,19 +110,20 @@ cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil:
 #     _ret.entr_sc = 0.2 * fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-4)
 #     # or add to detrainment when buoyancy is negative
 #     return  _ret
+=======
+>>>>>>> f86ccfc4addb471b0a158e4b61190eec1ac15141
 
 
 cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil:
     cdef entr_struct _ret
     # in cloud portion from Soares 2004
     if entr_in.z >= entr_in.zi :
-        # _ret.detr_sc= 4.0e-3 +  0.12 * fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-4)
         _ret.detr_sc= 4.0e-3 +  0.12* fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
     else:
         _ret.detr_sc = 0.0
 
     _ret.entr_sc = 0.12 * fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
-    # or add to detrainment when buoyancy is negative
+
     return  _ret
 
 
