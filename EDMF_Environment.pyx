@@ -305,7 +305,7 @@ cdef class EnvironmentThermodynamics:
         # J. Atmos. Sci., 34, 344-355.
         cdef:
             Py_ssize_t gw = self.Gr.gw
-            double Lv, Tl, q_sl, beta1, lambda1, alpha1, sigma1, Q1, R, C0, C1, C2
+            double Lv, Tl, q_sl, beta1, lambda1, alpha1, sigma1, Q1, R, C0, C1, C2, C2_THL
         if EnvVar.H.name == 'thetal':
             with nogil:
                 for k in xrange(gw, self.Gr.nzg-gw):
