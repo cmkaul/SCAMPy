@@ -1338,10 +1338,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                          + self.Ref.rho0_half[k] * ae[k] * self.tke_diss_coeff * sqrt(fmax(self.EnvVar.TKE.values[k],0.0))/fmax(self.mixing_length[k],1.0))
                 c[kk] = (self.Ref.rho0_half[k+1] * ae[k+1] * whalf[k+1] * dzi - rho_ae_K_m[k] * dzi * dzi)
                 x[kk] = (self.Ref.rho0_half[k] * ae_old[k] * self.EnvVar.TKE.values[k] * dti
-                         + self.tke_shear[k] + self.tke_buoy[k] + self.tke_entr_gain[k] + self.tke_pressure[k]) #
+                         + self.tke_shear[k] + self.tke_buoy[k] + self.tke_entr_gain[k] + self.tke_pressure[k])
 
-
-                         #+ (1.0-self.vel_buoy_coeff)*interp2pt(self.m[0,k-1], self.m[0,k]) * self.UpdVar.B.values[0,k]  )
             a[0] = 0.0
             b[0] = 1.0
             c[0] = 0.0
@@ -1557,7 +1555,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                          + rho_ae_K_m[k] * dzi * dzi + rho_ae_K_m[k-1] * dzi * dzi
                          + D_env
                          + self.Ref.rho0_half[k] * ae[k] * self.EnvVar.Hvar.values[k]
-                                    *pow(fmax(self.EnvVar.TKE.values[k],0), 0.5)/fmax(self.mixing_length[k],1.0) * self.tke_diss_coeff)
+                                    *sqrt(fmax(self.EnvVar.TKE.values[k],0))/fmax(self.mixing_length[k],1.0) * self.tke_diss_coeff)
                 c[kk] = (self.Ref.rho0_half[k+1] * ae[k+1] * whalf[k+1] * dzi - rho_ae_K_m[k] * dzi * dzi)
                 x[kk] = (self.Ref.rho0_half[k] * ae_old[k] * self.EnvVar.Hvar.values[k] * dti
                          + self.Hvar_shear[k] + self.Hvar_entr_gain[k]) #
