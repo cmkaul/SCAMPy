@@ -6,6 +6,7 @@
 *.c
 *.idea
 *.in
+*.idea/workspace.xml
 build/
 *.txt
 figs/

@@ -19,7 +19,7 @@ cdef class CasesBase:
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)
     cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS)
-    cpdef update_forcing(self, GridMeanVariables GMV, Grid Gr, ReferenceState Ref, TimeStepping TS)
+    cpdef update_forcing(self, GridMeanVariables GMV, TimeStepping TS)
 
 cdef class Soares(CasesBase):
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats)
@@ -29,7 +29,7 @@ cdef class Soares(CasesBase):
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)
     cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS)
-    cpdef update_forcing(self, GridMeanVariables GMV, Grid Gr, ReferenceState Ref, TimeStepping TS)
+    cpdef update_forcing(self, GridMeanVariables GMV,  TimeStepping TS)
 
 cdef class Bomex(CasesBase):
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats)
@@ -39,9 +39,12 @@ cdef class Bomex(CasesBase):
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)
     cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS)
-    cpdef update_forcing(self, GridMeanVariables GMV, Grid Gr, ReferenceState Ref, TimeStepping TS)
+    cpdef update_forcing(self, GridMeanVariables GMV,  TimeStepping TS)
 
-cdef class Bomex_pulse(CasesBase):
+cdef class life_cycle_Tan2018(CasesBase):
+    cdef:
+        double shf0
+        double lhf0
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats)
     cpdef initialize_profiles(self, Grid Gr, GridMeanVariables GMV, ReferenceState Ref )
     cpdef initialize_surface(self, Grid Gr,  ReferenceState Ref )
@@ -49,17 +52,7 @@ cdef class Bomex_pulse(CasesBase):
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)
     cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS)
-    cpdef update_forcing(self, GridMeanVariables GMV, Grid Gr, ReferenceState Ref, TimeStepping TS)
-
-cdef class Bomex_cosine(CasesBase):
-    cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats)
-    cpdef initialize_profiles(self, Grid Gr, GridMeanVariables GMV, ReferenceState Ref )
-    cpdef initialize_surface(self, Grid Gr,  ReferenceState Ref )
-    cpdef initialize_forcing(self, Grid Gr,  ReferenceState Ref, GridMeanVariables GMV )
-    cpdef initialize_io(self, NetCDFIO_Stats Stats)
-    cpdef io(self, NetCDFIO_Stats Stats)
-    cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS)
-    cpdef update_forcing(self, GridMeanVariables GMV, Grid Gr, ReferenceState Ref, TimeStepping TS)
+    cpdef update_forcing(self, GridMeanVariables GMV, TimeStepping TS)
 
 cdef class Rico(CasesBase):
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats)
@@ -69,9 +62,13 @@ cdef class Rico(CasesBase):
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)
     cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS)
-    cpdef update_forcing(self, GridMeanVariables GMV, Grid Gr, ReferenceState Ref, TimeStepping TS)
+    cpdef update_forcing(self, GridMeanVariables GMV, TimeStepping TS)
 
 cdef class TRMM_LBA(CasesBase):
+    cdef:
+        double [:] rad_time
+        double [:,:] rad
+
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats)
     cpdef initialize_profiles(self, Grid Gr, GridMeanVariables GMV, ReferenceState Ref )
     cpdef initialize_surface(self, Grid Gr,  ReferenceState Ref )
@@ -79,7 +76,7 @@ cdef class TRMM_LBA(CasesBase):
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)
     cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS)
-    cpdef update_forcing(self, GridMeanVariables GMV, Grid Gr, ReferenceState Ref, TimeStepping TS)
+    cpdef update_forcing(self, GridMeanVariables GMV,  TimeStepping TS)
 
 cdef class ARM_SGP(CasesBase):
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats)
@@ -89,7 +86,7 @@ cdef class ARM_SGP(CasesBase):
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)
     cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS)
-    cpdef update_forcing(self, GridMeanVariables GMV, Grid Gr, ReferenceState Ref, TimeStepping TS)
+    cpdef update_forcing(self, GridMeanVariables GMV,  TimeStepping TS)
 
 cdef class GATE_III(CasesBase):
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats)
@@ -99,4 +96,20 @@ cdef class GATE_III(CasesBase):
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)
     cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS)
-    cpdef update_forcing(self, GridMeanVariables GMV, Grid Gr, ReferenceState Ref, TimeStepping TS)
+    cpdef update_forcing(self, GridMeanVariables GMV, TimeStepping TS)
+
+# Evaluation of Large-Eddy Simulations via Observations of Nocturnal Marine Stratocumulus
+# Stevens et al
+# Monthly Weather Review 2005
+# url: https://journals.ametsoc.org/doi/abs/10.1175/MWR2930.1
+# doi: 10.1175/MWR2930.1
+
+cdef class DYCOMS_RF01(CasesBase):
+    cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats)
+    cpdef initialize_profiles(self, Grid Gr, GridMeanVariables GMV, ReferenceState Ref )
+    cpdef initialize_surface(self, Grid Gr,  ReferenceState Ref )
+    cpdef initialize_forcing(self, Grid Gr,  ReferenceState Ref, GridMeanVariables GMV )
+    cpdef initialize_io(self, NetCDFIO_Stats Stats)
+    cpdef io(self, NetCDFIO_Stats Stats)
+    cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS)
+    cpdef update_forcing(self, GridMeanVariables GMV, TimeStepping TS)

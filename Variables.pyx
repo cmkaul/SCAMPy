@@ -188,24 +188,13 @@ cdef class GridMeanVariables:
                 if self.use_sommeria_deardorff:
                     self.THVvar = VariablePrognostic(Gr.nzg, 'half', 'scalar','sym', 'thatav_var','K^2' )
 
-
-
-
-
-
         return
+
     cpdef zero_tendencies(self):
         self.U.zero_tendencies(self.Gr)
         self.V.zero_tendencies(self.Gr)
         self.QT.zero_tendencies(self.Gr)
         self.H.zero_tendencies(self.Gr)
-        #if self.use_tke:
-        #    self.TKE.zero_tendencies(self.Gr)
-        #if self.use_scalar_var:
-        #    self.QTvar.zero_tendencies(self.Gr)
-        #    self.Hvar.zero_tendencies(self.Gr)
-        #    self.HQTcov.zero_tendencies(self.Gr)
-
         return
 
     cpdef update(self,  TimeStepping TS):
