@@ -171,6 +171,9 @@ cdef evap_struct evap_sat_adjust(double p0, double thetal_, double qt_mix, doubl
         evap.T  = T_2
         qv = qs_2
         evap.ql = ql_2
+    else:
+        evap.T  = T_1
+        evap.ql = 0.0
 
     return evap
 
