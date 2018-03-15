@@ -4,6 +4,8 @@
 #cython: initializedcheck=False
 #cython: cdivision=True
 
+#Adapated from PyCLES: https://github.com/pressel/pycles
+
 import netCDF4 as nc
 import os
 import shutil
