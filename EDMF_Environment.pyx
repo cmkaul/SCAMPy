@@ -12,7 +12,7 @@ from ReferenceState cimport ReferenceState
 from Variables cimport VariableDiagnostic, GridMeanVariables
 from libc.math cimport fmax, fmin, sqrt, exp
 from thermodynamic_functions cimport  *
-
+import pylab as plt
 cdef class EnvironmentVariable:
     def __init__(self, nz, loc, kind, name, units):
         self.values = np.zeros((nz,),dtype=np.double, order='c')

@@ -21,7 +21,7 @@ from turbulence_functions cimport *
 from utility_functions cimport *
 from libc.math cimport fmax, sqrt, exp, pow, cbrt, fmin
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
-
+import pylab as plt
 
 cdef class EDMF_PrognosticTKE(ParameterizationBase):
     # Initialize the class
@@ -622,7 +622,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 input.zi = self.UpdVar.cloud_base[i]
                 for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                     input.b = self.UpdVar.B.values[i,k]
+                    input.b_mean = GMV.B.values[k]
                     input.w = interp2pt(self.UpdVar.W.values[i,k],self.UpdVar.W.values[i,k-1])
+                    input.dw = (self.UpdVar.W.values[i,k]-self.UpdVar.W.values[i,k-1])/self.Gr.dz
                     input.z = self.Gr.z_half[k]
                     input.af = self.UpdVar.Area.values[i,k]
                     input.tke = self.EnvVar.TKE.values[k]
@@ -630,15 +632,16 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     input.qt_env = self.EnvVar.QT.values[k]
                     input.ql_env = self.EnvVar.QL.values[k]
                     input.H_env = self.EnvVar.H.values[k]
-                    input.b_env = self.EnvVar.B.values[k]
-                    input.w_env = self.EnvVar.W.values[k]
+                    input.w_env = interp2pt(self.EnvVar.W.values[k],self.EnvVar.W.values[k-1])
+                    input.dw_env = (self.EnvVar.W.values[k]-self.EnvVar.W.values[k-1])/self.Gr.dz
                     input.H_up = self.UpdVar.H.values[i,k]
                     input.qt_up = self.UpdVar.QT.values[i,k]
                     input.ql_up = self.UpdVar.QL.values[i,k]
                     input.p0 = self.Ref.p0_half[k]
                     input.alpha0 = self.Ref.alpha0_half[k]
                     input.tke_ed_coeff  = self.tke_ed_coeff
-                    input.T_mean = (self.EnvVar.T.values[k]+self.UpdVar.T.values[i,k])/2
+                    input.T_env = self.EnvVar.T.values[k]
+                    input.T_up = self.UpdVar.T.values[i,k]
                     input.L = 20000.0 # need to define the scale of the GCM grid resolution
                     ret = self.entr_detr_fp(input)
                     self.entr_sc[i,k] = ret.entr_sc * self.entrainment_factor
@@ -1234,8 +1237,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
                 # alpha = alpha_c(self.Ref.p0_half[k], GMV.T.values[k], GMV.QT.values[k], qv)
                 # GMV.B.values[k] = buoyancy_c(self.Ref.alpha0_half[k], alpha)
-                GMV.B.values[k] = (self.UpdVar.Area.bulkvalues[k] * self.UpdVar.B.bulkvalues[k]
-                                    + (1.0 - self.UpdVar.Area.bulkvalues[k]) * self.EnvVar.B.values[k])
+
+                #GMV.B.values[k] = (self.UpdVar.Area.bulkvalues[k] * self.UpdVar.B.bulkvalues[k]
+                #                    + (1.0 - self.UpdVar.Area.bulkvalues[k]) * self.EnvVar.B.values[k])
 
         return
 

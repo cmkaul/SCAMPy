@@ -40,31 +40,58 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
 cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
-        double  cp_d, Lv
+        double wdw_mix, wdw_env
 
+    w_mix = (entr_in.w+entr_in.w_env)/2
+    dw_mix = (entr_in.dw+entr_in.dw_env)/2
+    T_mean = (entr_in.T_up+entr_in.T_env)/2
     qt_mix = (entr_in.qt_up+entr_in.qt_env)/2
     ql_mix = (entr_in.ql_up+entr_in.ql_env)/2
     qv_mix = qt_mix-ql_mix
-    thetal_ = t_to_thetali_c(entr_in.p0, entr_in.T_mean,  qt_mix, ql_mix, 0.0)
-    qs_1 =qv_star_t(entr_in.p0, entr_in.T_mean)
-    evap = evap_sat_adjust(entr_in.p0, thetal_, qt_mix, entr_in.T_mean, qs_1, ql_mix)
-
-    qv_2 = qt_mix-evap.ql
-    alpha_mix = alpha_c(entr_in.p0, evap.T, qt_mix, qv_2)
-    bmix = buoyancy_c(entr_in.alpha0, alpha_mix)
-    eps_w = 1.0/(500.0 * fmax(fabs(entr_in.w),0.1)) # inverse w
+    alpha_env = alpha_c(entr_in.p0, entr_in.T_env, entr_in.qt_env, entr_in.qt_env-entr_in.ql_env)
+    b_env = buoyancy_c(entr_in.alpha0, alpha_env)  - entr_in.b_mean
+    alpha_up = alpha_c(entr_in.p0, entr_in.T_up, entr_in.qt_up, entr_in.qt_up-entr_in.ql_up)
+    b_up = buoyancy_c(entr_in.alpha0, alpha_up)  - entr_in.b_mean
+    thetal_ = t_to_thetali_c(entr_in.p0, T_mean,  qt_mix, ql_mix, 0.0)
+    evap = evap_sat_adjust(entr_in.p0, thetal_, qt_mix)
+    qv_mix = qt_mix-evap.ql
+    Tmix = evap.T
+    alpha_mix = alpha_c(entr_in.p0, Tmix, qt_mix, qv_mix)
+    bmix = buoyancy_c(entr_in.alpha0, alpha_mix) - entr_in.b_mean
+    #eps_w = 1.0/(500.0 * fmax(fabs(entr_in.w),0.1)) # inverse w
+    #eps_w = fabs(entr_in.b/fmax(w_mix * w_mix, 1e-2))
+    eps_w = 0.12 * fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-1)
+    wdw_mix = w_mix*dw_mix
+    wdw_env = entr_in.w_env*entr_in.dw_env
 
     if entr_in.af>0.0:
-        if bmix >= 0.0:
-            _ret.entr_sc = eps_w
-            _ret.detr_sc = 0.0
-        else:
-            _ret.entr_sc = 0.0
-            _ret.detr_sc = eps_w
+        #if entr_in.w - entr_in.dt*(bmix-entr_in.b_mean + wdw_mix)  > 0.0:
+        _ret.entr_sc = fmax((1.0-((b_up-bmix)/(b_up+bmix))**2),0.0)*eps_w
+        _ret.detr_sc = fmax((1.0-((b_env-bmix)/(b_env+bmix))**2),0.0)*eps_w
+        with gil:
+             print 'net', _ret.entr_sc- _ret.detr_sc
     else:
         _ret.entr_sc = 0.0
         _ret.detr_sc = 0.0
     return  _ret
+
+    # if entr_in.af>0.0:
+    #     #if entr_in.w - entr_in.dt*(bmix-entr_in.b_mean + wdw_mix)  > 0.0:
+    #     if bmix> b_env:
+    #         with gil:
+    #             print entr_in.b
+    #         _ret.entr_sc = eps_w
+    #         _ret.detr_sc = 0.0
+    #     else:
+    #         _ret.entr_sc = eps_w
+    #         _ret.detr_sc = fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-1)
+    #     with gil:
+    #         print 'entrainment', _ret.entr_sc, 'detrainment', _ret.detr_sc
+    #
+    # else:
+    #     _ret.entr_sc = 0.0
+    #     _ret.detr_sc = 0.0
+    # return  _ret
 
 
 cdef entr_struct entr_detr_tke2(entr_in_struct entr_in) nogil:
@@ -114,45 +141,52 @@ cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil:
     return  _ret
 
 
-cdef evap_struct evap_sat_adjust(double p0, double thetal_, double qt_mix, double T_1, double qs_1, double ql_mix) nogil:
+cdef evap_struct evap_sat_adjust(double p0, double thetal_, double qt_mix) nogil:
     cdef:
         evap_struct evap
-        double ql_1, T_2, ql_2, f_1, f_2, cp, Lv
+        double ql_1, T_2, ql_2, f_1, f_2, qv_mix, T_1
 
-    evap.T  = T_1
-    evap.ql = ql_mix
-    cp  = cpm_c(qt_mix)
-    Lv = latent_heat(T_1)
+    qv_mix = qt_mix
+    ql = 0.0
+
+    pv_1 = pv_c(p0,qt_mix,qt_mix)
+    pd_1 = p0 - pv_1
 
     # evaporate and cool
-    T_1 = T_1 + ql_mix * Lv  / cp
+    T_1 = eos_first_guess_thetal(thetal_, pd_1, pv_1, qt_mix)
+    pv_star_1 = pv_star(T_1)
+    qv_star_1 = qv_star_c(p0,qt_mix,pv_star_1)
 
-    if qt_mix >= qs_1: # is the mixture is saturated - run saturation adjust
-        ql_1 = qt_mix - qs_1
-        f_1 = thetal_ - t_to_thetali_c(p0, T_1,  qt_mix, ql_1, 0.0)
-        cp  = cpm_c(qt_mix)
-        Lv = latent_heat(T_1)
-        T_2 = T_1 +  Lv* ql_1 / cp
-        pv_star_2 = pv_star(T_2)
-        qs_2 = qv_star_c(p0, qt_mix, pv_star_2)
-        ql_2 = qt_mix - qs_2
+    if(qt_mix <= qv_star_1):
+        evap.T = T_1
+        evap.ql = 0.0
 
-        while fabs(T_2 - T_1) >= 1e-9:
+    else:
+        ql_1 = qt_mix - qv_star_1
+        prog_1 = t_to_thetali_c(p0, T_1, qt_mix, ql_1, 0.0)
+        f_1 = thetal_ - prog_1
+        T_2 = T_1 + ql_1 * latent_heat(T_1) /((1.0 - qt_mix)*cpd + qv_star_1 * cpv)
+        delta_T  = fabs(T_2 - T_1)
+
+        while delta_T > 1.0e-3 or ql_2 < 0.0:
             pv_star_2 = pv_star(T_2)
-            qs_2 = qv_star_c(p0, qt_mix, pv_star_2)
-            ql_2 = qt_mix - qs_2
-            f_2 = thetal_ - t_to_thetali_c(p0, T_2,  qt_mix, ql_1, 0.0)
-            T_n = T_2 - f_2 * (T_2 - T_1)/(f_2 - f_1)
+            qv_star_2 = qv_star_c(p0,qt_mix,pv_star_2)
+            pv_2 = pv_c(p0, qt_mix, qv_star_2)
+            pd_2 = p0 - pv_2
+            ql_2 = qt_mix - qv_star_2
+            prog_2 =  t_to_thetali_c(p0,T_2,qt_mix, ql_2, 0.0)
+            f_2 = thetal_ - prog_2
+            T_n = T_2 - f_2*(T_2 - T_1)/(f_2 - f_1)
             T_1 = T_2
             T_2 = T_n
             f_1 = f_2
+            delta_T  = fabs(T_2 - T_1)
 
         evap.T  = T_2
-        qv = qs_2
+        qv = qv_star_2
         evap.ql = ql_2
 
     return evap
-
 
 # convective velocity scale
 cdef double get_wstar(double bflux, double zi ):
