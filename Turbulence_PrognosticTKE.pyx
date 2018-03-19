@@ -428,20 +428,17 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         return
 
     cpdef compute_tke(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
-        if TS.nstep > 0:
-            if self.similarity_diffusivity: # otherwise, we computed mixing length when we computed
-                self.compute_mixing_length(Case.Sur.obukhov_length)
 
-            self.compute_tke_buoy(GMV)
-            self.compute_tke_entr()
-            self.compute_tke_shear(GMV)
-            self.compute_tke_pressure()
+        if self.similarity_diffusivity: # otherwise, we computed mixing length when we computed D_T
+            self.compute_mixing_length(Case.Sur.obukhov_length)
 
-            self.reset_surface_tke(GMV, Case)
-            self.update_tke_ED(GMV, Case, TS)
-            # self.reset_surface_tke(GMV, Case)
-        else:
-            self.initialize_tke(GMV, Case)
+        self.compute_tke_buoy(GMV)
+        self.compute_tke_entr()
+        self.compute_tke_shear(GMV)
+        self.compute_tke_pressure()
+
+        self.reset_surface_tke(GMV, Case)
+        self.update_tke_ED(GMV, Case, TS)
 
         return
 
@@ -1216,8 +1213,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 GMV.THL.values[k] = t_to_thetali_c(self.Ref.p0_half[k], GMV.T.values[k], GMV.QT.values[k],
                                                    GMV.QL.values[k], 0.0)
 
-                # alpha = alpha_c(self.Ref.p0_half[k], GMV.T.values[k], GMV.QT.values[k], qv)
-                # GMV.B.values[k] = buoyancy_c(self.Ref.alpha0_half[k], alpha)
+
                 GMV.B.values[k] = (self.UpdVar.Area.bulkvalues[k] * self.UpdVar.B.bulkvalues[k]
                                     + (1.0 - self.UpdVar.Area.bulkvalues[k]) * self.EnvVar.B.values[k])
 
