@@ -536,12 +536,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         return
 
     cpdef reset_surface_tke(self, GridMeanVariables GMV, CasesBase Case):
-        cdef:
-            double zLL = self.Gr.z_half[self.Gr.gw]
-            double ustar = Case.Sur.ustar, oblength = Case.Sur.obukhov_length
-            double tke_surface = get_surface_tke(ustar, self.wstar, zLL, oblength)
 
-        GMV.TKE.values[self.Gr.gw] = tke_surface
+        GMV.TKE.values[self.Gr.gw] = get_surface_tke(Case.Sur.ustar,
+                                                     self.wstar,
+                                                     self.Gr.z_half[self.Gr.gw],
+                                                     Case.Sur.obukhov_length)
 
         return
 
