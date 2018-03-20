@@ -314,6 +314,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             with nogil:
                 for k in xrange(self.Gr.nzg):
                     self.EnvVar.TKE.values[k] = GMV.TKE.values[k]
+                    self.EnvVar.Hvar.values[k] = GMV.Hvar.values[k]
+                    self.EnvVar.QTvar.values[k] = GMV.QTvar.values[k]
+                    self.EnvVar.HQTcov.values[k] = GMV.HQTcov.values[k]
         self.decompose_environment(GMV, 'values')
 
         if self.use_steady_updrafts:
@@ -1395,9 +1398,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 dH_high = (self.EnvVar.H.values[k+1] - self.EnvVar.H.values[k]) * self.Gr.dzi
                 dQT_low = dQT_high
                 dQT_high = (self.EnvVar.QT.values[k+1] - self.EnvVar.QT.values[k]) * self.Gr.dzi
-                self.Hvar_shear[k] = (self.Ref.rho0_half[k] * ae[k] * self.KH.values[k] *pow(interp2pt(dH_low, dH_high),2.0))
-                self.QTvar_shear[k] = (self.Ref.rho0_half[k] * ae[k] * self.KH.values[k] *pow(interp2pt(dQT_low, dQT_high),2.0))
-                self.HQTcov_shear[k] = (self.Ref.rho0_half[k] * ae[k] * self.KH.values[k] *interp2pt(dH_low, dH_high)*interp2pt(dQT_low, dQT_high))
+                self.Hvar_shear[k] = 2.0*(self.Ref.rho0_half[k] * ae[k] * self.KH.values[k] *pow(interp2pt(dH_low, dH_high),2.0))
+                self.QTvar_shear[k] = 2.0*(self.Ref.rho0_half[k] * ae[k] * self.KH.values[k] *pow(interp2pt(dQT_low, dQT_high),2.0))
+                self.HQTcov_shear[k] = 2.0*(self.Ref.rho0_half[k] * ae[k] * self.KH.values[k] *interp2pt(dH_low, dH_high)*interp2pt(dQT_low, dQT_high))
         return
 
     cpdef compute_covariance_entr(self):
