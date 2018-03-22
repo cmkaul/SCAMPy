@@ -239,6 +239,9 @@ cdef class GridMeanVariables:
         Stats.add_profile('ql_mean')
         if self.use_tke:
             Stats.add_profile('tke_mean')
+            Stats.add_profile('Hvar_mean')
+            Stats.add_profile('QTvar_mean')
+            Stats.add_profile('HQTcov_mean')
 
         Stats.add_ts('lwp')
         return

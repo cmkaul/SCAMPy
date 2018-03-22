@@ -201,9 +201,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         Stats.add_profile('tke_pressure')
         Stats.add_profile('updraft_qt_precip')
         Stats.add_profile('updraft_thetal_precip')
-        Stats.add_profile('Hvar')
-        Stats.add_profile('QTvar')
-        Stats.add_profile('HQTcov')
+        #Stats.add_profile('Hvar')
+        #Stats.add_profile('QTvar')
+        #Stats.add_profile('HQTcov')
         Stats.add_profile('Hvar_dissipation')
         Stats.add_profile('QTvar_dissipation')
         Stats.add_profile('HQTcov_dissipation')
@@ -1557,10 +1557,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for kk in xrange(nz):
                 k = kk + gw
                 #self.EnvVar.Hvar.values[k] = fmax(x[kk], 0.0)
-                self.EnvVar.Hvar.values[k] = x[kk]
+                self.EnvVar.QTvar.values[k] = x[kk]
                 GMV.QTvar.values[k] = (ae[k] * (self.EnvVar.QTvar.values[k] + (QThalf[k]-GMV.QT.values[k]) * (QThalf[k]-GMV.QT.values[k]))
                                   + self.UpdVar.Area.bulkvalues[k] * (self.UpdVar.QT.bulkvalues[k]-GMV.QT.values[k])  * (self.UpdVar.QT.bulkvalues[k]-GMV.QT.values[k]))
-
         # run tridiagonal solver for HQTcov
         with nogil:
             for kk in xrange(nz):
