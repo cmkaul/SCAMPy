@@ -220,7 +220,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         return
 
     cpdef io(self, NetCDFIO_Stats Stats):
-
         cdef:
             Py_ssize_t k, i
             Py_ssize_t kmin = self.Gr.gw
@@ -233,10 +232,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         self.UpdVar.io(Stats)
         self.EnvVar.io(Stats)
-
         Stats.write_profile('eddy_viscosity', self.KM.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('eddy_diffusivity', self.KH.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
-
         with nogil:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                 mf_h[k] = interp2pt(self.massflux_h[k], self.massflux_h[k-1])
