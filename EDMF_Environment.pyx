@@ -330,7 +330,7 @@ cdef class EnvironmentThermodynamics:
                     # i.e. applying eq. (41) twice. The resulting expression yields:
                     C2_THL = C2*EnvVar.THL.values[k] # the defacto coefficient in eq(41) is C2*THLza
                     EnvVar.THVvar.values[k] = C1**2*EnvVar.Hvar.values[k] + 2*C1*C2_THL*EnvVar.HQTcov.values[k]+ C2_THL**2*EnvVar.QTvar.values[k]
-                    # using eq. (25) in SD, noting that there is a typo in the first condition and 1.6 there should be -1.6
+                    #using eq. (25) in SD, noting that in the paper there is a typo in the first condition and 1.6 there should be -1.6
                     if Q1<-1.6:
                         EnvVar.QL.values[k] = 0.0*lambda1*sigma1
                     elif Q1>-1.6 and Q1<1.6:
@@ -353,7 +353,7 @@ cdef class EnvironmentThermodynamics:
         #if GMV.use_scalar_var:
         #    self.sommeria_deardorff(EnvVar)
         #    self.eos_update_SA_sgs(EnvVar, GMV.B)
-
+        #self.sommeria_deardorff(EnvVar)
         if GMV.use_scalar_var:
             if GMV.use_sommeria_deardorff:
                 self.sommeria_deardorff(EnvVar)

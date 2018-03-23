@@ -264,6 +264,9 @@ cdef class GridMeanVariables:
             Stats.write_profile('thetal_mean',self.H.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         if self.use_tke:
             Stats.write_profile('tke_mean',self.TKE.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+            Stats.write_profile('Hvar_mean',self.Hvar.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+            Stats.write_profile('QTvar_mean',self.QTvar.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+            Stats.write_profile('HQTcov_mean',self.HQTcov.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
             lwp += self.Ref.rho0_half[k]*self.QL.values[k]*self.Gr.dz
         Stats.write_ts('lwp', lwp)
