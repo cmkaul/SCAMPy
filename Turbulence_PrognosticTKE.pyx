@@ -636,6 +636,55 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         return
 
 
+    # Note: this assumes all variables are defined on half levels not full levels (i.e. phi, psi are not w)
+    cdef get_GMV_CoVar(self, EDMF_Updrafts.UpdraftVariable au,
+                        EDMF_Updrafts.UpdraftVariable phi_u, EDMF_Updrafts.UpdraftVariable psi_u,
+                        EDMF_Environment.EnvironmentVariable phi_e,  EDMF_Environment.EnvironmentVariable psi_e,
+                        EDMF_Environment.EnvironmentVariable covar_e,
+                       double *gmv_phi, double *gmv_psi, double *gmv_covar):
+        cdef:
+            Py_ssize_t i,k
+            double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),au.bulkvalues)
+            double phi_diff, psi_diff
+
+        with nogil:
+            for k in xrange(self.Gr.nzg):
+                phi_diff = phi_e.values[k]-gmv_phi[k]
+                psi_diff = psi_e.values[k]-gmv_psi[k]
+                gmv_covar[k] = ae[k] * phi_diff * psi_diff + ae[k] * covar_e.values[k]
+                for i in xrange(self.n_updrafts):
+                    phi_diff = phi_u.values[i,k]-gmv_phi[k]
+                    psi_diff = psi_u.values[i,k]-gmv_psi[k]
+                    gmv_covar[k] += au.values[i,k] * phi_diff * psi_diff
+        return
+
+
+
+    cdef get_ENV_COVAR_from_GMV(self, EDMF_Updrafts.UpdraftVariable au,
+                                EDMF_Updrafts.UpdraftVariable phi_u, EDMF_Updrafts.UpdraftVariable psi_u,
+                                EDMF_Environment.EnvironmentVariable phi_e, EDMF_Environment.EnvironmentVariable psi_e,
+                                EDMF_Environment.EnvironmentVariable covar_e,
+                                double *gmv_phi, double *gmv_psi, double *gmv_covar):
+        cdef:
+            Py_ssize_t i,k
+            double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),au.bulkvalues)
+            double phi_diff, psi_diff
+
+        with nogil:
+            for k in xrange(self.Gr.nzg):
+                if ae[k] > 0.0:
+                    phi_diff = phi_e.values[k]-gmv_phi[k]
+                    psi_diff = psi_e.values[k] - gmv_psi[k]
+                    covar_e.values[k] = gmv_covar[k] - ae[k] * phi_diff * psi_diff
+                    for i in xrange(self.n_updrafts):
+                        phi_diff = phi_u.values[i,k]-gmv_phi[k]
+                        psi_diff = psi_u.values[i,k] - gmv_psi[k]
+                        covar_e.values[k] -= au.values[i,k] * phi_diff * psi_diff
+                    covar_e.values[k] = covar_e.values[k]/ae[k]
+                else:
+                    covar_e.values[k] = 0.0
+        return
+
 
 
 
