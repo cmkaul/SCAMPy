@@ -712,26 +712,26 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         self.UpdVar.W.new[i,k] = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * dti_
                                                   -adv + exch + buoy + press)/(self.Ref.rho0[k] * anew_k * dti_)
 
-                        if self.UpdVar.W.new[i,k] <= 0.0:
-                            self.UpdVar.W.new[i,k:] = 0.0
-                            self.UpdVar.Area.new[i,k+1:] = 0.0
-                            break
-                    else:
-                        self.UpdVar.W.new[i,k:] = 0.0
-                        self.UpdVar.Area.new[i,k+1:] = 0.0
-                        # keep this in mind if we modify updraft top treatment!
-                        self.updraft_pressure_sink[i,k:] = 0.0
-                        break
+                    #     if self.UpdVar.W.new[i,k] <= 0.0:
+                    #         self.UpdVar.W.new[i,k:] = 0.0
+                    #         self.UpdVar.Area.new[i,k+1:] = 0.0
+                    #         break
+                    # else:
+                    #     self.UpdVar.W.new[i,k:] = 0.0
+                    #     self.UpdVar.Area.new[i,k+1:] = 0.0
+                    #     # keep this in mind if we modify updraft top treatment!
+                    #     self.updraft_pressure_sink[i,k:] = 0.0
+                    #     break
                     # the above lines were replaced by the followings to allow integration above negative w
                     # the model output is sensitive to the choice of value inthe condition : <= 0.01
-                    #     if self.UpdVar.W.new[i,k] <= 0.01:
-                    #         self.UpdVar.W.new[i,k] = 0.0
-                    #         self.UpdVar.Area.new[i,k+1] = 0.0
-                    #         #break
-                    # else:
-                    #     self.UpdVar.W.new[i,k] = 0.0
-                    #     self.UpdVar.Area.new[i,k+1] = 0.0
-                    #     #break
+                        if self.UpdVar.W.new[i,k] <= 0.01:
+                            self.UpdVar.W.new[i,k] = 0.0
+                            self.UpdVar.Area.new[i,k+1] = 0.0
+                            #break
+                    else:
+                        self.UpdVar.W.new[i,k] = 0.0
+                        self.UpdVar.Area.new[i,k+1] = 0.0
+                        #break
         # plt.figure('area')
         # plt.plot(self.UpdVar.Area.new[0,:], self.Gr.z_half)
         # plt.show()

@@ -50,15 +50,11 @@ cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
     qv_mix = qt_mix-ql_mix
     thetal_ = t_to_thetali_c(entr_in.p0, T_mean,  qt_mix, ql_mix, 0.0)
     #if entr_in.z >= entr_in.zi:
-    if ql_mix > 0.0:
-        evap = evap_sat_adjust(entr_in.p0, thetal_, qt_mix)
-        qv_mix = qt_mix-evap.ql
-        Tmix = evap.T
-        alpha_mix = alpha_c(entr_in.p0, Tmix, qt_mix, qv_mix)
-        bmix = buoyancy_c(entr_in.alpha0, alpha_mix) - entr_in.b_mean
-    else:
-        alpha_mix = alpha_c(entr_in.p0, T_mean, qt_mix, qv_mix)
-        bmix = buoyancy_c(entr_in.alpha0, alpha_mix) - entr_in.b_mean
+    evap = evap_sat_adjust(entr_in.p0, thetal_, qt_mix)
+    qv_mix = qt_mix-evap.ql
+    Tmix = evap.T
+    alpha_mix = alpha_c(entr_in.p0, Tmix, qt_mix, qv_mix)
+    bmix = buoyancy_c(entr_in.alpha0, alpha_mix) - entr_in.b_mean
 
     alpha_env = alpha_c(entr_in.p0, entr_in.T_env, entr_in.qt_env, entr_in.qt_env-entr_in.ql_env)
     alpha_up = alpha_c(entr_in.p0, entr_in.T_up, entr_in.qt_up, entr_in.qt_up-entr_in.ql_up)
@@ -66,67 +62,26 @@ cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
     b_up = buoyancy_c(entr_in.alpha0, alpha_up)  - entr_in.b_mean
     wdw_mix = w_mix*dw_mix
 
-    if bmix+wdw_mix>0.0:
-        buoyancy_ratio = (bmix+wdw_mix-b_env)/(bmix+wdw_mix)
-        with gil:
-            print buoyancy_ratio
-
-    else:
+    if bmix==0.0:
         buoyancy_ratio = 0.0
+    else:
+        buoyancy_ratio = (bmix-b_env)/fabs(bmix)
 
-    #eps_w = 1.0/(500.0 * fmax(fabs(entr_in.w),0.1)) # inverse w
-    #eps_w = fabs(entr_in.b/fmax(w_mix * w_mix, 1e-2))
-    eps_w = (0.1 * fabs(bmix+wdw_mix) / fmax(w_mix * w_mix, 1e-2))
+    eps_w = (0.1 * fabs(bmix) / fmax(w_mix* w_mix, 1e-2))
 
     wdw_env = entr_in.w_env*entr_in.dw_env
     wdw_up = entr_in.w*entr_in.dw
-    # first attempt
-    # if bmix>b_env:
-    #     partiation_func = 1.0
-    # else:
-    #     partiation_func = fmin(pow((b_up-b_env),2.0)/fmax( pow((b_up-bmix),2.0) + (b_up-bmix)*(b_env-bmix),0.00001),1.0)
 
-    # second attempt
-    # b1 = (b_up + b_env)/2
-    #
-    #
-    # if b1>b_env:
-    #     partiation_func = 1.0
-    # else:
-    #     partiation_func = fmin(pow((b_up-b_env),2.0)/fmax( pow((b_up-bmix),2.0) + (b_up-bmix)*(b_env-bmix),0.00001),1.0)
-    #     with gil:
-    #         print 'partiation_func',partiation_func
-    # #partiation_func = pow(fmax((bmix-b_env),0.0)/fmax(bmix+b_env,0.05),2.0)
-    partiation_func = tanh(fmax(buoyancy_ratio,0.0))
+    partiation_func = 0.9*(1.0+tanh(buoyancy_ratio))/2.0
     if entr_in.af>0.0:
-#        if entr_in.w - entr_in.dt*(bmix-entr_in.b_mean + wdw_mix)  > 0.0:
-        _ret.entr_sc = partiation_func*eps_w+(1-partiation_func)*1e-3
-        _ret.detr_sc = (1.0-partiation_func)*eps_w +partiation_func*1e-3
-        with gil:
-            print 'partiation_func', partiation_func, 'entr', _ret.entr_sc, 'detr', _ret.detr_sc
+        _ret.entr_sc = partiation_func*eps_w#+(1-partiation_func)*1e-3
+        _ret.detr_sc = (1.0-partiation_func)*eps_w#+partiation_func*1e-3
+#        with gil:
+#            print 'partiation_func', partiation_func, 'entr', _ret.entr_sc, 'detr', _ret.detr_sc
     else:
         _ret.entr_sc = 0.0
         _ret.detr_sc = 0.0
     return  _ret
-
-    # if entr_in.af>0.0:
-    #     #if entr_in.w - entr_in.dt*(bmix-entr_in.b_mean + wdw_mix)  > 0.0:
-    #     if bmix> b_env:
-    #         with gil:
-    #             print entr_in.b
-    #         _ret.entr_sc = eps_w
-    #         _ret.detr_sc = 0.0
-    #     else:
-    #         _ret.entr_sc = eps_w
-    #         _ret.detr_sc = fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-1)
-    #     with gil:
-    #         print 'entrainment', _ret.entr_sc, 'detrainment', _ret.detr_sc
-    #
-    # else:
-    #     _ret.entr_sc = 0.0
-    #     _ret.detr_sc = 0.0
-    # return  _ret
-
 
 cdef entr_struct entr_detr_tke2(entr_in_struct entr_in) nogil:
     cdef entr_struct _ret
