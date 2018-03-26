@@ -91,7 +91,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cdef get_GMV_TKE(self, EDMF_Updrafts.UpdraftVariable au, EDMF_Updrafts.UpdraftVariable wu,
                       EDMF_Environment.EnvironmentVariable we, EDMF_Environment.EnvironmentVariable tke_e,
                       double *gmv_w, double *gmv_tke)
-    cdef get_ENV_TKE_from_GMV(self, EDMF_Updrafts.UpdraftVariable au, EDMF_Updrafts.UpdraftVariable wu,
+    cdef get_env_tke_from_GMV(self, EDMF_Updrafts.UpdraftVariable au, EDMF_Updrafts.UpdraftVariable wu,
                       EDMF_Environment.EnvironmentVariable we, EDMF_Environment.EnvironmentVariable tke_e,
                       double *gmv_w, double *gmv_tke)
 
@@ -101,7 +101,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         EDMF_Environment.EnvironmentVariable covar_e,
                        double *gmv_phi, double *gmv_psi, double *gmv_covar)
 
-    cdef get_ENV_COVAR_from_GMV(self, EDMF_Updrafts.UpdraftVariable au,
+    cdef get_env_covar_from_GMV(self, EDMF_Updrafts.UpdraftVariable au,
                                 EDMF_Updrafts.UpdraftVariable phi_u, EDMF_Updrafts.UpdraftVariable psi_u,
                                 EDMF_Environment.EnvironmentVariable phi_e, EDMF_Environment.EnvironmentVariable psi_e,
                                 EDMF_Environment.EnvironmentVariable covar_e,

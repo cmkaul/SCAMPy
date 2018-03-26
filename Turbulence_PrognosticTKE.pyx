@@ -613,7 +613,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
 
 
-    cdef get_ENV_TKE_from_GMV(self, EDMF_Updrafts.UpdraftVariable au, EDMF_Updrafts.UpdraftVariable wu,
+    cdef get_env_tke_from_GMV(self, EDMF_Updrafts.UpdraftVariable au, EDMF_Updrafts.UpdraftVariable wu,
                       EDMF_Environment.EnvironmentVariable we, EDMF_Environment.EnvironmentVariable tke_e,
                       double *gmv_w, double *gmv_tke):
         cdef:
@@ -660,7 +660,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
 
 
-    cdef get_ENV_COVAR_from_GMV(self, EDMF_Updrafts.UpdraftVariable au,
+    cdef get_env_covar_from_GMV(self, EDMF_Updrafts.UpdraftVariable au,
                                 EDMF_Updrafts.UpdraftVariable phi_u, EDMF_Updrafts.UpdraftVariable psi_u,
                                 EDMF_Environment.EnvironmentVariable phi_e, EDMF_Environment.EnvironmentVariable psi_e,
                                 EDMF_Environment.EnvironmentVariable covar_e,
@@ -1242,7 +1242,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         wu_half = interp2pt(self.UpdVar.W.bulkvalues[gw-1], self.UpdVar.W.bulkvalues[gw])
         GMV.TKE.values[gw] = get_surface_tke(Case.Sur.ustar, self.wstar, self.Gr.z_half[gw], Case.Sur.obukhov_length)
-        self.get_ENV_TKE_from_GMV(self.UpdVar.Area, self.UpdVar.W, self.EnvVar.W,
+        self.get_env_tke_from_GMV(self.UpdVar.Area, self.UpdVar.W, self.EnvVar.W,
                                   self.EnvVar.TKE, &GMV.W.values[0], &GMV.TKE.values[0])
 
         tke_0_surf = self.EnvVar.TKE.values[gw]
