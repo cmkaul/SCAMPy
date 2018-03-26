@@ -554,7 +554,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         cdef:
             Py_ssize_t k, gw = self.Gr.gw
-            double val1, val2, au_full, wu_half, we_half
+            double val1, val2, au_full
 
 
         if whichvals == 'values':
@@ -571,9 +571,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     self.EnvVar.W.values[k] = -au_full/(1.0-au_full) * self.UpdVar.W.bulkvalues[k]
                     wu_half = interp2pt(self.UpdVar.W.bulkvalues[k-1], self.UpdVar.W.bulkvalues[k])
                     we_half = interp2pt(self.EnvVar.W.values[k-1], self.EnvVar.W.values[k])
-                    GMV.TKE.values[k] =  (self.UpdVar.Area.bulkvalues[k] * 0.5 * wu_half * wu_half
-                                          + (1.0-self.UpdVar.Area.bulkvalues[k]) * 0.5 * we_half * we_half
-                                          + (1.0-self.UpdVar.Area.bulkvalues[k]) * self.EnvVar.TKE.values[k])
+
+            self.get_GMV_TKE(self.UpdVar.Area,self.UpdVar.W, self.EnvVar.W, self.EnvVar.TKE,
+                             &GMV.W.values[0], &GMV.TKE.values[0])
 
         elif whichvals == 'mf_update':
             # same as above but replace GMV.SomeVar.values with GMV.SomeVar.mf_update
@@ -589,13 +589,55 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     # Assuming GMV.W = 0!
                     au_full = 0.5 * (self.UpdVar.Area.bulkvalues[k+1] + self.UpdVar.Area.bulkvalues[k])
                     self.EnvVar.W.values[k] = -au_full/(1.0-au_full) * self.UpdVar.W.bulkvalues[k]
-                    wu_half = interp2pt(self.UpdVar.W.bulkvalues[k-1], self.UpdVar.W.bulkvalues[k])
-                    we_half = interp2pt(self.EnvVar.W.values[k-1], self.EnvVar.W.values[k])
-                    GMV.TKE.values[k] =  (self.UpdVar.Area.bulkvalues[k] * 0.5 * wu_half * wu_half
-                                          + (1.0-self.UpdVar.Area.bulkvalues[k]) * 0.5 * we_half * we_half
-                                          + (1.0-self.UpdVar.Area.bulkvalues[k]) * self.EnvVar.TKE.values[k])
+            self.get_GMV_TKE(self.UpdVar.Area,self.UpdVar.W, self.EnvVar.W, self.EnvVar.TKE,
+                             &GMV.W.values[0], &GMV.TKE.values[0])
 
         return
+
+    cdef get_GMV_TKE(self, EDMF_Updrafts.UpdraftVariable au, EDMF_Updrafts.UpdraftVariable wu,
+                      EDMF_Environment.EnvironmentVariable we, EDMF_Environment.EnvironmentVariable tke_e,
+                      double *gmv_w, double *gmv_tke):
+        cdef:
+            Py_ssize_t i,k
+            double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),au.bulkvalues)
+            double interp_w_diff
+
+        with nogil:
+            for k in xrange(self.Gr.nzg):
+                interp_w_diff = interp2pt(we.values[k-1]-gmv_w[k-1],we.values[k]-gmv_w[k])
+                gmv_tke[k] = ae[k] * interp_w_diff * interp_w_diff + ae[k] * tke_e.values[k]
+                for i in xrange(self.n_updrafts):
+                    interp_w_diff = interp2pt(wu.values[i,k-1]-gmv_w[k-1],wu.values[i,k]-gmv_w[k])
+                    gmv_tke[k] += au.values[i,k] *interp_w_diff * interp_w_diff
+        return
+
+
+
+    cdef get_ENV_TKE_from_GMV(self, EDMF_Updrafts.UpdraftVariable au, EDMF_Updrafts.UpdraftVariable wu,
+                      EDMF_Environment.EnvironmentVariable we, EDMF_Environment.EnvironmentVariable tke_e,
+                      double *gmv_w, double *gmv_tke):
+        cdef:
+            Py_ssize_t i,k
+            double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),au.bulkvalues)
+            double interp_w_diff
+
+        with nogil:
+            for k in xrange(self.Gr.nzg):
+                if ae[k] > 0.0:
+                    interp_w_diff = interp2pt(we.values[k-1]-gmv_w[k-1],we.values[k]-gmv_w[k])
+                    tke_e.values[k] = gmv_tke[k] - ae[k] * interp_w_diff * interp_w_diff
+
+                    for i in xrange(self.n_updrafts):
+                        interp_w_diff = interp2pt(wu.values[i,k-1]-gmv_w[k-1],wu.values[i,k]-gmv_w[k])
+                        tke_e.values[k] -= au.values[i,k] *interp_w_diff * interp_w_diff
+                    tke_e.values[k] = tke_e.values[k]/ae[k]
+                else:
+                    tke_e.values[k] = 0.0
+        return
+
+
+
+
 
     cpdef compute_entrainment_detrainment(self, GridMeanVariables GMV, CasesBase Case):
         cdef:
@@ -1141,7 +1183,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double [:] rho_ae_K_m = np.zeros((nzg,),dtype=np.double, order='c')
             double [:] whalf = np.zeros((nzg,),dtype=np.double, order='c')
             double  D_env = 0.0
-            double tke_gmv_surf =  get_surface_tke(Case.Sur.ustar, self.wstar, self.Gr.z_half[gw], Case.Sur.obukhov_length)
             double wu_half, we_half,a_half, tke_0_surf,press_k
 
 
@@ -1151,9 +1192,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 whalf[k] = interp2pt(self.EnvVar.W.values[k-1], self.EnvVar.W.values[k])
 
         wu_half = interp2pt(self.UpdVar.W.bulkvalues[gw-1], self.UpdVar.W.bulkvalues[gw])
+        GMV.TKE.values[gw] = get_surface_tke(Case.Sur.ustar, self.wstar, self.Gr.z_half[gw], Case.Sur.obukhov_length)
+        self.get_ENV_TKE_from_GMV(self.UpdVar.Area, self.UpdVar.W, self.EnvVar.W,
+                                  self.EnvVar.TKE, &GMV.W.values[0], &GMV.TKE.values[0])
 
-        tke_0_surf = (tke_gmv_surf/ae[k] - self.UpdVar.Area.bulkvalues[k]/ae[k] * 0.5 * wu_half * wu_half
-                      - 0.5 * whalf[gw] * whalf[gw])
+        tke_0_surf = self.EnvVar.TKE.values[gw]
 
 
         with nogil:
@@ -1189,8 +1232,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 k = kk + gw
                 self.EnvVar.TKE.values[k] = fmax(x[kk], 0.0)
                 wu_half = interp2pt(self.UpdVar.W.bulkvalues[k-1], self.UpdVar.W.bulkvalues[k])
-                GMV.TKE.values[k] = (ae[k] * (self.EnvVar.TKE.values[k] + 0.5 * whalf[k] * whalf[k])
-                                  + self.UpdVar.Area.bulkvalues[k] * 0.5 * wu_half * wu_half)
+
+        self.get_GMV_TKE(self.UpdVar.Area,self.UpdVar.W, self.EnvVar.W, self.EnvVar.TKE,
+                             &GMV.W.values[0], &GMV.TKE.values[0])
 
         return
 

@@ -88,4 +88,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef compute_tke_pressure(self)
     cpdef update_tke_ED(self, GridMeanVariables GMV, CasesBase Case,TimeStepping TS)
     cpdef update_GMV_diagnostics(self, GridMeanVariables GMV)
+    cdef get_GMV_TKE(self, EDMF_Updrafts.UpdraftVariable au, EDMF_Updrafts.UpdraftVariable wu,
+                      EDMF_Environment.EnvironmentVariable we, EDMF_Environment.EnvironmentVariable tke_e,
+                      double *gmv_w, double *gmv_tke)
+    cdef get_ENV_TKE_from_GMV(self, EDMF_Updrafts.UpdraftVariable au, EDMF_Updrafts.UpdraftVariable wu,
+                      EDMF_Environment.EnvironmentVariable we, EDMF_Environment.EnvironmentVariable tke_e,
+                      double *gmv_w, double *gmv_tke)
 
