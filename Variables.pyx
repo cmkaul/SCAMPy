@@ -134,6 +134,8 @@ cdef class GridMeanVariables:
 
         self.U = VariablePrognostic(Gr.nzg, 'half', 'velocity', 'sym','u', 'm/s' )
         self.V = VariablePrognostic(Gr.nzg, 'half', 'velocity','sym', 'v', 'm/s' )
+        # Just leave this zero for now!
+        self.W = VariablePrognostic(Gr.nzg, 'full', 'velocity','sym', 'v', 'm/s' )
 
         # Create thermodynamic variables
         self.QT = VariablePrognostic(Gr.nzg, 'half', 'scalar','sym', 'qt', 'kg/kg')
@@ -161,11 +163,31 @@ cdef class GridMeanVariables:
         # Determine whether we need 2nd moment variables
         if  namelist['turbulence']['scheme'] == 'EDMF_PrognosticTKE':
             self.use_tke = True
-            self.use_scalar_var = False
         else:
             self.use_tke = False
+
+        if namelist['turbulence']['EDMF_PrognosticTKE']['use_scalar_var']:
             self.use_scalar_var = True
-        self.use_sommeria_deardorff = namelist['turbulence']['EDMF_PrognosticTKE']['use_sommeria_deardorff']
+        else:
+            self.use_scalar_var = False
+
+
+        if namelist['thermodynamics']['saturation'] == 'sommeria_deardorff':
+            if self.use_scalar_var:
+                self.use_sommeria_deardorff =  True
+            else:
+                sys.exit('Variables.pyx 175: scalar variance must be set True for Sommeria Deardorff saturation')
+        else:
+            self.use_sommeria_deardorff =  False
+
+        if namelist['thermodynamics']['saturation'] == 'sgs_quadrature':
+            if self.use_scalar_var:
+                self.use_quadrature =  True
+            else:
+                sys.exit('Variables.pyx 184: scalar variance must be set True for sgs_quadrature saturation')
+        else:
+            self.use_quadrature =  False
+
         #Now add the 2nd moment variables
         if self.use_tke:
             self.TKE = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym', 'tke','m^2/s^2' )
@@ -186,7 +208,7 @@ cdef class GridMeanVariables:
                 self.Hvar = VariableDiagnostic(Gr.nzg, 'half', 'scalar', 'sym' ,'thetal_var', 'K^2')
                 self.HQTcov = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym' ,'thetal_qt_covar', 'K(kg/kg)' )
                 if self.use_sommeria_deardorff:
-                    self.THVvar = VariablePrognostic(Gr.nzg, 'half', 'scalar','sym', 'thatav_var','K^2' )
+                    self.THVvar = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym', 'thatav_var','K^2' )
 
         return
 

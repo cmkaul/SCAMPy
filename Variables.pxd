@@ -36,6 +36,7 @@ cdef class GridMeanVariables:
         ReferenceState Ref
         VariablePrognostic U
         VariablePrognostic V
+        VariablePrognostic W
         VariablePrognostic QT
         VariablePrognostic H
         VariableDiagnostic QL
@@ -52,6 +53,7 @@ cdef class GridMeanVariables:
         bint use_tke
         bint use_scalar_var
         bint use_sommeria_deardorff
+        bint use_quadrature
 
     cpdef zero_tendencies(self)
     cpdef update(self, TimeStepping TS)

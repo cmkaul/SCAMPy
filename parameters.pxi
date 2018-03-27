@@ -1,3 +1,4 @@
+#Adapated from PyCLES: https://github.com/pressel/pycles
 cdef double pi = 3.14159265359
 cdef double g = 9.80665
 cdef double Rd = 287.1

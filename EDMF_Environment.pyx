@@ -12,6 +12,7 @@ from ReferenceState cimport ReferenceState
 from Variables cimport VariableDiagnostic, GridMeanVariables
 from libc.math cimport fmax, fmin, sqrt, exp, erf
 from thermodynamic_functions cimport  *
+import sys
 
 cdef class EnvironmentVariable:
     def __init__(self, nz, loc, kind, name, units):
@@ -51,13 +52,30 @@ cdef class EnvironmentVariables:
         # Determine whether we need 2nd moment variables
         if  namelist['turbulence']['scheme'] == 'EDMF_PrognosticTKE':
             self.use_tke = True
-            self.use_scalar_var = True
         else:
             self.use_tke = False
+
+        if namelist['turbulence']['EDMF_PrognosticTKE']['use_scalar_var']:
             self.use_scalar_var = True
-        #Now add the 2nd moment variables
-        if namelist['turbulence']['EDMF_PrognosticTKE']['use_sommeria_deardorff']:
-            self.use_sommeria_deardorff = True
+        else:
+            self.use_scalar_var = False
+
+        if namelist['thermodynamics']['saturation'] == 'sommeria_deardorff':
+            if self.use_scalar_var:
+                self.use_sommeria_deardorff =  True
+            else:
+                sys.exit('EMDF_env 65: scalar variance must be set True for Sommeria Deardorff saturation')
+        else:
+            self.use_sommeria_deardorff =  False
+
+        if namelist['thermodynamics']['saturation'] == 'sgs_quadrature':
+            if self.use_scalar_var:
+                self.use_quadrature =  True
+            else:
+                sys.exit('EDMF_env 73: scalar variance must be set True for sgs_quadrature saturation')
+        else:
+            self.use_quadrature =  False
+
         if self.use_tke:
             self.TKE = EnvironmentVariable( nz, 'half', 'scalar', 'tke','m^2/s^2' )
 
@@ -142,7 +160,7 @@ cdef class EnvironmentThermodynamics:
 
 
     cdef void eos_update_SA_sgs(self, EnvironmentVariables EnvVar, VariableDiagnostic GMV_B):
-
+        print 'calculation SA_sgs'
         a, w = np.polynomial.hermite.hermgauss(self.quadrature_order)
         cdef:
             Py_ssize_t gw = self.Gr.gw
@@ -306,6 +324,8 @@ cdef class EnvironmentThermodynamics:
         cdef:
             Py_ssize_t gw = self.Gr.gw
             double Lv, Tl, q_sl, beta1, lambda1, alpha1, sigma1, Q1, R, C0, C1, C2, C2_THL
+        print 'calculation sommeria deardorff'
+
         if EnvVar.H.name == 'thetal':
             with nogil:
                 for k in xrange(gw, self.Gr.nzg-gw):
@@ -349,17 +369,11 @@ cdef class EnvironmentThermodynamics:
 
             eos_struct sa
             double qv, alpha
-        #self.sommeria_deardorff(EnvVar)
-        #if GMV.use_scalar_var:
-        #    self.sommeria_deardorff(EnvVar)
-        #    self.eos_update_SA_sgs(EnvVar, GMV.B)
-        #self.sommeria_deardorff(EnvVar)
-        if GMV.use_scalar_var:
-            if GMV.use_sommeria_deardorff:
-                self.sommeria_deardorff(EnvVar)
-            else:
-                self.eos_update_SA_sgs(EnvVar, GMV.B)
 
+        if GMV.use_sommeria_deardorff:
+            self.sommeria_deardorff(EnvVar)
+        elif GMV.use_quadrature:
+            self.eos_update_SA_sgs(EnvVar, GMV.B)
         else:
             with nogil:
                 for k in xrange(gw,self.Gr.nzg-gw):
