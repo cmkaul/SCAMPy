@@ -240,6 +240,7 @@ cdef class EnvironmentThermodynamics:
                     EnvVar.B.values[k]  = g * (outer_int_alpha - self.Ref.alpha0_half[k])/self.Ref.alpha0_half[k] #- GMV_B.values[k]
                     EnvVar.T.values[k]  = outer_int_T
                     EnvVar.CF.values[k] = outer_int_cf
+
                     self.qt_dry[k]      = outer_int_qt_dry
                     self.th_dry[k]      = outer_int_T_dry/exner_c(self.Ref.p0_half[k])
                     self.t_cloudy[k]    = outer_int_T_cloudy
