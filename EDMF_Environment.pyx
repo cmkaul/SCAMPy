@@ -160,7 +160,6 @@ cdef class EnvironmentThermodynamics:
 
 
     cdef void eos_update_SA_sgs(self, EnvironmentVariables EnvVar, VariableDiagnostic GMV_B):
-        print 'calculation SA_sgs'
         a, w = np.polynomial.hermite.hermgauss(self.quadrature_order)
         cdef:
             Py_ssize_t gw = self.Gr.gw
@@ -232,15 +231,15 @@ cdef class EnvironmentThermodynamics:
                         outer_int_alpha     += inner_int_alpha     * weights[m_q] * sqpi_inv
                         outer_int_cf        += inner_int_cf        * weights[m_q] * sqpi_inv
                         outer_int_qt_cloudy += inner_int_qt_cloudy * weights[m_q] * sqpi_inv
-                        outer_int_T_cloudy  += outer_int_T_cloudy  * weights[m_q] * sqpi_inv
+                        outer_int_T_cloudy  += inner_int_T_cloudy  * weights[m_q] * sqpi_inv # anna's fix (changed outer to inner)
                         outer_int_qt_dry    += inner_int_qt_dry    * weights[m_q] * sqpi_inv
-                        outer_int_T_dry     += outer_int_T_dry     * weights[m_q] * sqpi_inv
+                        outer_int_T_dry     += inner_int_T_dry     * weights[m_q] * sqpi_inv # anna's fix (changed outer to inner)
 
                     EnvVar.QL.values[k] = outer_int_ql
                     EnvVar.B.values[k]  = g * (outer_int_alpha - self.Ref.alpha0_half[k])/self.Ref.alpha0_half[k] #- GMV_B.values[k]
                     EnvVar.T.values[k]  = outer_int_T
                     EnvVar.CF.values[k] = outer_int_cf
-
+                    EnvVar.THL.values[k] = t_to_thetali_c(self.Ref.p0_half[k], EnvVar.T.values[k], EnvVar.QT.values[k], EnvVar.QL.values[k], 0.0) # anna's fix
                     self.qt_dry[k]      = outer_int_qt_dry
                     self.th_dry[k]      = outer_int_T_dry/exner_c(self.Ref.p0_half[k])
                     self.t_cloudy[k]    = outer_int_T_cloudy
@@ -325,7 +324,7 @@ cdef class EnvironmentThermodynamics:
         cdef:
             Py_ssize_t gw = self.Gr.gw
             double Lv, Tl, q_sl, beta1, lambda1, alpha1, sigma1, Q1, R, C0, C1, C2, C2_THL
-        print 'calculation sommeria deardorff'
+        print '----------------> calculation sommeria deardorff'
 
         if EnvVar.H.name == 'thetal':
             with nogil:
