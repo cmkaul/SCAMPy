@@ -60,21 +60,23 @@ cdef class EnvironmentVariables:
         else:
             self.use_scalar_var = False
 
-        if namelist['thermodynamics']['saturation'] == 'sommeria_deardorff':
-            if self.use_scalar_var:
-                self.use_sommeria_deardorff =  True
-            else:
-                sys.exit('EMDF_env 65: scalar variance must be set True for Sommeria Deardorff saturation')
-        else:
-            self.use_sommeria_deardorff =  False
+        try:
+            if namelist['thermodynamics']['saturation'] == 'sommeria_deardorff':
+                self.EnvThermo_scheme =  'sommeria_deardorff'
+                if self.use_scalar_var:
+                    sys.exit('EMDF_env 65: scalar variance must be set True for Sommeria Deardorff saturation')
 
-        if namelist['thermodynamics']['saturation'] == 'sgs_quadrature':
-            if self.use_scalar_var:
-                self.use_quadrature =  True
-            else:
-                sys.exit('EDMF_env 73: scalar variance must be set True for sgs_quadrature saturation')
-        else:
-            self.use_quadrature =  False
+            elif namelist['thermodynamics']['saturation'] == 'quadrature':
+                self.EnvThermo_scheme = 'quadrature'
+                if self.use_scalar_var:
+                    sys.exit('EMDF_env 65: scalar variance must be set True for Sommeria Deardorff saturation')
+
+            elif namelist['thermodynamics']['saturation'] == 'saturation_adjustment':
+                self.EnvThermo_scheme = 'saturation_adjustment'
+        except:
+            print 'environment thermodynamic scheme not specified, defaulting to saturation adjustment'
+            self.EnvThermo_scheme = 'saturation_adjustment'
+
 
         if self.use_tke:
             self.TKE = EnvironmentVariable( nz, 'half', 'scalar', 'tke','m^2/s^2' )
@@ -87,7 +89,7 @@ cdef class EnvironmentVariables:
             elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
                 self.Hvar = EnvironmentVariable(nz, 'half', 'scalar', 'thetal_var', 'K^2')
                 self.HQTcov = EnvironmentVariable(nz, 'half', 'scalar', 'thetal_qt_covar', 'K(kg/kg)' )
-                if self.use_sommeria_deardorff:
+                if self.EnvThermo_scheme == 'sommeria_deardorff':
                     self.THVvar = EnvironmentVariable(nz, 'half', 'scalar', 'thetav_var', 'K^2' )
 
         #
@@ -107,7 +109,7 @@ cdef class EnvironmentVariables:
             Stats.add_profile('env_Hvar')
             Stats.add_profile('env_QTvar')
             Stats.add_profile('env_HQTcov')
-            if self.use_sommeria_deardorff:
+            if self.EnvThermo_scheme == 'use_sommeria_deardorff':
                 Stats.add_profile('env_THVvar')
 
 
@@ -128,7 +130,7 @@ cdef class EnvironmentVariables:
             Stats.write_profile('env_Hvar', self.Hvar.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
             Stats.write_profile('env_QTvar', self.QTvar.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
             Stats.write_profile('env_HQTcov', self.HQTcov.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
-        if self.use_sommeria_deardorff:
+        if self.EnvThermo_scheme  == 'sommeria_deardorff':
             Stats.write_profile('env_THVvar', self.THVvar.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         return
 
@@ -324,7 +326,6 @@ cdef class EnvironmentThermodynamics:
         cdef:
             Py_ssize_t gw = self.Gr.gw
             double Lv, Tl, q_sl, beta1, lambda1, alpha1, sigma1, Q1, R, C0, C1, C2, C2_THL
-        print '----------------> calculation sommeria deardorff'
 
         if EnvVar.H.name == 'thetal':
             with nogil:
@@ -335,7 +336,7 @@ cdef class EnvironmentThermodynamics:
                     q_sl = qv_star_t(self.Ref.p0[k], Tl) # using the qv_star_c function instead of the approximation in eq. (4) in SD
                     beta1 = 0.622*Lv**2/(Rd*cp*Tl**2) # eq. (8) in SD
                     lambda1 = 1/(1+beta1*q_sl) # text under eq. (20) in SD
-                    # check the pressure units - mb vs hpa
+                    # check the pressure units - mb vs pa
                     alpha1 = (self.Ref.p0[k]/100000.0)**0.286*0.622*Lv*q_sl/Rd/Tl**2 # eq. (14) and eq. (6) in SD
                     # see if there is another way to calculate dq/dT from scmapy
                     sigma1 = EnvVar.QTvar.values[k]-2*alpha1*EnvVar.HQTcov.values[k]+alpha1**2*EnvVar.Hvar.values[k] # eq. (18) in SD , with r from (11)
@@ -350,16 +351,22 @@ cdef class EnvironmentThermodynamics:
                     # i.e. applying eq. (41) twice. The resulting expression yields:
                     C2_THL = C2*EnvVar.THL.values[k] # the defacto coefficient in eq(41) is C2*THLza
                     EnvVar.THVvar.values[k] = C1**2*EnvVar.Hvar.values[k] + 2*C1*C2_THL*EnvVar.HQTcov.values[k]+ C2_THL**2*EnvVar.QTvar.values[k]
-                    #using eq. (25) in SD, noting that in the paper there is a typo in the first condition and 1.6 there should be -1.6
-                    if Q1<-1.6:
-                        EnvVar.QL.values[k] = 0.0*lambda1*sigma1
-                    elif Q1>-1.6 and Q1<1.6:
-                        EnvVar.QL.values[k] = ((Q1+1.6)**2/6.4)*lambda1*sigma1
-                    elif Q1>1.6:
-                        EnvVar.QL.values[k] = Q1*lambda1*sigma1
+                    # equation (19) exact form for QL
+                    EnvVar.QL.values[k] = 1.0/(1.0+beta1*q_sl)*(R*(EnvVar.QT.values[k]-q_sl)+sigma1/sqrt(6.14)*exp(-((EnvVar.QT.values[k]-q_sl)*(EnvVar.QT.values[k]-q_sl)/(2.0*sigma1*sigma1))))
                     EnvVar.T.values[k] = Tl + Lv/cp*EnvVar.QL.values[k] # should this be the differnece in ql - would it work for evaporation as well ?
+                    EnvVar.CF.values[k] = R
+
+                    #using eq. (25) in SD, noting that in the paper there is a typo in the first condition and 1.6 there should be -1.6
+                    # if Q1<-1.6:
+                    #     EnvVar.QL.values[k] = 0.0*lambda1*sigma1
+                    # elif Q1>-1.6 and Q1<1.6:
+                    #     EnvVar.QL.values[k] = ((Q1+1.6)**2/6.4)*lambda1*sigma1
+                    # elif Q1>1.6:
+                    #     EnvVar.QL.values[k] = Q1*lambda1*sigma1
+                    #
+
         elif EnvVar.H.name == 's':
-            print 'Sommeria Deardorff is not defined for in that case'
+            print 'Sommeria Deardorff is not defined for using entropy as thermodyanmic variable'
         return
 
     cpdef satadjust(self, EnvironmentVariables EnvVar, GridMeanVariables GMV):
@@ -370,9 +377,9 @@ cdef class EnvironmentThermodynamics:
             eos_struct sa
             double qv, alpha
 
-        if GMV.use_sommeria_deardorff:
+        if EnvVar.EnvThermo_scheme == 'sommeria_deardorff':
             self.sommeria_deardorff(EnvVar)
-        elif GMV.use_quadrature:
+        elif EnvVar.EnvThermo_scheme == 'quadrature':
             self.eos_update_SA_sgs(EnvVar, GMV.B)
         else:
             with nogil:

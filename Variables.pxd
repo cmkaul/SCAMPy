@@ -52,8 +52,6 @@ cdef class GridMeanVariables:
         double (*prog_to_t_fp)(double H, double pd, double pv, double qt ) nogil
         bint use_tke
         bint use_scalar_var
-        bint use_sommeria_deardorff
-        bint use_quadrature
 
     cpdef zero_tendencies(self)
     cpdef update(self, TimeStepping TS)

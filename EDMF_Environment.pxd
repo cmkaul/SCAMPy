@@ -33,6 +33,7 @@ cdef class EnvironmentVariables:
         bint use_scalar_var
         bint use_sommeria_deardorff
         bint use_quadrature
+        str EnvThermo_scheme
 
     cpdef initialize_io(self, NetCDFIO_Stats Stats )
     cpdef io(self, NetCDFIO_Stats Stats)
@@ -51,10 +52,13 @@ cdef class EnvironmentThermodynamics:
         double [:] qv_cloudy
         double [:] qt_cloudy
         double [:] th_cloudy
+
         void sommeria_deardorff(self, EnvironmentVariables EnvVar)
 
 
+
     cpdef satadjust(self, EnvironmentVariables EnvVar, GridMeanVariables GMV)
+
 
 
 
