@@ -50,7 +50,7 @@ def Soares():
 
     namelist['thermodynamics'] = {}
     namelist['thermodynamics']['thermal_variable'] = 'thetal'
-    namelist['thermodynamics']['saturation'] = 'SA'
+    namelist['thermodynamics']['saturation'] = 'saturation_adjustment'
 
     namelist['time_stepping'] = {}
     namelist['time_stepping']['dt'] = 60.0
@@ -101,7 +101,7 @@ def Bomex():
 
     namelist['thermodynamics'] = {}
     namelist['thermodynamics']['thermal_variable'] = 'thetal'
-    namelist['thermodynamics']['saturation'] = 'sommeria_deardorff'
+    namelist['thermodynamics']['saturation'] = 'saturation_adjustment'
 
     namelist['time_stepping'] = {}
     namelist['time_stepping']['dt'] = 20.0
@@ -143,7 +143,9 @@ def life_cycle_Tan2018():
     namelist['grid']['gw'] = 2
     namelist['grid']['dz'] = 100 / 2.5
     namelist['thermodynamics'] = {}
+    namelist['thermodynamics']['saturation'] = 'saturation_adjustment'
     namelist['thermodynamics']['thermal_variable'] = 'thetal'
+
     namelist['time_stepping'] = {}
     namelist['time_stepping']['dt'] = 30.0
     namelist['time_stepping']['t_max'] = 6*3600.0
@@ -179,6 +181,7 @@ def Rico():
 
 
     namelist['thermodynamics'] = {}
+    namelist['thermodynamics']['saturation'] = 'saturation_adjustment'
     namelist['thermodynamics']['thermal_variable'] = 'thetal'
 
     namelist['time_stepping'] = {}
@@ -223,6 +226,7 @@ def TRMM_LBA(): # yair
     namelist['grid']['dz'] = 10
 
     namelist['thermodynamics'] = {}
+    namelist['thermodynamics']['saturation'] = 'saturation_adjustment'
     namelist['thermodynamics']['thermal_variable'] = 'thetal'
 
     namelist['time_stepping'] = {}
@@ -266,6 +270,7 @@ def ARM_SGP():
 
 
     namelist['thermodynamics'] = {}
+    namelist['thermodynamics']['saturation'] = 'saturation_adjustment'
     namelist['thermodynamics']['thermal_variable'] = 'thetal'
 
     namelist['time_stepping'] = {}
@@ -310,6 +315,7 @@ def GATE_III(): # yair
     namelist['grid']['dz'] = 10
 
     namelist['thermodynamics'] = {}
+    namelist['thermodynamics']['saturation'] = 'saturation_adjustment'
     namelist['thermodynamics']['thermal_variable'] = 'thetal'
 
     namelist['time_stepping'] = {}
@@ -352,6 +358,7 @@ def DYCOMS_RF01():
     namelist['grid']['dz'] = 10
 
     namelist['thermodynamics'] = {}
+    namelist['thermodynamics']['saturation'] = 'saturation_adjustment'
     namelist['thermodynamics']['thermal_variable'] = 'thetal'
 
     namelist['time_stepping'] = {}
