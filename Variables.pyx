@@ -171,23 +171,24 @@ cdef class GridMeanVariables:
         else:
             self.use_scalar_var = False
 
-
         try:
-            if namelist['thermodynamics']['saturation'] == 'sommeria_deardorff':
-                self.EnvThermo_scheme =  'sommeria_deardorff'
-                if self.use_scalar_var:
-                    sys.exit('EMDF_env 65: scalar variance must be set True for Sommeria Deardorff saturation')
-
-            elif namelist['thermodynamics']['saturation'] == 'quadrature':
-                self.EnvThermo_scheme = 'quadrature'
-                if self.use_scalar_var:
-                    sys.exit('EMDF_env 65: scalar variance must be set True for Sommeria Deardorff saturation')
-
-            elif namelist['thermodynamics']['saturation'] == 'saturation_adjustment':
+            if namelist['thermodynamics']['saturation'] == 'saturation_adjustment':
                 self.EnvThermo_scheme = 'saturation_adjustment'
         except:
-            print 'environment thermodynamic scheme not specified, defaulting to saturation adjustment'
-            self.EnvThermo_scheme = 'saturation_adjustment'
+            namelist['thermodynamics']['saturation'] = 'saturation_adjustment'
+            self.EnvThermo_scheme = namelist['thermodynamics']['saturation']
+            print 'Environment thermodynamic scheme not specified, defaulting to saturation adjustment'
+
+
+        if namelist['thermodynamics']['saturation'] == 'sommeria_deardorff':
+            self.EnvThermo_scheme =  'sommeria_deardorff'
+            if self.use_scalar_var == False:
+                sys.exit('Variables.pyx 185: scalar variance must be set True for Sommeria Deardorff saturation')
+
+        elif namelist['thermodynamics']['saturation'] == 'quadrature':
+            self.EnvThermo_scheme = 'quadrature'
+            if self.use_scalar_var == False:
+                sys.exit('Variables.pyx 78: scalar variance must be set True for quadrature saturation')
 
         #Now add the 2nd moment variables
         if self.use_tke:
@@ -240,7 +241,7 @@ cdef class GridMeanVariables:
             self.QTvar.set_bcs(self.Gr)
             self.Hvar.set_bcs(self.Gr)
             self.HQTcov.set_bcs(self.Gr)
-            if self.use_sommeria_deardorff:
+            if self.EnvThermo_scheme == 'sommeria_deardorff':
                 self.THVvar.set_bcs(self.Gr)
 
 

@@ -620,7 +620,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         cdef:
             Py_ssize_t k, gw = self.Gr.gw
-            double val1, val2, au_full, wu_half, we_half
+            double val1, val2, au_full
             double Hvar_e, QTvar_e, HQTcov_e, Hvar_u, QTvar_u, HQTcov_u
         if whichvals == 'values':
 
@@ -634,8 +634,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     # Assuming GMV.W = 0!
                     au_full = 0.5 * (self.UpdVar.Area.bulkvalues[k+1] + self.UpdVar.Area.bulkvalues[k])
                     self.EnvVar.W.values[k] = -au_full/(1.0-au_full) * self.UpdVar.W.bulkvalues[k]
-                    wu_half = interp2pt(self.UpdVar.W.bulkvalues[k-1], self.UpdVar.W.bulkvalues[k])
-                    we_half = interp2pt(self.EnvVar.W.values[k-1], self.EnvVar.W.values[k])
 
             self.get_GMV_TKE(self.UpdVar.Area,self.UpdVar.W, self.EnvVar.W, self.EnvVar.TKE,
                              &GMV.W.values[0], &GMV.TKE.values[0])
@@ -1332,7 +1330,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 rho_ae_K_m[k] = 0.5 * (ae[k]*self.KM.values[k]+ ae[k+1]*self.KM.values[k+1]) * self.Ref.rho0[k]
                 whalf[k] = interp2pt(self.EnvVar.W.values[k-1], self.EnvVar.W.values[k])
         wu_half = interp2pt(self.UpdVar.W.bulkvalues[gw-1], self.UpdVar.W.bulkvalues[gw])
-        # yair you need to use this for variances as well
         GMV.TKE.values[gw] = get_surface_tke(Case.Sur.ustar, self.wstar, self.Gr.z_half[gw], Case.Sur.obukhov_length)
         self.get_env_tke_from_GMV(self.UpdVar.Area, self.UpdVar.W, self.EnvVar.W,
                                   self.EnvVar.TKE, &GMV.W.values[0], &GMV.TKE.values[0])
