@@ -54,17 +54,18 @@ cdef class EnvironmentVariables:
         else:
             self.use_tke = False
 
-        if namelist['turbulence']['EDMF_PrognosticTKE']['use_scalar_var']:
-            self.use_scalar_var = True
-        else:
+        try:
+            self.use_scalar_var = namelist['turbulence']['EDMF_PrognosticTKE']['use_scalar_var']
+        except:
             self.use_scalar_var = False
+            print('Defaulting to non-calculation of scalar variances')
 
-        if namelist['thermodynamics']['saturation'] == 'saturation_adjustment':
+        try:
+            self.EnvThermo_scheme = namelist['thermodynamics']['saturation']
+        except:
             self.EnvThermo_scheme = 'saturation_adjustment'
-        elif namelist['thermodynamics']['saturation'] == 'sommeria_deardorff':
-            self.EnvThermo_scheme =  'sommeria_deardorff'
-        elif namelist['thermodynamics']['saturation'] == 'quadrature':
-            self.EnvThermo_scheme = 'quadrature'
+            print('Defaulting to simple saturation adjustment with respect to environmental means')
+
 
         if self.use_tke:
             self.TKE = EnvironmentVariable( nz, 'half', 'scalar', 'tke','m^2/s^2' )

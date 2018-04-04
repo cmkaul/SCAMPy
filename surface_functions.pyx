@@ -1,5 +1,6 @@
 import numpy as np
-from thermodynamic_functions cimport latent_heat, pd_c, pv_c, sd_c, sv_c, cpm_c
+from thermodynamic_functions cimport latent_heat, pd_c, pv_c, sd_c, sv_c, cpm_c, theta_rho_c
+from turbulence_functions cimport get_wstar, get_inversion
 include "parameters.pxi"
 
 #Adapated from PyCLES: https://github.com/pressel/pycles
@@ -100,4 +101,3 @@ cpdef double compute_ustar(double windspeed, double buoyancy_flux, double z0, do
 
 
     return ustar
-

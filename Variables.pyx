@@ -166,29 +166,23 @@ cdef class GridMeanVariables:
         else:
             self.use_tke = False
 
-        if namelist['turbulence']['EDMF_PrognosticTKE']['use_scalar_var']:
-            self.use_scalar_var = True
-        else:
+        try:
+            self.use_scalar_var = namelist['turbulence']['EDMF_PrognosticTKE']['use_scalar_var']
+        except:
             self.use_scalar_var = False
+            print('Defaulting to non-calculation of scalar variances')
+
 
         try:
-            if namelist['thermodynamics']['saturation'] == 'saturation_adjustment':
-                self.EnvThermo_scheme = 'saturation_adjustment'
-        except:
-            namelist['thermodynamics']['saturation'] = 'saturation_adjustment'
             self.EnvThermo_scheme = namelist['thermodynamics']['saturation']
-            print 'Environment thermodynamic scheme not specified, defaulting to saturation adjustment'
+        except:
+            self.EnvThermo_scheme = 'saturation_adjustment'
+            print('Defaulting to simple saturation adjustment with respect to environmental means')
 
 
-        if namelist['thermodynamics']['saturation'] == 'sommeria_deardorff':
-            self.EnvThermo_scheme =  'sommeria_deardorff'
+        if self.EnvThermo_scheme == 'sommeria_deardorff' or self.EnvThermo_scheme == 'quadrature':
             if self.use_scalar_var == False:
-                sys.exit('Variables.pyx 185: scalar variance must be set True for Sommeria Deardorff saturation')
-
-        elif namelist['thermodynamics']['saturation'] == 'quadrature':
-            self.EnvThermo_scheme = 'quadrature'
-            if self.use_scalar_var == False:
-                sys.exit('Variables.pyx 78: scalar variance must be set True for quadrature saturation')
+                sys.exit('Variables.pyx 185: scalar variance must be set True for Sommeria Deardorff or quadrature saturation')
 
         #Now add the 2nd moment variables
         if self.use_tke:
