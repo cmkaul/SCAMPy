@@ -4,6 +4,7 @@
 #cython: initializedcheck=False
 #cython: cdivision=True
 
+#Adapated from PyCLES: https://github.com/pressel/pycles
 
 cimport numpy as np
 import numpy as np
