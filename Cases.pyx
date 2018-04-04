@@ -658,14 +658,12 @@ cdef class TRMM_LBA(CasesBase):
         self.Fo.Gr = Gr
         self.Fo.Ref = Ref
         self.Fo.initialize(GMV)
-        # only radiative forcing
-
-        # radiative tendencies from the paper  are interpolated to model vertical and time resolutions
-        self.rad_time     = np.linspace(10,360,36)*60
-        z_in         = np.array([42.5, 200.92, 456.28, 743, 1061.08, 1410.52, 1791.32, 2203.48, 2647,
-                                      3121.88, 3628.12, 4165.72, 4734.68, 5335, 5966.68, 6629.72, 7324.12,
-                                      8049.88, 8807, 9595.48, 10415.32, 11266.52, 12149.08, 13063, 14008.28,
-                                      14984.92, 15992.92, 17032.28, 18103, 19205.08, 20338.52, 21503.32, 22699.48])
+        self.Fo.dTdt = np.zeros(Gr.nzg, dtype=np.double)
+        self.rad_time = np.linspace(10,360,36)*60
+        z_in         = np.array([42.5, 200.92, 456.28, 743, 1061.08, 1410.52, 1791.32, 2203.48, 2647,3121.88, 3628.12,
+                                 4165.72, 4734.68, 5335, 5966.68, 6629.72, 7324.12,
+                                 8049.88, 8807, 9595.48, 10415.32, 11266.52, 12149.08, 13063, 14008.28,
+                                 14984.92, 15992.92, 17032.28, 18103, 19205.08, 20338.52, 21503.32, 22699.48])
         rad_in   = np.array([[-1.386, -1.927, -2.089, -1.969, -1.805, -1.585, -1.406, -1.317, -1.188, -1.106, -1.103, -1.025,
                               -0.955, -1.045, -1.144, -1.119, -1.068, -1.092, -1.196, -1.253, -1.266, -1.306,  -0.95,  0.122,
                                0.255,  0.258,  0.322,  0.135,      0,      0,      0,      0,      0],
@@ -810,7 +808,6 @@ cdef class TRMM_LBA(CasesBase):
         self.Sur.rho_uflux = 0.0
         self.Sur.rho_vflux = 0.0
         return
-
     cpdef update_forcing(self, GridMeanVariables GMV,  TimeStepping TS):
         cdef:
             Py_ssize_t k, ind1, ind2
@@ -836,7 +833,7 @@ cdef class TRMM_LBA(CasesBase):
                                                  /(self.rad_time[ind2]-self.rad_time[ind1])\
                                                  *(TS.t/60.0-self.rad_time[ind1])+self.rad[ind1,k]
                     else:
-                        self.Fo.dTdt[k] = 0.1  # CK==> Is this sign correct?
+                        self.Fo.dTdt[k] = 0.0
         self.Fo.update(GMV)
 
         return
@@ -1059,8 +1056,6 @@ cdef class GATE_III(CasesBase):
         self.Fo.Gr = Gr
         self.Fo.Ref = Ref
         self.Fo.initialize(GMV)
-
-
         #LES z is in meters
         z_in     = np.array([ 0.0,   0.5,  1.0,  1.5,   2.0,   2.5,    3.0,   3.5,   4.0,   4.5,   5.0,   5.5,   6.0,
                               6.5,  7.0,  7.5,   8.0,  8.5,   9.0,  9.5,  10.0,  10.5,  11.0,    11.5,   12.0, 12.5,
@@ -1080,6 +1075,7 @@ cdef class GATE_III(CasesBase):
         Ttend_in = np.array([ 0.0,  -1.0, -2.2, -3.0,  -3.5,  -3.8,   -4.0,  -4.1,  -4.2,  -4.2,  -4.1,  -4.0, -3.85,
                               -3.7, -3.5, -3.25, -3.0, -2.8,  -2.5, -2.1,  -1.7,  -1.3,   -1.0,   -0.7,   -0.5, -0.4,
                               -0.3, -0.2, -0.1,-0.05,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0])/(24.0*3600.0)
+
         Qtend_in = np.divide(r_tend_in,(1+r_tend_in)) # convert mixing ratio to specific humidity
 
         self.Fo.dqtdt = np.interp(Gr.z_half,z_in,Qtend_in)

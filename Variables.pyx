@@ -163,14 +163,36 @@ cdef class GridMeanVariables:
         # Determine whether we need 2nd moment variables
         if  namelist['turbulence']['scheme'] == 'EDMF_PrognosticTKE':
             self.use_tke = True
-            self.use_scalar_var = False
         else:
             self.use_tke = False
+
+        if namelist['turbulence']['EDMF_PrognosticTKE']['use_scalar_var']:
             self.use_scalar_var = True
+        else:
+            self.use_scalar_var = False
+
+        try:
+            if namelist['thermodynamics']['saturation'] == 'saturation_adjustment':
+                self.EnvThermo_scheme = 'saturation_adjustment'
+        except:
+            namelist['thermodynamics']['saturation'] = 'saturation_adjustment'
+            self.EnvThermo_scheme = namelist['thermodynamics']['saturation']
+            print 'Environment thermodynamic scheme not specified, defaulting to saturation adjustment'
+
+
+        if namelist['thermodynamics']['saturation'] == 'sommeria_deardorff':
+            self.EnvThermo_scheme =  'sommeria_deardorff'
+            if self.use_scalar_var == False:
+                sys.exit('Variables.pyx 185: scalar variance must be set True for Sommeria Deardorff saturation')
+
+        elif namelist['thermodynamics']['saturation'] == 'quadrature':
+            self.EnvThermo_scheme = 'quadrature'
+            if self.use_scalar_var == False:
+                sys.exit('Variables.pyx 78: scalar variance must be set True for quadrature saturation')
+
         #Now add the 2nd moment variables
         if self.use_tke:
             self.TKE = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym', 'tke','m^2/s^2' )
-        if self.use_scalar_var:
             self.QTvar = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym', 'qt_var','kg^2/kg^2' )
             if namelist['thermodynamics']['thermal_variable'] == 'entropy':
                 self.Hvar = VariableDiagnostic(Gr.nzg, 'half', 'scalar', 'sym', 's_var', '(J/kg/K)^2')
@@ -179,16 +201,24 @@ cdef class GridMeanVariables:
                 self.Hvar = VariableDiagnostic(Gr.nzg, 'half', 'scalar', 'sym' ,'thetal_var', 'K^2')
                 self.HQTcov = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym' ,'thetal_qt_covar', 'K(kg/kg)' )
 
-
-
+        if self.use_scalar_var:
+            self.QTvar = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym', 'qt_var','kg^2/kg^2' )
+            if namelist['thermodynamics']['thermal_variable'] == 'entropy':
+                self.Hvar = VariableDiagnostic(Gr.nzg, 'half', 'scalar', 'sym', 's_var', '(J/kg/K)^2')
+                self.HQTcov = VariableDiagnostic(Gr.nzg, 'half', 'scalar', 'sym' ,'s_qt_covar', '(J/kg/K)(kg/kg)' )
+            elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
+                self.Hvar = VariableDiagnostic(Gr.nzg, 'half', 'scalar', 'sym' ,'thetal_var', 'K^2')
+                self.HQTcov = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym' ,'thetal_qt_covar', 'K(kg/kg)' )
+                if self.EnvThermo_scheme == 'sommeria_deardorff':
+                    self.THVvar = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym', 'thatav_var','K^2' )
 
         return
+
     cpdef zero_tendencies(self):
         self.U.zero_tendencies(self.Gr)
         self.V.zero_tendencies(self.Gr)
         self.QT.zero_tendencies(self.Gr)
         self.H.zero_tendencies(self.Gr)
-
         return
 
     cpdef update(self,  TimeStepping TS):
@@ -211,6 +241,8 @@ cdef class GridMeanVariables:
             self.QTvar.set_bcs(self.Gr)
             self.Hvar.set_bcs(self.Gr)
             self.HQTcov.set_bcs(self.Gr)
+            if self.EnvThermo_scheme == 'sommeria_deardorff':
+                self.THVvar.set_bcs(self.Gr)
 
 
         self.zero_tendencies()
@@ -231,6 +263,9 @@ cdef class GridMeanVariables:
         Stats.add_profile('ql_mean')
         if self.use_tke:
             Stats.add_profile('tke_mean')
+            Stats.add_profile('Hvar_mean')
+            Stats.add_profile('QTvar_mean')
+            Stats.add_profile('HQTcov_mean')
 
         Stats.add_ts('lwp')
         return
@@ -253,6 +288,9 @@ cdef class GridMeanVariables:
             Stats.write_profile('thetal_mean',self.H.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         if self.use_tke:
             Stats.write_profile('tke_mean',self.TKE.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+            Stats.write_profile('Hvar_mean',self.Hvar.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+            Stats.write_profile('QTvar_mean',self.QTvar.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+            Stats.write_profile('HQTcov_mean',self.HQTcov.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
             lwp += self.Ref.rho0_half[k]*self.QL.values[k]*self.Gr.dz
         Stats.write_ts('lwp', lwp)
