@@ -61,7 +61,7 @@ cdef class EnvironmentVariables:
             print('Defaulting to non-calculation of scalar variances')
 
         try:
-            self.EnvThermo_scheme = namelist['thermodynamics']['saturation']
+            self.EnvThermo_scheme = str(namelist['thermodynamics']['saturation'])
         except:
             self.EnvThermo_scheme = 'saturation_adjustment'
             print('Defaulting to simple saturation adjustment with respect to environmental means')
