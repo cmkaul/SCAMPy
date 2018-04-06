@@ -44,15 +44,15 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             print('Turbulence--EDMF_PrognosticTKE: defaulting to local (level-by-level) microphysics')
 
         try:
-            if namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] == 'inverse_z':
+            if str(namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'])== 'inverse_z':
                 self.entr_detr_fp = entr_detr_inverse_z
-            elif namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] == 'dry':
+            elif str(namelist['turbulence']['EDMF_PrognosticTKE']['entrainment']) == 'dry':
                 self.entr_detr_fp = entr_detr_dry
-            elif namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] == 'inverse_w':
+            elif str(namelist['turbulence']['EDMF_PrognosticTKE']['entrainment']) == 'inverse_w':
                 self.entr_detr_fp = entr_detr_inverse_w
-            elif namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] == 'b_w2':
+            elif str(namelist['turbulence']['EDMF_PrognosticTKE']['entrainment']) == 'b_w2':
                 self.entr_detr_fp = entr_detr_b_w2
-            elif namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] == 'buoyancy_sorting':
+            elif str(namelist['turbulence']['EDMF_PrognosticTKE']['entrainment']) == 'buoyancy_sorting':
                 self.entr_detr_fp = entr_detr_buoyancy_sorting
             else:
                 print('Turbulence--EDMF_PrognosticTKE: Entrainment rate namelist option is not recognized')
