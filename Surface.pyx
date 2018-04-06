@@ -7,7 +7,7 @@
 import numpy as np
 include "parameters.pxi"
 import cython
-from thermodynamic_functions cimport latent_heat, cpm_c, exner_c, qv_star_t, sd_c, sv_c, pv_star, theta_rho_c
+from thermodynamic_functions cimport *
 from surface_functions cimport entropy_flux, compute_ustar, buoyancy_flux
 from turbulence_functions cimport get_wstar, get_inversion
 from Variables cimport GridMeanVariables
@@ -152,10 +152,27 @@ cdef class SurfaceMoninObukhov(SurfaceBase):
     cpdef initialize(self):
         return
     cpdef update(self, GridMeanVariables GMV):
+        self.qsurface = qv_star_t(self.Ref.Pg, self.Tsurface)
         cdef:
             Py_ssize_t k, gw = self.Gr.gw
+            double zb = self.Gr.z_half[gw]
+            double theta_rho_g = theta_rho_c(self.Ref.Pg, self.Tsurface, self.qsurface, self.qsurface)
+            double theta_rho_b = theta_rho_c(self.Ref.p0_half[gw], GMV.T.values[gw])
+            double Nb2,
+            double h_star
+
+        if GMV.H.name == 'thetal':
+            h_star = t_to_thetali_c(self.Ref.Pg, self.Tsurface, self.qsurface, 0.0, 0.0)
+        elif GMV.H.name == 's':
+            h_star = t_to_entropy_c(self.Ref.Pg, self.Tsurface, self.qsurface, 0.0, 0.0)
+
+
+
 
         self.windspeed = np.sqrt(GMV.U.values[gw]*GMV.U.values[gw] + GMV.V.values[gw] * GMV.V.values[gw])
+        Nb2 = g/theta_rho_g*(theta_rho_b-theta_rho_g)/zb
+        Ri = Nb2 * zb * zb/(self.windspeed * self.windspeed)
+
 
         return
 
