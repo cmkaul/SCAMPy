@@ -25,6 +25,7 @@ cdef double beta_m = 4.8
 cdef double beta_h = 7.8
 cdef double gamma_m = 15.0
 cdef double gamma_h = 9.0
+cdef double liquid_density = 1000.0 # density of liquid water
 # constants defined in Stevens et al 2005 (that are different from scampy)
 # needed for DYCOMS case setup
 cdef double dycoms_cp = 1015.

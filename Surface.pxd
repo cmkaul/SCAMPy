@@ -6,7 +6,6 @@ from thermodynamic_functions cimport latent_heat,cpm_c
 cdef class SurfaceBase:
     cdef:
         double zrough
-        bint interactive_zrough
         double Tsurface
         double qsurface
         double shf

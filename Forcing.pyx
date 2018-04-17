@@ -97,36 +97,6 @@ cdef class ForcingStandard(ForcingBase):
     cpdef io(self, NetCDFIO_Stats Stats):
         return
 
-# cdef class ForcingRadiative(ForcingBase): # yair - added to avoid zero subsidence
-#     def __init__(self):
-#         ForcingBase.__init__(self)
-#         return
-#     cpdef initialize(self, GridMeanVariables GMV):
-#         ForcingBase.initialize(self, GMV)
-#         return
-#     cpdef update(self, GridMeanVariables GMV):
-#         cdef:
-#             Py_ssize_t k
-#             double qv
-#
-#         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-#             # Apply large-scale horizontal advection tendencies
-#             qv = GMV.QT.values[k] - GMV.QL.values[k]
-#             GMV.H.tendencies[k] += self.convert_forcing_prog_fp(self.Ref.p0_half[k],GMV.QT.values[k], qv,
-#                                                                 GMV.T.values[k], self.dqtdt[k], self.dTdt[k])
-#             GMV.QT.tendencies[k] += self.dqtdt[k]
-#
-#
-#         return
-#
-#     cpdef coriolis_force(self, VariablePrognostic U, VariablePrognostic V):
-#         ForcingBase.coriolis_force(self, U, V)
-#         return
-#     cpdef initialize_io(self, NetCDFIO_Stats Stats):
-#         return
-#     cpdef io(self, NetCDFIO_Stats Stats):
-#         return
-
 
 cdef class ForcingDYCOMS_RF01(ForcingBase):
 
@@ -224,3 +194,4 @@ cdef class ForcingDYCOMS_RF01(ForcingBase):
         Stats.write_profile('rad_dTdt', self.dTdt[ self.Gr.gw     : self.Gr.nzg - self.Gr.gw])
         Stats.write_profile('rad_flux', self.f_rad[self.Gr.gw + 1 : self.Gr.nzg - self.Gr.gw + 1])
         return
+

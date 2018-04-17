@@ -1,17 +1,20 @@
 import numpy as np
 include "parameters.pxi"
 import cython
-
+import sys
 from Grid cimport Grid
 from Variables cimport GridMeanVariables
 from ReferenceState cimport ReferenceState
 from TimeStepping cimport  TimeStepping
 cimport Surface
 cimport Forcing
+cimport Nudging
+cimport ForcingReference
+cimport SurfaceBudget
 from NetCDFIO cimport NetCDFIO_Stats
 from thermodynamic_functions cimport *
 import math as mt
-from libc.math cimport sqrt, log, fabs,atan, exp, fmax
+from libc.math cimport sqrt, log, fabs,atan, exp, fmax, sin, cos, pow, log2
 
 def CasesFactory(namelist, paramlist):
     if namelist['meta']['casename'] == 'Soares':
@@ -30,6 +33,8 @@ def CasesFactory(namelist, paramlist):
         return GATE_III(paramlist)
     elif namelist['meta']['casename'] == 'DYCOMS_RF01':
         return DYCOMS_RF01(paramlist)
+    elif namelist['meta']['casename'] == 'ZGILS':
+        return ZGILS(namelist, paramlist)
 
     else:
         print('case not recognized')
@@ -395,7 +400,7 @@ cdef class life_cycle_Tan2018(CasesBase):
         return
     cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS):
         weight = 1.0
-        weight_factor = 0.01 + 0.99 *(np.cos(2.0*pi * TS.t /3600.0) + 1.0)/2.0
+        weight_factor = 0.01 + 0.99 *(cos(2.0*pi * TS.t /3600.0) + 1.0)/2.0
         weight = weight * weight_factor
         self.Sur.lhf = self.lhf0*weight
         self.Sur.shf = self.shf0*weight
@@ -414,7 +419,7 @@ cdef class Rico(CasesBase):
         self.inversion_option = 'critical_Ri'
         self.Fo.apply_coriolis = True
         cdef double latitude = 18.0
-        self.Fo.coriolis_param = 2.0 * omega * np.sin(latitude * pi / 180.0 ) # s^{-1}
+        self.Fo.coriolis_param = 2.0 * omega * sin(latitude * pi / 180.0 ) # s^{-1}
         self.Fo.apply_subsidence = True
         return
 
@@ -477,7 +482,7 @@ cdef class Rico(CasesBase):
         self.Sur.ch = 0.001094
         self.Sur.cq = 0.001133
         # Adjust for non-IC grid spacing
-        grid_adjust = (np.log(20.0/self.Sur.zrough)/np.log(Gr.z_half[Gr.gw]/self.Sur.zrough))**2
+        grid_adjust = (log(20.0/self.Sur.zrough)/log(Gr.z_half[Gr.gw]/self.Sur.zrough))**2
         self.Sur.cm = self.Sur.cm * grid_adjust
         self.Sur.ch = self.Sur.ch * grid_adjust
         self.Sur.cq = self.Sur.cq * grid_adjust
@@ -801,8 +806,8 @@ cdef class TRMM_LBA(CasesBase):
         return
 
     cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS):
-        self.Sur.lhf = 554.0 * mt.pow(np.maximum(0, np.cos(np.pi/2*((5.25*3600.0 - TS.t)/5.25/3600.0))),1.3)
-        self.Sur.shf = 270.0 * mt.pow(np.maximum(0, np.cos(np.pi/2*((5.25*3600.0 - TS.t)/5.25/3600.0))),1.5)
+        self.Sur.lhf = 554.0 * pow(fmax(0, cos(np.pi/2*((5.25*3600.0 - TS.t)/5.25/3600.0))),1.3)
+        self.Sur.shf = 270.0 * pow(fmax(0, cos(np.pi/2*((5.25*3600.0 - TS.t)/5.25/3600.0))),1.5)
         self.Sur.update(GMV)
         # fix momentum fluxes to zero as they are not used in the paper
         self.Sur.rho_uflux = 0.0
@@ -1289,6 +1294,164 @@ cdef class DYCOMS_RF01(CasesBase):
         self.Sur.update(GMV)
         return
 
+    cpdef update_forcing(self, GridMeanVariables GMV, TimeStepping TS):
+        self.Fo.update(GMV)
+        return
+
+
+cdef class ZGILS(CasesBase):
+    def __init__(self, namelist, paramlist):
+        self.casename = 'ZGILS'
+        self.Sur = Surface.SurfaceMoninObukhov(paramlist)
+        self.Fo = Forcing.ForcingStandard()
+        self.inversion_option = 'critical_Ri'
+        self.Fo.apply_coriolis = True
+        self.Fo.apply_subsidence = True
+        self.location = namelist['ZGILS']['location']
+        if not self.location in [6,11,12]:
+            print('Invalid ZGILS location '+str(self.location))
+            sys.kill()
+        self.co2_factor = namelist['ZGILS']['co2_factor']
+        self.FoRef = ForcingReference.ReferenceRCE(self.co2_factor)
+        self.SurBud = SurfaceBudget.SurfaceBudget(namelist)
+        return
+    cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats):
+        Ref.Pg = 1.018e5  #Pressure at ground
+        Ref.Tg = 289.472  #Temperature at ground
+        Ref.qtg = 0.098449   #Total water mixing ratio at surface
+        Ref.initialize(Gr, Stats)
+        return
+    cpdef initialize_profiles(self, Grid Gr, GridMeanVariables GMV, ReferenceState Ref):
+            cdef:
+                double [:] temperature, qt, u, v
+                double [:] thetal = np.zeros((Gr.nzg,), dtype=np.double, order='c')
+                double [:] s = np.zeros((Gr.nzg,), dtype=np.double, order='c')
+                Py_ssize_t k
+                eos_struct sa
+
+
+            temperature = np.interp(Ref.p0_half, np.flipud(self.FoRef.pressure),
+                                    np.flipud(self.FoRef.temperature))
+            qt =  np.interp(Ref.p0_half, np.flipud(self.FoRef.pressure),
+                                    np.flipud(self.FoRef.qt))
+
+            u =  np.interp(Ref.p0_half, np.flipud(self.FoRef.pressure),
+                                    np.flipud(self.FoRef.u))
+            v =  np.interp(Ref.p0_half, np.flipud(self.FoRef.pressure),
+                                    np.flipud(self.FoRef.v))
+
+            with nogil:
+                for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
+                    GMV.U.values[k] = u[k]
+                    GMV.V.values[k] = v[k]
+                    if Ref.p0_half[k] > 920.0e2:
+                        thetal[k] = Ref.Tg/exner_c(Ref.Pg)
+                        GMV.QT.values[k] = Ref.qtg
+                        sa = eos(&t_to_thetali_c,&eos_first_guess_thetal,Ref.p0_half[k], GMV.QT.values[k], thetal[k])
+
+                        GMV.T.values[k] = sa.T
+                        GMV.QL.values[k] = sa.ql
+                    else:
+                        thetal[k] = temperature[k]/exner_c(Ref.p0_half[k])
+                        GMV.QT.values[k] = qt[k]
+                        GMV.T.values[k] = temperature[k]
+                        GMV.QL.values[k] = 0.0
+                    GMV.THL.values[k] = thetal[k]
+                    if GMV.H.name =='thetal':
+                        GMV.H.values[k]= thetal[k]
+                    elif GMV.H.name == 's':
+                        GMV.H.values[k] = t_to_entropy_c(Ref.p0_half[k], GMV.T.values[k],
+                                                         GMV.QT.values[k], GMV.QL.values[k], 0.0)
+            GMV.U.set_bcs(Gr)
+            GMV.QT.set_bcs(Gr)
+            GMV.H.set_bcs(Gr)
+            GMV.T.set_bcs(Gr)
+            GMV.satadjust()
+
+            return
+    cpdef initialize_surface(self, Grid Gr, ReferenceState Ref):
+        self.Sur.zrough = 1.0e-3 # This is what the LES uses and close to what we get using windspeed formula
+        if self.location == 12:
+            self.Sur.Tsurface = 290.0
+        elif self.location == 11:
+            self.Sur.Tsurface = 292.0
+        elif self.location == 6:
+            self.Sur.Tsurface = 299.0
+        # Adjust surface temperature for climate change experiments
+        self.Sur.Tsurface += 3.0 * log2(self.co2_factor)
+        self.Sur.qsurface = qv_star_t(Ref.Pg, self.Sur.Tsurface)
+        self.Sur.ustar_fixed = False # this flag isn't actually used by the MO scheme
+        self.Sur.Gr = Gr
+        self.Sur.Ref = Ref
+        self.Sur.initialize()
+        return
+    cpdef initialize_forcing(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV):
+        cdef:
+            Py_ssize_t k
+            double divergence
+        self.Fo.Gr = Gr
+        self.Fo.Ref = Ref
+        self.Fo.initialize(GMV)
+
+        # setting some values
+        if self.location == 12:
+            divergence = 6.0e-6
+            self.coriolis_param = 2.0 * omega * sin(34.5/180.0*pi)
+        elif self.location == 11:
+            divergence = 3.5e-6
+            self.coriolis_param = 2.0 * omega * sin(31.5/180.0*pi)
+        elif self.location == 6:
+            divergence = 2.0e-6
+            self.coriolis_param = 2.0 * omega * sin(16.5/180.0*pi)
+
+        # Current climate/control advection forcing values (modified below for climate change)
+        self.t_adv_max = -1.2/86400.0  # K/s BL tendency of temperature due to horizontal advection
+        self.qt_adv_max = -0.6e-3/86400.0 # kg/kg/s BL tendency of qt due to horizontal advection
+
+
+        self.Fo.ug =  np.interp(Ref.p0_half, np.flipud(self.FoRef.pressure),
+                                    np.flipud(self.FoRef.u))
+        self.Fo.vg=  np.interp(Ref.p0_half, np.flipud(self.FoRef.pressure),
+                            np.flipud(self.FoRef.v))
+
+        cdef:
+            double sub_factor = divergence/(Ref.Pg*Ref.Pg)/g  #* self.divergence_factor
+
+
+        for k in xrange(Gr.nzg):
+            self.Fo.subsidence[k]= sub_factor * (Ref.p0_half[k] - Ref.Pg) \
+                                   * Ref.p0_half[k] * Ref.p0_half[k] * Ref.alpha0_half[k]
+
+            #Set large scale cooling
+            if Ref.p0_half[k] > 900.0e2:
+                self.Fo.dTdt[k] = self.t_adv_max
+                self.Fo.dqtdt[k] = self.qt_adv_max
+            elif  Ref.p0_half[k]< 800.0e2:
+                self.Fo.dTdt[k] = 0.0
+                self.Fo.dqtdt[k] = 0.0
+            else:
+                self.Fo.dTdt[k] = self.t_adv_max * (Ref.p0_half[k]-800.0e2)/(900.0e2-800.0e2)
+                self.Fo.dqtdt[k] = self.qt_adv_max * (Ref.p0_half[k]-800.0e2)/(900.0e2-800.0e2)
+
+        #Instantiate the nudging class
+        self.Nud = Nudging.NudgingStandard(Gr, Ref, self.FoRef)
+        # Set some nudging related values
+        self.tau_relax_inverse = 1.0/(6.0*3600)
+        # relaxation time scale. Note this differs from Tan et al 2016 but is consistent with Zhihong's code. Due to the
+        # way he formulates the relaxation coefficient formula, effective timescale in FT is about 24 hr
+        self.alpha_h = 1.2 # ad hoc qt/qt_ref threshold ratio for determining BL height
+
+        return
+
+    cpdef initialize_io(self, NetCDFIO_Stats Stats):
+        CasesBase.initialize_io(self, Stats)
+        return
+    cpdef io(self, NetCDFIO_Stats Stats):
+        CasesBase.io(self,Stats)
+        return
+    cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS):
+        self.Sur.update(GMV)
+        return
     cpdef update_forcing(self, GridMeanVariables GMV, TimeStepping TS):
         self.Fo.update(GMV)
         return

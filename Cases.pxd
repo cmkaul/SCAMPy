@@ -12,6 +12,7 @@ cdef class CasesBase:
         str inversion_option
         SurfaceBase Sur
         ForcingBase Fo
+        RadiationBase Ra
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats)
     cpdef initialize_profiles(self, Grid Gr, GridMeanVariables GMV, ReferenceState Ref )
     cpdef initialize_surface(self, Grid Gr,  ReferenceState Ref )
@@ -105,6 +106,27 @@ cdef class GATE_III(CasesBase):
 # doi: 10.1175/MWR2930.1
 
 cdef class DYCOMS_RF01(CasesBase):
+    cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats)
+    cpdef initialize_profiles(self, Grid Gr, GridMeanVariables GMV, ReferenceState Ref )
+    cpdef initialize_surface(self, Grid Gr,  ReferenceState Ref )
+    cpdef initialize_forcing(self, Grid Gr,  ReferenceState Ref, GridMeanVariables GMV )
+    cpdef initialize_io(self, NetCDFIO_Stats Stats)
+    cpdef io(self, NetCDFIO_Stats Stats)
+    cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS)
+    cpdef update_forcing(self, GridMeanVariables GMV, TimeStepping TS)
+
+cdef class ZGILS(CasesBase):
+    cdef:
+        Py_ssize_t location
+        double co2_factor
+        ForcingReferenceBase FoRef
+        SurfaceBudget SurBud
+        NudgingBase Nud
+        double t_adv_max
+        double qt_adv_max
+        double alpha_h
+        double tau_relax_inverse
+
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats)
     cpdef initialize_profiles(self, Grid Gr, GridMeanVariables GMV, ReferenceState Ref )
     cpdef initialize_surface(self, Grid Gr,  ReferenceState Ref )
