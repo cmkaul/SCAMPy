@@ -7,6 +7,7 @@
 import numpy as np
 include "parameters.pxi"
 from thermodynamic_functions cimport  *
+from microphysics_functions cimport  *
 import cython
 cimport Grid
 cimport ReferenceState
@@ -70,6 +71,7 @@ cdef class UpdraftVariables:
         self.Area = UpdraftVariable(nu, nzg, 'full', 'scalar', 'area_fraction','[-]' )
         self.QT = UpdraftVariable(nu, nzg, 'half', 'scalar', 'qt','kg/kg' )
         self.QL = UpdraftVariable(nu, nzg, 'half', 'scalar', 'ql','kg/kg' )
+        self.QR = UpdraftVariable(nu, nzg, 'half', 'scalar', 'qr','kg/kg' )
         if namelist['thermodynamics']['thermal_variable'] == 'entropy':
             self.H = UpdraftVariable(nu, nzg, 'half', 'scalar', 's','J/kg/K' )
         elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
@@ -118,13 +120,14 @@ cdef class UpdraftVariables:
                         self.Area.values[i,k] = self.updraft_fraction/self.n_updrafts
                     self.QT.values[i,k] = GMV.QT.values[k]
                     self.QL.values[i,k] = GMV.QL.values[k]
+                    self.QR.values[i,k] = GMV.QR.values[k]
                     self.H.values[i,k] = GMV.H.values[k]
                     self.T.values[i,k] = GMV.T.values[k]
                     self.B.values[i,k] = 0.0
                 self.Area.values[i,gw] = self.updraft_fraction/self.n_updrafts
 
-
         self.QT.set_bcs(self.Gr)
+        self.QR.set_bcs(self.Gr)
         self.H.set_bcs(self.Gr)
 
         return
@@ -134,6 +137,7 @@ cdef class UpdraftVariables:
         Stats.add_profile('updraft_w')
         Stats.add_profile('updraft_qt')
         Stats.add_profile('updraft_ql')
+        Stats.add_profile('updraft_qr')
         if self.H.name == 'thetal':
             Stats.add_profile('updraft_thetal')
         else:
@@ -157,6 +161,7 @@ cdef class UpdraftVariables:
         self.W.bulkvalues[:] = 0.0
         self.QT.bulkvalues[:] = 0.0
         self.QL.bulkvalues[:] = 0.0
+        self.QR.bulkvalues[:] = 0.0
         self.H.bulkvalues[:] = 0.0
         self.T.bulkvalues[:] = 0.0
         self.B.bulkvalues[:] = 0.0
@@ -168,6 +173,7 @@ cdef class UpdraftVariables:
                     for i in xrange(self.n_updrafts):
                         self.QT.bulkvalues[k] += self.Area.values[i,k] * self.QT.values[i,k]/self.Area.bulkvalues[k]
                         self.QL.bulkvalues[k] += self.Area.values[i,k] * self.QL.values[i,k]/self.Area.bulkvalues[k]
+                        self.QR.bulkvalues[k] += self.Area.values[i,k] * self.QR.values[i,k]/self.Area.bulkvalues[k]
                         self.H.bulkvalues[k] += self.Area.values[i,k] * self.H.values[i,k]/self.Area.bulkvalues[k]
                         self.T.bulkvalues[k] += self.Area.values[i,k] * self.T.values[i,k]/self.Area.bulkvalues[k]
                         self.B.bulkvalues[k] += self.Area.values[i,k] * self.B.values[i,k]/self.Area.bulkvalues[k]
@@ -175,6 +181,7 @@ cdef class UpdraftVariables:
                                             /(self.Area.bulkvalues[k] + self.Area.bulkvalues[k+1]))
                 else:
                     self.QT.bulkvalues[k] = GMV.QT.values[k]
+                    self.QR.bulkvalues[k] = GMV.QR.values[k]
                     self.QL.bulkvalues[k] = 0.0
                     self.H.bulkvalues[k] = GMV.H.values[k]
                     self.T.bulkvalues[k] = GMV.T.values[k]
@@ -191,6 +198,7 @@ cdef class UpdraftVariables:
                     self.Area.new[i,k] = self.Area.values[i,k]
                     self.QT.new[i,k] = self.QT.values[i,k]
                     self.QL.new[i,k] = self.QL.values[i,k]
+                    self.QR.new[i,k] = self.QR.values[i,k]
                     self.H.new[i,k] = self.H.values[i,k]
                     self.THL.new[i,k] = self.THL.values[i,k]
                     self.T.new[i,k] = self.T.values[i,k]
@@ -206,6 +214,7 @@ cdef class UpdraftVariables:
                     self.Area.old[i,k] = self.Area.values[i,k]
                     self.QT.old[i,k] = self.QT.values[i,k]
                     self.QL.old[i,k] = self.QL.values[i,k]
+                    self.QR.old[i,k] = self.QR.values[i,k]
                     self.H.old[i,k] = self.H.values[i,k]
                     self.THL.old[i,k] = self.THL.values[i,k]
                     self.T.old[i,k] = self.T.values[i,k]
@@ -220,6 +229,7 @@ cdef class UpdraftVariables:
                     self.Area.values[i,k] = self.Area.new[i,k]
                     self.QT.values[i,k] = self.QT.new[i,k]
                     self.QL.values[i,k] = self.QL.new[i,k]
+                    self.QR.values[i,k] = self.QR.new[i,k]
                     self.H.values[i,k] = self.H.new[i,k]
                     self.THL.values[i,k] = self.THL.new[i,k]
                     self.T.values[i,k] = self.T.new[i,k]
@@ -238,6 +248,7 @@ cdef class UpdraftVariables:
         Stats.write_profile('updraft_w', self.W.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('updraft_qt', self.QT.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('updraft_ql', self.QL.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        Stats.write_profile('updraft_qr', self.QR.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         if self.H.name == 'thetal':
             Stats.write_profile('updraft_thetal', self.H.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         else:
@@ -359,29 +370,32 @@ cdef class UpdraftMicrophysics:
         self.prec_source_h_tot = np.zeros((Gr.nzg,), dtype=np.double, order='c')
         self.prec_source_qt_tot = np.zeros((Gr.nzg,), dtype=np.double, order='c')
         return
+
     cpdef compute_sources(self, UpdraftVariables UpdVar):
+        """
+        Compute precipitation source terms for QT, QR and H
+        """
         cdef:
             Py_ssize_t k, i
-            double psat, qsat, lh
-
+            double tmp_qr
 
         with nogil:
             for i in xrange(self.n_updraft):
                 for k in xrange(self.Gr.nzg):
-                    lh = latent_heat(UpdVar.T.values[i,k])
-                    psat = pv_star(UpdVar.T.values[i,k])
-                    qsat = qv_star_c(self.Ref.p0_half[k], UpdVar.QT.values[i,k], psat)
+                    tmp_qr = acnv_instant(UpdVar.QL.values[i,k], UpdVar.QT.values[i,k], self.max_supersaturation,\
+                                          UpdVar.T.values[i,k], self.Ref.p0_half[k])
+                    self.prec_source_qt[i,k] = -tmp_qr
+                    self.prec_source_h[i,k]  = rain_source_to_thetal(tmp_qr, self.Ref.p0_half[k], UpdVar.T.values[i,k]) 
 
-                    self.prec_source_qt[i,k] = -fmax(0.0, UpdVar.QL.values[i,k] - self.max_supersaturation*qsat )
-                    self.prec_source_h[i,k] = -self.prec_source_qt[i,k] /exner_c(self.Ref.p0_half[k]) * lh/cpd
-
-
-        self.prec_source_h_tot = np.sum(np.multiply(self.prec_source_h,UpdVar.Area.values), axis=0)
-        self.prec_source_qt_tot = np.sum(np.multiply(self.prec_source_qt,UpdVar.Area.values), axis=0)
+        self.prec_source_h_tot  = np.sum(np.multiply(self.prec_source_h,  UpdVar.Area.values), axis=0)
+        self.prec_source_qt_tot = np.sum(np.multiply(self.prec_source_qt, UpdVar.Area.values), axis=0)
 
         return
 
     cpdef update_updraftvars(self, UpdraftVariables UpdVar):
+        """
+        Apply precipitation source terms to QL, QR and H
+        """
         cdef:
             Py_ssize_t k, i
 
@@ -390,23 +404,23 @@ cdef class UpdraftMicrophysics:
                 for k in xrange(self.Gr.nzg):
                     UpdVar.QT.values[i,k] += self.prec_source_qt[i,k]
                     UpdVar.QL.values[i,k] += self.prec_source_qt[i,k]
+                    UpdVar.QR.values[i,k] -= self.prec_source_qt[i,k]
                     UpdVar.H.values[i,k] += self.prec_source_h[i,k]
-
         return
 
-    cdef void compute_update_combined_local_thetal(self, double p0, double t, double *qt, double *ql, double *h,
-                                                   Py_ssize_t i, Py_ssize_t k) nogil:
-        cdef:
-            double psat, qsat, lh
+    cdef void compute_update_combined_local_thetal(self, double p0, double T, double *qt, double *ql, double *qr, double *h,
+                                               Py_ssize_t i, Py_ssize_t k) nogil :
+
         # Language note: array indexing must be used to dereference pointers in Cython. * notation (C-style dereferencing)
         # is reserved for packing tuples
-        lh = latent_heat(t)
-        psat = pv_star(t)
-        qsat = qv_star_c(p0, qt[0], psat)
-        self.prec_source_qt[i,k] = -fmax(0.0, ql[0] - self.max_supersaturation*qsat )
-        self.prec_source_h[i,k] = -self.prec_source_qt[i,k] /exner_c(p0) * lh/cpd
+
+        tmp_qr =  acnv_instant(ql[0], qt[0], self.max_supersaturation, T, p0)
+        self.prec_source_qt[i,k] = -tmp_qr
+        self.prec_source_h[i,k]  = rain_source_to_thetal(tmp_qr, p0, T) 
+
         qt[0] += self.prec_source_qt[i,k]
         ql[0] += self.prec_source_qt[i,k]
-        h[0] += self.prec_source_h[i,k]
+        qr[0] -= self.prec_source_qt[i,k]
+        h[0]  += self.prec_source_h[i,k]
 
         return
