@@ -11,6 +11,7 @@ cimport Forcing
 cimport Nudging
 cimport ForcingReference
 cimport SurfaceBudget
+cimport Radiation
 from NetCDFIO cimport NetCDFIO_Stats
 from thermodynamic_functions cimport *
 import math as mt
@@ -52,6 +53,15 @@ cdef class CasesBase:
         return
     cpdef initialize_forcing(self, Grid Gr,  ReferenceState Ref, GridMeanVariables GMV):
         return
+    cpdef initialize_radiation(self, Grid Gr, ReferenceState Ref ):
+        return
+    cpdef initialize(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV, NetCDFIO_Stats Stats):
+        self.initialize_reference(Gr, Ref, Stats)
+        self.initialize_profiles(Gr, GMV, Ref)
+        self.initialize_surface(Gr,Ref)
+        self.initialize_forcing(Gr,Ref,GMV)
+        self.initialize_radiation(Gr, Ref)
+        return
     cpdef initialize_io(self, NetCDFIO_Stats Stats):
         Stats.add_ts('Tsurface')
         Stats.add_ts('shf')
@@ -68,6 +78,13 @@ cdef class CasesBase:
         return
     cpdef update_forcing(self, GridMeanVariables GMV,  TimeStepping TS):
         return
+    cpdef update_radiation(self, GridMeanVariables GMV, TimeStepping TS):
+        return
+    cpdef update(self, GridMeanVariables GMV, TimeStepping TS):
+        self.update_surface(GMV, TS)
+        self.update_forcing(GMV, TS)
+        self.update_radiation(GMV, TS)
+        return
 
 
 cdef class Soares(CasesBase):
@@ -75,6 +92,7 @@ cdef class Soares(CasesBase):
         self.casename = 'Soares2004'
         self.Sur = Surface.SurfaceFixedFlux(paramlist)
         self.Fo = Forcing.ForcingNone()
+        self.Ra = Radiation.RadiatioNone()
         self.inversion_option = 'critical_Ri'
         self.Fo.apply_coriolis = False
         self.Fo.apply_subsidence = False
@@ -141,7 +159,16 @@ cdef class Soares(CasesBase):
         self.Fo.Ref = Ref
         self.Fo.initialize(GMV)
         return
-
+    cpdef initialize_radiation(self, Grid Gr, ReferenceState Ref ):
+        self.Ra.initialize(Gr,Ref)
+        return
+    cpdef initialize(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV, NetCDFIO_Stats Stats):
+        self.initialize_reference(Gr, Ref, Stats)
+        self.initialize_profiles(Gr, GMV, Ref)
+        self.initialize_surface(Gr,Ref)
+        self.initialize_forcing(Gr,Ref,GMV)
+        self.initialize_radiation(Gr, Ref)
+        return
     cpdef initialize_io(self, NetCDFIO_Stats Stats):
         CasesBase.initialize_io(self, Stats)
         return
@@ -155,12 +182,20 @@ cdef class Soares(CasesBase):
     cpdef update_forcing(self, GridMeanVariables GMV, TimeStepping TS):
         self.Fo.update(GMV)
         return
-
+    cpdef update_radiation(self, GridMeanVariables GMV, TimeStepping TS):
+        self.Ra.update(GMV,TS)
+        return
+    cpdef update(self, GridMeanVariables GMV, TimeStepping TS):
+        self.update_surface(GMV, TS)
+        self.update_forcing(GMV, TS)
+        self.update_radiation(GMV, TS)
+        return
 cdef class Bomex(CasesBase):
     def __init__(self, paramlist):
         self.casename = 'Bomex'
         self.Sur = Surface.SurfaceFixedFlux(paramlist)
         self.Fo = Forcing.ForcingStandard()
+        self.Ra = Radiation.RadiationNone()
         self.inversion_option = 'critical_Ri'
         self.Fo.apply_coriolis = True
         self.Fo.coriolis_param = 0.376e-4 # s^{-1}
@@ -264,7 +299,16 @@ cdef class Bomex(CasesBase):
             if Gr.z_half[k] > 1500.0 and Gr.z_half[k] <= 2100.0:
                 self.Fo.subsidence[k] = -0.65/100 + (Gr.z_half[k] - 1500.0)* (0.0 - -0.65/100.0)/(2100.0 - 1500.0)
         return
-
+    cpdef initialize_radiation(self, Grid Gr, ReferenceState Ref ):
+        self.Ra.initialize(Gr, Ref)
+        return
+    cpdef initialize(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV, NetCDFIO_Stats Stats):
+        self.initialize_reference(Gr, Ref, Stats)
+        self.initialize_profiles(Gr, GMV, Ref)
+        self.initialize_surface(Gr,Ref)
+        self.initialize_forcing(Gr,Ref,GMV)
+        self.initialize_radiation(Gr, Ref)
+        return
     cpdef initialize_io(self, NetCDFIO_Stats Stats):
         CasesBase.initialize_io(self, Stats)
         return
@@ -277,7 +321,14 @@ cdef class Bomex(CasesBase):
     cpdef update_forcing(self, GridMeanVariables GMV, TimeStepping TS):
         self.Fo.update(GMV)
         return
-
+    cpdef update_radiation(self, GridMeanVariables GMV, TimeStepping TS):
+        self.Ra.update(GMV,TS)
+        return
+    cpdef update(self, GridMeanVariables GMV, TimeStepping TS):
+        self.update_surface(GMV, TS)
+        self.update_forcing(GMV, TS)
+        self.update_radiation(GMV, TS)
+        return
 cdef class life_cycle_Tan2018(CasesBase):
     # Taken from: "An extended eddy- diffusivity mass-flux scheme for unified representation of subgrid-scale turbulence and convection"
     # Tan, Z., Kaul, C. M., Pressel, K. G., Cohen, Y., Schneider, T., & Teixeira, J. (2018).
@@ -287,6 +338,7 @@ cdef class life_cycle_Tan2018(CasesBase):
         self.casename = 'life_cycle_Tan2018'
         self.Sur = Surface.SurfaceFixedFlux(paramlist)
         self.Fo = Forcing.ForcingStandard()
+        self.Ra = Radiation.RadiationNone()
         self.inversion_option = 'critical_Ri'
         self.Fo.apply_coriolis = True
         self.Fo.coriolis_param = 0.376e-4 # s^{-1}
@@ -391,7 +443,16 @@ cdef class life_cycle_Tan2018(CasesBase):
             if Gr.z_half[k] > 1500.0 and Gr.z_half[k] <= 2100.0:
                 self.Fo.subsidence[k] = -0.65/100 + (Gr.z_half[k] - 1500.0)* (0.0 - -0.65/100.0)/(2100.0 - 1500.0)
         return
-
+    cpdef initialize_radiation(self, Grid Gr, ReferenceState Ref ):
+        self.Ra.initialize(Gr, Ref)
+        return
+    cpdef initialize(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV, NetCDFIO_Stats Stats):
+        self.initialize_reference(Gr, Ref, Stats)
+        self.initialize_profiles(Gr, GMV, Ref)
+        self.initialize_surface(Gr,Ref)
+        self.initialize_forcing(Gr,Ref,GMV)
+        self.initialize_radiation(Gr, Ref)
+        return
     cpdef initialize_io(self, NetCDFIO_Stats Stats):
         CasesBase.initialize_io(self, Stats)
         return
@@ -410,12 +471,20 @@ cdef class life_cycle_Tan2018(CasesBase):
     cpdef update_forcing(self, GridMeanVariables GMV,  TimeStepping TS):
         self.Fo.update(GMV)
         return
-
+    cpdef update_radiation(self, GridMeanVariables GMV, TimeStepping TS):
+        self.Ra.update(GMV,TS)
+        return
+    cpdef update(self, GridMeanVariables GMV, TimeStepping TS):
+        self.update_surface(GMV, TS)
+        self.update_forcing(GMV, TS)
+        self.update_radiation(GMV, TS)
+        return
 cdef class Rico(CasesBase):
     def __init__(self, paramlist):
         self.casename = 'Rico'
         self.Sur = Surface.SurfaceFixedCoeffs(paramlist)
         self.Fo = Forcing.ForcingStandard()
+        self.Ra = Radiation.RadiationNone()
         self.inversion_option = 'critical_Ri'
         self.Fo.apply_coriolis = True
         cdef double latitude = 18.0
@@ -514,7 +583,16 @@ cdef class Rico(CasesBase):
                 self.Fo.subsidence[k] = -0.005
         return
 
-
+    cpdef initialize_radiation(self, Grid Gr, ReferenceState Ref ):
+        self.Ra.initialize(Gr,Ref)
+        return
+    cpdef initialize(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV, NetCDFIO_Stats Stats):
+        self.initialize_reference(Gr, Ref, Stats)
+        self.initialize_profiles(Gr, GMV, Ref)
+        self.initialize_surface(Gr,Ref)
+        self.initialize_forcing(Gr,Ref,GMV)
+        self.initialize_radiation(Gr, Ref)
+        return
     cpdef initialize_io(self, NetCDFIO_Stats Stats):
         CasesBase.initialize_io(self, Stats)
         return
@@ -528,14 +606,22 @@ cdef class Rico(CasesBase):
     cpdef update_forcing(self, GridMeanVariables GMV, TimeStepping TS):
         self.Fo.update(GMV)
         return
-
+    cpdef update_radiation(self, GridMeanVariables GMV, TimeStepping TS):
+        self.Ra.update(GMV,TS)
+        return
+    cpdef update(self, GridMeanVariables GMV, TimeStepping TS):
+        self.update_surface(GMV, TS)
+        self.update_forcing(GMV, TS)
+        self.update_radiation(GMV, TS)
+        return
 cdef class TRMM_LBA(CasesBase):
     # adopted from: "Daytime convective development over land- A model intercomparison based on LBA observations",
     # By Grabowski et al (2006)  Q. J. R. Meteorol. Soc. 132 317-344
     def __init__(self, paramlist):
         self.casename = 'TRMM_LBA'
         self.Sur = Surface.SurfaceFixedFlux(paramlist)
-        self.Fo = Forcing.ForcingStandard() # it was forcing standard
+        self.Fo = Forcing.ForcingStandard()
+        self.Ra = Radiation.RadiationNone()
         self.inversion_option = 'thetal_maxgrad'
         self.Fo.apply_coriolis = False
         self.Fo.apply_subsidence = False
@@ -796,8 +882,16 @@ cdef class TRMM_LBA(CasesBase):
 
 
         return
-
-
+    cpdef initialize_radiation(self, Grid Gr, ReferenceState Ref ):
+        self.Ra.initialize(Gr, Ref)
+        return
+    cpdef initialize(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV, NetCDFIO_Stats Stats):
+        self.initialize_reference(Gr, Ref, Stats)
+        self.initialize_profiles(Gr, GMV, Ref)
+        self.initialize_surface(Gr,Ref)
+        self.initialize_forcing(Gr,Ref,GMV)
+        self.initialize_radiation(Gr, Ref)
+        return
     cpdef initialize_io(self, NetCDFIO_Stats Stats):
         CasesBase.initialize_io(self, Stats)
         return
@@ -842,14 +936,22 @@ cdef class TRMM_LBA(CasesBase):
         self.Fo.update(GMV)
 
         return
-
+    cpdef update_radiation(self, GridMeanVariables GMV, TimeStepping TS):
+        self.Ra.update(GMV,TS)
+        return
+    cpdef update(self, GridMeanVariables GMV, TimeStepping TS):
+        self.update_surface(GMV, TS)
+        self.update_forcing(GMV, TS)
+        self.update_radiation(GMV, TS)
+        return
 cdef class ARM_SGP(CasesBase):
     # adopted from: "Large-eddy simulation of the diurnal cycle of shallow cumulus convection over land",
     # By Brown et al. (2002)  Q. J. R. Meteorol. Soc. 128, 1075-1093
     def __init__(self, paramlist):
         self.casename = 'ARM_SGP'
         self.Sur = Surface.SurfaceFixedFlux(paramlist)
-        self.Fo = Forcing.ForcingStandard() # it was forcing standard
+        self.Fo = Forcing.ForcingStandard()
+        self.Ra = Radiation.RadiationNone()
         self.inversion_option = 'thetal_maxgrad'
         self.Fo.apply_coriolis = True
         self.Fo.coriolis_param = 8.5e-5
@@ -925,8 +1027,16 @@ cdef class ARM_SGP(CasesBase):
             self.Fo.vg[k] = 0.0
 
         return
-
-
+    cpdef initialize_radiation(self, Grid Gr, ReferenceState Ref ):
+        self.Ra.initialize(Gr,Ref)
+        return
+    cpdef initialize(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV, NetCDFIO_Stats Stats):
+        self.initialize_reference(Gr, Ref, Stats)
+        self.initialize_profiles(Gr, GMV, Ref)
+        self.initialize_surface(Gr,Ref)
+        self.initialize_forcing(Gr,Ref,GMV)
+        self.initialize_radiation(Gr, Ref)
+        return
     cpdef initialize_io(self, NetCDFIO_Stats Stats):
         CasesBase.initialize_io(self, Stats)
         return
@@ -973,15 +1083,23 @@ cdef class ARM_SGP(CasesBase):
         self.Fo.update(GMV)
 
         return
+    cpdef update_radiation(self, GridMeanVariables GMV, TimeStepping TS):
+        self.Ra.update(GMV, TS)
+        return
 
-
+    cpdef update(self, GridMeanVariables GMV, TimeStepping TS):
+        self.update_surface(GMV, TS)
+        self.update_forcing(GMV, TS)
+        self.update_radiation(GMV, TS)
+        return
 cdef class GATE_III(CasesBase):
     # adopted from: "Large eddy simulation of Maritime Deep Tropical Convection",
     # By Khairoutdinov et al (2009)  JAMES, vol. 1, article #15
     def __init__(self, paramlist):
         self.casename = 'GATE_III'
         self.Sur = Surface.SurfaceFixedCoeffs(paramlist)
-        self.Fo = Forcing.ForcingStandard() # it was forcing standard
+        self.Fo = Forcing.ForcingStandard()
+        self.Ra = Radiation.RadiationNone()
         self.inversion_option = 'thetal_maxgrad'
         self.Fo.apply_subsidence = False
         self.Fo.apply_coriolis = False
@@ -1086,8 +1204,16 @@ cdef class GATE_III(CasesBase):
         self.Fo.dqtdt = np.interp(Gr.z_half,z_in,Qtend_in)
         self.Fo.dTdt = np.interp(Gr.z_half,z_in,Ttend_in) + np.interp(Gr.z_half,z_in,RAD_in)
         return
-
-
+    cpdef initialize_radiation(self, Grid Gr, ReferenceState Ref ):
+        self.Ra.initialize(Gr,Ref)
+        return
+    cpdef initialize(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV, NetCDFIO_Stats Stats):
+        self.initialize_reference(Gr, Ref, Stats)
+        self.initialize_profiles(Gr, GMV, Ref)
+        self.initialize_surface(Gr,Ref)
+        self.initialize_forcing(Gr,Ref,GMV)
+        self.initialize_radiation(Gr, Ref)
+        return
     cpdef initialize_io(self, NetCDFIO_Stats Stats):
         CasesBase.initialize_io(self, Stats)
         return
@@ -1102,7 +1228,14 @@ cdef class GATE_III(CasesBase):
     cpdef update_forcing(self, GridMeanVariables GMV,  TimeStepping TS):
         self.Fo.update(GMV)
         return
-
+    cpdef update_radiation(self, GridMeanVariables GMV, TimeStepping TS):
+        self.Ra.update(GMV,TS)
+        return
+    cpdef update(self, GridMeanVariables GMV, TimeStepping TS):
+        self.update_surface(GMV, TS)
+        self.update_forcing(GMV, TS)
+        self.update_radiation(GMV, TS)
+        return
 
 cdef class DYCOMS_RF01(CasesBase):
     """
@@ -1115,6 +1248,7 @@ cdef class DYCOMS_RF01(CasesBase):
         self.casename = 'DYCOMS_RF01'
         self.Sur = Surface.SurfaceFixedFlux(paramlist)
         self.Fo = Forcing.ForcingDYCOMS_RF01() # radiation is included in Forcing
+        self.Ra = Radiation.RadiationNone()
         self.inversion_option = 'thetal_maxgrad'
         return
 
@@ -1279,7 +1413,17 @@ cdef class DYCOMS_RF01(CasesBase):
         # radiation is treated as a forcing term (see eq. 3 in Stevens et. al. 2005)
         # cloud-top cooling + cloud-base warming + cooling in free troposphere
         self.Fo.calculate_radiation(GMV)
-
+        return
+    cpdef initialize_radiation(self, Grid Gr, ReferenceState Ref ):
+        self.Ra.initialize(Gr,Ref)
+        return
+    cpdef initialize(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV, NetCDFIO_Stats Stats):
+        self.initialize_reference(Gr, Ref, Stats)
+        self.initialize_profiles(Gr, GMV, Ref)
+        self.initialize_surface(Gr,Ref)
+        self.initialize_forcing(Gr,Ref,GMV)
+        self.initialize_radiation(Gr, Ref)
+        return
     cpdef initialize_io(self, NetCDFIO_Stats Stats):
         CasesBase.initialize_io(self, Stats)
         self.Fo.initialize_io(Stats)
@@ -1297,13 +1441,21 @@ cdef class DYCOMS_RF01(CasesBase):
     cpdef update_forcing(self, GridMeanVariables GMV, TimeStepping TS):
         self.Fo.update(GMV)
         return
-
+    cpdef update_radiation(self, GridMeanVariables GMV, TimeStepping TS):
+        self.Ra.update(GMV, TS)
+        return
+    cpdef update(self, GridMeanVariables GMV, TimeStepping TS):
+        self.update_surface(GMV, TS)
+        self.update_forcing(GMV, TS)
+        self.update_radiation(GMV, TS)
+        return
 
 cdef class ZGILS(CasesBase):
     def __init__(self, namelist, paramlist):
         self.casename = 'ZGILS'
         self.Sur = Surface.SurfaceMoninObukhov(paramlist)
         self.Fo = Forcing.ForcingStandard()
+        self.Ra = Radiation.RadiationRRTM()
         self.inversion_option = 'critical_Ri'
         self.Fo.apply_coriolis = True
         self.Fo.apply_subsidence = True
@@ -1313,6 +1465,16 @@ cdef class ZGILS(CasesBase):
             sys.kill()
         self.co2_factor = namelist['ZGILS']['co2_factor']
         self.FoRef = ForcingReference.ReferenceRCE(self.co2_factor)
+
+        try:
+            self.adjust_qt_adv_co2 = namelist['ZGILS']['adjust_qt_adv_co2']
+        except:
+            self.adjust_qt_adv_co2 = False
+        try:
+            self.adjust_subsidence_co2 = namelist['ZGILS']['adjust_subsidence_co2']
+        except:
+            self.adjust_subsidence_co2 = False
+
         self.SurBud = SurfaceBudget.SurfaceBudget(namelist)
         return
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats):
@@ -1340,28 +1502,28 @@ cdef class ZGILS(CasesBase):
             v =  np.interp(Ref.p0_half, np.flipud(self.FoRef.pressure),
                                     np.flipud(self.FoRef.v))
 
-            with nogil:
-                for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
-                    GMV.U.values[k] = u[k]
-                    GMV.V.values[k] = v[k]
-                    if Ref.p0_half[k] > 920.0e2:
-                        thetal[k] = Ref.Tg/exner_c(Ref.Pg)
-                        GMV.QT.values[k] = Ref.qtg
-                        sa = eos(&t_to_thetali_c,&eos_first_guess_thetal,Ref.p0_half[k], GMV.QT.values[k], thetal[k])
+            # with nogil:
+            for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
+                GMV.U.values[k] = u[k]
+                GMV.V.values[k] = v[k]
+                if Ref.p0_half[k] > 920.0e2:
+                    thetal[k] = Ref.Tg/exner_c(Ref.Pg)
+                    GMV.QT.values[k] = Ref.qtg
+                    sa = eos(t_to_thetali_c,eos_first_guess_thetal,Ref.p0_half[k], GMV.QT.values[k], thetal[k])
 
-                        GMV.T.values[k] = sa.T
-                        GMV.QL.values[k] = sa.ql
-                    else:
-                        thetal[k] = temperature[k]/exner_c(Ref.p0_half[k])
-                        GMV.QT.values[k] = qt[k]
-                        GMV.T.values[k] = temperature[k]
-                        GMV.QL.values[k] = 0.0
-                    GMV.THL.values[k] = thetal[k]
-                    if GMV.H.name =='thetal':
-                        GMV.H.values[k]= thetal[k]
-                    elif GMV.H.name == 's':
-                        GMV.H.values[k] = t_to_entropy_c(Ref.p0_half[k], GMV.T.values[k],
-                                                         GMV.QT.values[k], GMV.QL.values[k], 0.0)
+                    GMV.T.values[k] = sa.T
+                    GMV.QL.values[k] = sa.ql
+                else:
+                    thetal[k] = temperature[k]/exner_c(Ref.p0_half[k])
+                    GMV.QT.values[k] = qt[k]
+                    GMV.T.values[k] = temperature[k]
+                    GMV.QL.values[k] = 0.0
+                GMV.THL.values[k] = thetal[k]
+                if GMV.H.name =='thetal':
+                    GMV.H.values[k]= thetal[k]
+                elif GMV.H.name == 's':
+                    GMV.H.values[k] = t_to_entropy_c(Ref.p0_half[k], GMV.T.values[k],
+                                                     GMV.QT.values[k], GMV.QL.values[k], 0.0)
             GMV.U.set_bcs(Gr)
             GMV.QT.set_bcs(Gr)
             GMV.H.set_bcs(Gr)
@@ -1389,6 +1551,7 @@ cdef class ZGILS(CasesBase):
         cdef:
             Py_ssize_t k
             double divergence
+            double n_double_co2 = log2(self.co2_factor)
         self.Fo.Gr = Gr
         self.Fo.Ref = Ref
         self.Fo.initialize(GMV)
@@ -1404,10 +1567,14 @@ cdef class ZGILS(CasesBase):
             divergence = 2.0e-6
             self.coriolis_param = 2.0 * omega * sin(16.5/180.0*pi)
 
+        if self.adjust_subsidence_co2:
+            divergence = divergence * pow(0.86,n_double_co2)
+
         # Current climate/control advection forcing values (modified below for climate change)
         self.t_adv_max = -1.2/86400.0  # K/s BL tendency of temperature due to horizontal advection
         self.qt_adv_max = -0.6e-3/86400.0 # kg/kg/s BL tendency of qt due to horizontal advection
-
+        if self.adjust_qt_adv_co2:
+            self.qt_adv_max = self.qt_adv_max * pow(1.18, n_double_co2)
 
         self.Fo.ug =  np.interp(Ref.p0_half, np.flipud(self.FoRef.pressure),
                                     np.flipud(self.FoRef.u))
@@ -1434,7 +1601,9 @@ cdef class ZGILS(CasesBase):
                 self.Fo.dqtdt[k] = self.qt_adv_max * (Ref.p0_half[k]-800.0e2)/(900.0e2-800.0e2)
 
         #Instantiate the nudging class
-        self.Nud = Nudging.NudgingStandard(Gr, Ref, self.FoRef)
+        self.Nud = Nudging.NudgingStandard(Gr, Ref, GMV, self.FoRef)
+        self.Nud.nudge_uv = True
+
         # Set some nudging related values
         self.tau_relax_inverse = 1.0/(6.0*3600)
         # relaxation time scale. Note this differs from Tan et al 2016 but is consistent with Zhihong's code. Due to the
@@ -1442,7 +1611,16 @@ cdef class ZGILS(CasesBase):
         self.alpha_h = 1.2 # ad hoc qt/qt_ref threshold ratio for determining BL height
 
         return
-
+    cpdef initialize_radiation(self, Grid Gr, ReferenceState Ref ):
+        self.Ra.initialize(Gr, Ref)
+        return
+    cpdef initialize(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV, NetCDFIO_Stats Stats):
+        self.initialize_reference(Gr, Ref, Stats)
+        self.initialize_profiles(Gr, GMV, Ref)
+        self.initialize_surface(Gr,Ref)
+        self.initialize_forcing(Gr,Ref,GMV)
+        self.initialize_radiation(Gr, Ref)
+        return
     cpdef initialize_io(self, NetCDFIO_Stats Stats):
         CasesBase.initialize_io(self, Stats)
         return
@@ -1454,4 +1632,18 @@ cdef class ZGILS(CasesBase):
         return
     cpdef update_forcing(self, GridMeanVariables GMV, TimeStepping TS):
         self.Fo.update(GMV)
+        # Update relaxation coefficients
+        # Do the nudging (call self.Nud.update)
+
+
+        return
+    cpdef update_radiation(self, GridMeanVariables GMV, TimeStepping TS):
+        self.Ra.update(GMV,TS)
+        return
+
+    cpdef update(self, GridMeanVariables GMV, TimeStepping TS):
+        self.update_surface(GMV, TS)
+        self.update_forcing(GMV, TS)
+        self.update_radiation(GMV, TS)
+        self.SurBud.update(self.Ra, self.Sur, TS)
         return

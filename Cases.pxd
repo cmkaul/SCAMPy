@@ -5,7 +5,10 @@ from Surface cimport SurfaceBase
 from Forcing cimport ForcingBase
 from NetCDFIO cimport  NetCDFIO_Stats
 from TimeStepping cimport  TimeStepping
-
+from Radiation cimport RadiationBase
+from ForcingReference cimport ForcingReferenceBase
+from SurfaceBudget cimport SurfaceBudget
+from Nudging cimport NudgingBase
 cdef class CasesBase:
     cdef:
         str casename
@@ -17,31 +20,40 @@ cdef class CasesBase:
     cpdef initialize_profiles(self, Grid Gr, GridMeanVariables GMV, ReferenceState Ref )
     cpdef initialize_surface(self, Grid Gr,  ReferenceState Ref )
     cpdef initialize_forcing(self, Grid Gr,  ReferenceState Ref, GridMeanVariables GMV )
+    cpdef initialize_radiation(self, Grid Gr,  ReferenceState Ref)
+    cpdef initialize(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV, NetCDFIO_Stats Stats)
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)
     cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef update_forcing(self, GridMeanVariables GMV, TimeStepping TS)
-
+    cpdef update_radiation(self, GridMeanVariables GMV, TimeStepping TS)
+    cpdef update(self, GridMeanVariables GMV, TimeStepping TS)
 cdef class Soares(CasesBase):
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats)
     cpdef initialize_profiles(self, Grid Gr, GridMeanVariables GMV, ReferenceState Ref )
     cpdef initialize_surface(self, Grid Gr,  ReferenceState Ref )
     cpdef initialize_forcing(self, Grid Gr,  ReferenceState Ref, GridMeanVariables GMV )
+    cpdef initialize_radiation(self, Grid Gr,  ReferenceState Ref)
+    cpdef initialize(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV, NetCDFIO_Stats Stats)
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)
     cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef update_forcing(self, GridMeanVariables GMV,  TimeStepping TS)
-
+    cpdef update_radiation(self, GridMeanVariables GMV, TimeStepping TS)
+    cpdef update(self, GridMeanVariables GMV, TimeStepping TS)
 cdef class Bomex(CasesBase):
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats)
     cpdef initialize_profiles(self, Grid Gr, GridMeanVariables GMV, ReferenceState Ref )
     cpdef initialize_surface(self, Grid Gr,  ReferenceState Ref )
     cpdef initialize_forcing(self, Grid Gr,  ReferenceState Ref, GridMeanVariables GMV )
+    cpdef initialize_radiation(self, Grid Gr,  ReferenceState Ref)
+    cpdef initialize(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV, NetCDFIO_Stats Stats)
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)
     cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef update_forcing(self, GridMeanVariables GMV,  TimeStepping TS)
-
+    cpdef update_radiation(self, GridMeanVariables GMV, TimeStepping TS)
+    cpdef update(self, GridMeanVariables GMV, TimeStepping TS)
 cdef class life_cycle_Tan2018(CasesBase):
     cdef:
         double shf0
@@ -50,21 +62,27 @@ cdef class life_cycle_Tan2018(CasesBase):
     cpdef initialize_profiles(self, Grid Gr, GridMeanVariables GMV, ReferenceState Ref )
     cpdef initialize_surface(self, Grid Gr,  ReferenceState Ref )
     cpdef initialize_forcing(self, Grid Gr,  ReferenceState Ref, GridMeanVariables GMV )
+    cpdef initialize_radiation(self, Grid Gr,  ReferenceState Ref)
+    cpdef initialize(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV, NetCDFIO_Stats Stats)
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)
     cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef update_forcing(self, GridMeanVariables GMV, TimeStepping TS)
-
+    cpdef update_radiation(self, GridMeanVariables GMV, TimeStepping TS)
+    cpdef update(self, GridMeanVariables GMV, TimeStepping TS)
 cdef class Rico(CasesBase):
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats)
     cpdef initialize_profiles(self, Grid Gr, GridMeanVariables GMV, ReferenceState Ref )
     cpdef initialize_surface(self, Grid Gr,  ReferenceState Ref )
     cpdef initialize_forcing(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV)
+    cpdef initialize_radiation(self, Grid Gr,  ReferenceState Ref)
+    cpdef initialize(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV, NetCDFIO_Stats Stats)
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)
     cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef update_forcing(self, GridMeanVariables GMV, TimeStepping TS)
-
+    cpdef update_radiation(self, GridMeanVariables GMV, TimeStepping TS)
+    cpdef update(self, GridMeanVariables GMV, TimeStepping TS)
 cdef class TRMM_LBA(CasesBase):
     cdef:
         double [:] rad_time
@@ -74,31 +92,40 @@ cdef class TRMM_LBA(CasesBase):
     cpdef initialize_profiles(self, Grid Gr, GridMeanVariables GMV, ReferenceState Ref )
     cpdef initialize_surface(self, Grid Gr,  ReferenceState Ref )
     cpdef initialize_forcing(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV)
+    cpdef initialize_radiation(self, Grid Gr,  ReferenceState Ref)
+    cpdef initialize(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV, NetCDFIO_Stats Stats)
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)
     cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef update_forcing(self, GridMeanVariables GMV,  TimeStepping TS)
-
+    cpdef update_radiation(self, GridMeanVariables GMV, TimeStepping TS)
+    cpdef update(self, GridMeanVariables GMV, TimeStepping TS)
 cdef class ARM_SGP(CasesBase):
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats)
     cpdef initialize_profiles(self, Grid Gr, GridMeanVariables GMV, ReferenceState Ref )
     cpdef initialize_surface(self, Grid Gr,  ReferenceState Ref )
     cpdef initialize_forcing(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV)
+    cpdef initialize_radiation(self, Grid Gr,  ReferenceState Ref)
+    cpdef initialize(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV, NetCDFIO_Stats Stats)
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)
     cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef update_forcing(self, GridMeanVariables GMV,  TimeStepping TS)
-
+    cpdef update_radiation(self, GridMeanVariables GMV, TimeStepping TS)
+    cpdef update(self, GridMeanVariables GMV, TimeStepping TS)
 cdef class GATE_III(CasesBase):
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats)
     cpdef initialize_profiles(self, Grid Gr, GridMeanVariables GMV, ReferenceState Ref )
     cpdef initialize_surface(self, Grid Gr,  ReferenceState Ref )
     cpdef initialize_forcing(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV)
+    cpdef initialize_radiation(self, Grid Gr,  ReferenceState Ref)
+    cpdef initialize(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV, NetCDFIO_Stats Stats)
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)
     cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef update_forcing(self, GridMeanVariables GMV, TimeStepping TS)
-
+    cpdef update_radiation(self, GridMeanVariables GMV, TimeStepping TS)
+    cpdef update(self, GridMeanVariables GMV, TimeStepping TS)
 # Evaluation of Large-Eddy Simulations via Observations of Nocturnal Marine Stratocumulus
 # Stevens et al
 # Monthly Weather Review 2005
@@ -110,14 +137,19 @@ cdef class DYCOMS_RF01(CasesBase):
     cpdef initialize_profiles(self, Grid Gr, GridMeanVariables GMV, ReferenceState Ref )
     cpdef initialize_surface(self, Grid Gr,  ReferenceState Ref )
     cpdef initialize_forcing(self, Grid Gr,  ReferenceState Ref, GridMeanVariables GMV )
+    cpdef initialize_radiation(self, Grid Gr,  ReferenceState Ref)
+    cpdef initialize(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV, NetCDFIO_Stats Stats)
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)
     cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef update_forcing(self, GridMeanVariables GMV, TimeStepping TS)
-
+    cpdef update_radiation(self, GridMeanVariables GMV, TimeStepping TS)
+    cpdef update(self, GridMeanVariables GMV, TimeStepping TS)
 cdef class ZGILS(CasesBase):
     cdef:
         Py_ssize_t location
+        bint adjust_qt_adv_co2
+        bint adjust_subsidence_co2
         double co2_factor
         ForcingReferenceBase FoRef
         SurfaceBudget SurBud
@@ -131,7 +163,11 @@ cdef class ZGILS(CasesBase):
     cpdef initialize_profiles(self, Grid Gr, GridMeanVariables GMV, ReferenceState Ref )
     cpdef initialize_surface(self, Grid Gr,  ReferenceState Ref )
     cpdef initialize_forcing(self, Grid Gr,  ReferenceState Ref, GridMeanVariables GMV )
+    cpdef initialize_radiation(self, Grid Gr,  ReferenceState Ref)
+    cpdef initialize(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV, NetCDFIO_Stats Stats)
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)
     cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef update_forcing(self, GridMeanVariables GMV, TimeStepping TS)
+    cpdef update_radiation(self, GridMeanVariables GMV, TimeStepping TS)
+    cpdef update(self, GridMeanVariables GMV, TimeStepping TS)
