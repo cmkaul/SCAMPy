@@ -158,6 +158,7 @@ cdef class ZGILS(CasesBase):
         double qt_adv_max
         double alpha_h
         double tau_relax_inverse
+        double h_bl
 
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats)
     cpdef initialize_profiles(self, Grid Gr, GridMeanVariables GMV, ReferenceState Ref )

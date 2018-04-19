@@ -46,6 +46,25 @@ cdef class NudgingStandard(NudgingBase):
 
         return
     cpdef update(self, GridMeanVariables GMV):
+        cdef:
+            Py_ssize_t k
+            double qv
+        with nogil:
+            for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+                self.qt_tendency[k] = self.relax_coeff[k] * (self.qt_ref[k] - GMV.QT.values[k])
+                self.t_tendency[k] = self.relax_coeff[k] * (self.t_ref[k] - GMV.T.values[k])
+                qv = GMV.QT.values[k] - GMV.QL.values[k]
+                self.h_tendency[k] = self.convert_forcing_prog_fp(self.Ref.p0_half[k],GMV.QT.values[k],
+                                                                qv, GMV.T.values[k], self.qt_tendency[k], self.t_tendency[k])
+                GMV.QT.tendencies[k] += self.qt_tendency[k]
+                GMV.H.tendencies[k] += self.h_tendency[k]
+        if self.nudge_uv:
+                with nogil:
+                    for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+                        self.u_tendency[k] = self.relax_coeff[k] * (self.u_ref[k] - GMV.U.values[k])
+                        self.v_tendency[k] = self.relax_coeff[k] * (self.v_ref[k] - GMV.V.values[k])
+                        GMV.U.tendencies[k] += self.u_tendency[k]
+                        GMV.V.tendencies[k] += self.v_tendency[k]
         return
 
 

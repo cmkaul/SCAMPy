@@ -15,7 +15,7 @@ cimport Radiation
 from NetCDFIO cimport NetCDFIO_Stats
 from thermodynamic_functions cimport *
 import math as mt
-from libc.math cimport sqrt, log, fabs,atan, exp, fmax, sin, cos, pow, log2
+from libc.math cimport sqrt, log, fabs,atan, exp, fmax, fmin, sin, cos, pow, log2
 
 def CasesFactory(namelist, paramlist):
     if namelist['meta']['casename'] == 'Soares':
@@ -1484,53 +1484,54 @@ cdef class ZGILS(CasesBase):
         Ref.initialize(Gr, Stats)
         return
     cpdef initialize_profiles(self, Grid Gr, GridMeanVariables GMV, ReferenceState Ref):
-            cdef:
-                double [:] temperature, qt, u, v
-                double [:] thetal = np.zeros((Gr.nzg,), dtype=np.double, order='c')
-                double [:] s = np.zeros((Gr.nzg,), dtype=np.double, order='c')
-                Py_ssize_t k
-                eos_struct sa
+        cdef:
+            double [:] temperature, qt, u, v
+            double [:] thetal = np.zeros((Gr.nzg,), dtype=np.double, order='c')
+            double [:] s = np.zeros((Gr.nzg,), dtype=np.double, order='c')
+            Py_ssize_t k
+            eos_struct sa
 
 
-            temperature = np.interp(Ref.p0_half, np.flipud(self.FoRef.pressure),
+        temperature = np.interp(Ref.p0_half, np.flipud(self.FoRef.pressure),
                                     np.flipud(self.FoRef.temperature))
-            qt =  np.interp(Ref.p0_half, np.flipud(self.FoRef.pressure),
+        qt =  np.interp(Ref.p0_half, np.flipud(self.FoRef.pressure),
                                     np.flipud(self.FoRef.qt))
 
-            u =  np.interp(Ref.p0_half, np.flipud(self.FoRef.pressure),
+        u =  np.interp(Ref.p0_half, np.flipud(self.FoRef.pressure),
                                     np.flipud(self.FoRef.u))
-            v =  np.interp(Ref.p0_half, np.flipud(self.FoRef.pressure),
+        v =  np.interp(Ref.p0_half, np.flipud(self.FoRef.pressure),
                                     np.flipud(self.FoRef.v))
 
-            # with nogil:
-            for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
-                GMV.U.values[k] = u[k]
-                GMV.V.values[k] = v[k]
-                if Ref.p0_half[k] > 920.0e2:
-                    thetal[k] = Ref.Tg/exner_c(Ref.Pg)
-                    GMV.QT.values[k] = Ref.qtg
-                    sa = eos(t_to_thetali_c,eos_first_guess_thetal,Ref.p0_half[k], GMV.QT.values[k], thetal[k])
+        for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
+            GMV.U.values[k] = u[k]
+            GMV.V.values[k] = v[k]
+            if Ref.p0_half[k] > 920.0e2:
+                thetal[k] = Ref.Tg/exner_c(Ref.Pg)
+                GMV.QT.values[k] = Ref.qtg
+                sa = eos(t_to_thetali_c,eos_first_guess_thetal,Ref.p0_half[k],
+                         GMV.QT.values[k], thetal[k])
 
-                    GMV.T.values[k] = sa.T
-                    GMV.QL.values[k] = sa.ql
-                else:
-                    thetal[k] = temperature[k]/exner_c(Ref.p0_half[k])
-                    GMV.QT.values[k] = qt[k]
-                    GMV.T.values[k] = temperature[k]
-                    GMV.QL.values[k] = 0.0
-                GMV.THL.values[k] = thetal[k]
-                if GMV.H.name =='thetal':
-                    GMV.H.values[k]= thetal[k]
-                elif GMV.H.name == 's':
-                    GMV.H.values[k] = t_to_entropy_c(Ref.p0_half[k], GMV.T.values[k],
+                GMV.T.values[k] = sa.T
+                GMV.QL.values[k] = sa.ql
+            else:
+                thetal[k] = temperature[k]/exner_c(Ref.p0_half[k])
+                GMV.QT.values[k] = qt[k]
+                GMV.T.values[k] = temperature[k]
+                GMV.QL.values[k] = 0.0
+            GMV.THL.values[k] = thetal[k]
+            if GMV.H.name =='thetal':
+                GMV.H.values[k]= thetal[k]
+            elif GMV.H.name == 's':
+                GMV.H.values[k] = t_to_entropy_c(Ref.p0_half[k], GMV.T.values[k],
                                                      GMV.QT.values[k], GMV.QL.values[k], 0.0)
-            GMV.U.set_bcs(Gr)
-            GMV.QT.set_bcs(Gr)
-            GMV.H.set_bcs(Gr)
-            GMV.T.set_bcs(Gr)
-            GMV.satadjust()
+        GMV.U.set_bcs(Gr)
+        GMV.QT.set_bcs(Gr)
+        GMV.H.set_bcs(Gr)
+        GMV.T.set_bcs(Gr)
+        GMV.satadjust()
 
-            return
+        return
+
     cpdef initialize_surface(self, Grid Gr, ReferenceState Ref):
         self.Sur.zrough = 1.0e-3 # This is what the LES uses and close to what we get using windspeed formula
         if self.location == 12:
@@ -1631,9 +1632,23 @@ cdef class ZGILS(CasesBase):
         self.Sur.update(GMV)
         return
     cpdef update_forcing(self, GridMeanVariables GMV, TimeStepping TS):
+        cdef:
+            double z_h, factor
         self.Fo.update(GMV)
         # Update relaxation coefficients
         # Do the nudging (call self.Nud.update)
+        self.h_bl = self.Fo.Gr.z_half[self.Fo.Gr.nzg-self.Fo.Gr.gw]
+        for k in xrange(self.Fo.Gr.nzg-self.Fo.Gr.gw, self.Fo.Gr.gw-1, -1):
+            if GMV.QT.values[k] < self.alpha_h * self.Nud.qt_ref[k]:
+                self.h_bl = self.Fo.Gr.z_half[k]
+
+        for k in xrange(self.Fo.Gr.nzg):
+            z_h = self.Fo.Gr.z_half[k]/self.h_bl
+            factor =fmax(fmin((z_h-1.2)/0.3, 1.0), 0.0)
+            self.Nud.relax_coeff[k] = 0.5 * self.tau_relax_inverse * (1-cos(factor))
+        self.Nud.update(GMV)
+
+
 
 
         return
