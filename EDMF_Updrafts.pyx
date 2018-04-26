@@ -79,6 +79,7 @@ cdef class UpdraftVariables:
         self.T = UpdraftVariable(nu, nzg, 'half', 'scalar', 'temperature','K' )
         self.B = UpdraftVariable(nu, nzg, 'half', 'scalar', 'buoyancy','m^2/s^3' )
 
+
         if namelist['turbulence']['scheme'] == 'EDMF_PrognosticTKE':
             try:
                 use_steady_updrafts = namelist['turbulence']['EDMF_PrognosticTKE']['use_steady_updrafts']
@@ -141,6 +142,7 @@ cdef class UpdraftVariables:
             Stats.add_profile('updraft_s')
         Stats.add_profile('updraft_temperature')
         Stats.add_profile('updraft_buoyancy')
+        Stats.add_profile('updraft_cloudfrac')
 
         Stats.add_ts('cloud_cover')
         Stats.add_ts('cloud_base')
@@ -233,6 +235,7 @@ cdef class UpdraftVariables:
             double cloud_base = 99999.0
             double cloud_top = -99999.0
             Py_ssize_t k
+            double [:] cloudfrac = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
 
         Stats.write_profile('updraft_area', self.Area.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('updraft_w', self.W.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
@@ -245,12 +248,14 @@ cdef class UpdraftVariables:
             #Stats.write_profile('updraft_thetal', self.THL.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('updraft_temperature', self.T.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('updraft_buoyancy', self.B.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
-
+        #TODO--this definition of cloud fraction is not correct for multiple updrafts
         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
             if self.QL.bulkvalues[k] >0.0:
                 cloud_cover = fmax(cloud_cover, self.Area.bulkvalues[k])
                 cloud_base = fmin(cloud_base,self.Gr.z_half[k])
                 cloud_top = fmax(cloud_top, self.Gr.z_half[k])
+                cloudfrac[k] = self.Area.bulkvalues[k]
+        Stats.write_profile('updraft_cloudfrac', cloudfrac[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_ts('cloud_cover', cloud_cover)
         Stats.write_ts('cloud_base', cloud_base)
         Stats.write_ts('cloud_top', cloud_top)

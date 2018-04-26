@@ -1466,6 +1466,7 @@ cdef class ZGILS(CasesBase):
         self.co2_factor = namelist['ZGILS']['co2_factor']
         self.FoRef = ForcingReference.ReferenceRCE(self.co2_factor)
 
+
         try:
             self.adjust_qt_adv_co2 = namelist['ZGILS']['adjust_qt_adv_co2']
         except:
@@ -1490,6 +1491,8 @@ cdef class ZGILS(CasesBase):
             double [:] s = np.zeros((Gr.nzg,), dtype=np.double, order='c')
             Py_ssize_t k
             eos_struct sa
+
+        self.FoRef.initialize()
 
 
         temperature = np.interp(Ref.p0_half, np.flipud(self.FoRef.pressure),

@@ -25,5 +25,4 @@ cdef class NudgingStandard(NudgingBase):
         double [:] u_tendency
         double [:] v_tendency
 
-    cpdef initialize(self)
     cpdef update(self, GridMeanVariables GMV)

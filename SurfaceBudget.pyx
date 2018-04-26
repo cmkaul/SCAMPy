@@ -5,8 +5,8 @@
 #cython: cdivision=True
 from TimeStepping cimport TimeStepping
 from Surface cimport SurfaceBase
-from Radiation cimport RadiationBas
-f
+from Radiation cimport RadiationBase
+
 
 include "parameters.pxi"
 
