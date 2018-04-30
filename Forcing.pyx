@@ -59,7 +59,6 @@ cdef class ForcingNone(ForcingBase):
         return
 
 
-
 cdef class ForcingStandard(ForcingBase):
     def __init__(self):
         ForcingBase.__init__(self)
