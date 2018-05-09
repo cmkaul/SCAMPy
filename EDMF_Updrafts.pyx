@@ -239,11 +239,6 @@ cdef class UpdraftVariables:
 
 
     cpdef io(self, NetCDFIO_Stats Stats):
-        cdef:
-            double cloud_cover= 0.0
-            double cloud_base = 99999.0
-            double cloud_top = -99999.0
-            Py_ssize_t k
 
         Stats.write_profile('updraft_area', self.Area.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('updraft_w', self.W.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
@@ -263,8 +258,8 @@ cdef class UpdraftVariables:
         # itself (i.e. no consideration of tilting due to shear) while the updraft classes are assumed to have no overlap
         # at all. Thus total updraft cover is the sum of each updraft's cover
         Stats.write_ts('updraft_cloud_cover', np.sum(self.cloud_cover))
-        Stats.write_ts('updraft_cloud_base', np.amin(cloud_base))
-        Stats.write_ts('updraft_cloud_top', np.amax(cloud_top))
+        Stats.write_ts('updraft_cloud_base', np.amin(self.cloud_base))
+        Stats.write_ts('updraft_cloud_top', np.amax(self.cloud_top))
 
         return
 
@@ -272,11 +267,11 @@ cdef class UpdraftVariables:
         cdef Py_ssize_t i, k
 
         for i in xrange(self.n_updrafts):
-            self.cloud_base[i] = self.Gr.z_half[self.Gr.nzg]
+            self.cloud_base[i] = self.Gr.z_half[self.Gr.nzg-self.Gr.gw-1]
             self.cloud_top[i] = 0.0
             self.cloud_cover[i] = 0.0
             for k in xrange(self.Gr.gw,self.Gr.nzg-self.Gr.gw):
-                if self.QL.values[i,k] > 0.0:
+                if self.QL.values[i,k] > 1e-8 and self.Area.values[i,k] > 1e-3:
                     self.cloud_base[i] = fmin(self.cloud_base[i], self.Gr.z_half[k])
                     self.cloud_top[i] = fmax(self.cloud_top[i], self.Gr.z_half[k])
                     self.cloud_cover[i] = fmax(self.cloud_cover[i], self.Area.values[i,k])
