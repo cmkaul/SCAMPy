@@ -267,6 +267,7 @@ cdef class UpdraftVariables:
         cdef Py_ssize_t i, k
 
         for i in xrange(self.n_updrafts):
+            # Todo check the setting of ghost point z_half
             self.cloud_base[i] = self.Gr.z_half[self.Gr.nzg-self.Gr.gw-1]
             self.cloud_top[i] = 0.0
             self.cloud_cover[i] = 0.0
