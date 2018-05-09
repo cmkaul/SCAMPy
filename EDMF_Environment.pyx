@@ -136,6 +136,11 @@ cdef class EnvironmentVariables:
             Stats.write_profile('env_HQTcov', self.HQTcov.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         if self.EnvThermo_scheme  == 'sommeria_deardorff':
             Stats.write_profile('env_THVvar', self.THVvar.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+
+        #ToDo [suggested by CK for AJ ;]
+        # Add output of environmental cloud fraction, cloud base, cloud top (while the latter can be gleaned from ql profiles
+        # it is more convenient to simply have them in the stats files!
+        # Add the same with respect to the grid mean
         return
 
 cdef class EnvironmentThermodynamics:

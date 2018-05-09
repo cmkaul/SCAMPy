@@ -97,6 +97,7 @@ cdef class UpdraftVariables:
 
         self.cloud_base = np.zeros((nu,), dtype=np.double, order='c')
         self.cloud_top = np.zeros((nu,), dtype=np.double, order='c')
+        self.cloud_cover = np.zeros((nu,), dtype=np.double, order='c')
 
 
         return
@@ -146,9 +147,9 @@ cdef class UpdraftVariables:
         Stats.add_profile('updraft_temperature')
         Stats.add_profile('updraft_buoyancy')
 
-        Stats.add_ts('cloud_cover')
-        Stats.add_ts('cloud_base')
-        Stats.add_ts('cloud_top')
+        Stats.add_ts('updraft_cloud_cover')
+        Stats.add_ts('updraft_cloud_base')
+        Stats.add_ts('updraft_cloud_top')
 
         return
 
@@ -256,28 +257,29 @@ cdef class UpdraftVariables:
             #Stats.write_profile('updraft_thetal', self.THL.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('updraft_temperature', self.T.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('updraft_buoyancy', self.B.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
-
-        for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-            if self.QL.bulkvalues[k] >0.0:
-                cloud_cover = fmax(cloud_cover, self.Area.bulkvalues[k])
-                cloud_base = fmin(cloud_base,self.Gr.z_half[k])
-                cloud_top = fmax(cloud_top, self.Gr.z_half[k])
-        Stats.write_ts('cloud_cover', cloud_cover)
-        Stats.write_ts('cloud_base', cloud_base)
-        Stats.write_ts('cloud_top', cloud_top)
+        self.get_cloud_base_top_cover()
+        # Note definition of cloud cover : each updraft is associated with a cloud cover equal to the maximum
+        # area fraction of the updraft where ql > 0. Each updraft is assumed to have maximum overlap with respect to
+        # itself (i.e. no consideration of tilting due to shear) while the updraft classes are assumed to have no overlap
+        # at all. Thus total updraft cover is the sum of each updraft's cover
+        Stats.write_ts('updraft_cloud_cover', np.sum(self.cloud_cover))
+        Stats.write_ts('updraft_cloud_base', np.amin(cloud_base))
+        Stats.write_ts('updraft_cloud_top', np.amax(cloud_top))
 
         return
 
-    cpdef get_cloud_base_top(self):
+    cpdef get_cloud_base_top_cover(self):
         cdef Py_ssize_t i, k
 
         for i in xrange(self.n_updrafts):
-            self.cloud_base[i] = 99999.0
-            self.cloud_top[i] = -99999.0
+            self.cloud_base[i] = self.Gr.z_half[self.Gr.nzg]
+            self.cloud_top[i] = 0.0
+            self.cloud_cover[i] = 0.0
             for k in xrange(self.Gr.gw,self.Gr.nzg-self.Gr.gw):
                 if self.QL.values[i,k] > 0.0:
                     self.cloud_base[i] = fmin(self.cloud_base[i], self.Gr.z_half[k])
                     self.cloud_top[i] = fmax(self.cloud_top[i], self.Gr.z_half[k])
+                    self.cloud_cover[i] = fmax(self.cloud_cover[i], self.Area.values[i,k])
 
 
         return
