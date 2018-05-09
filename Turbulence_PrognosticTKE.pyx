@@ -1673,7 +1673,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 b[kk] = (self.Ref.rho0_half[k] * ae[k] * dti - self.Ref.rho0_half[k] * ae[k] * whalf[k] * dzi
                          + rho_ae_K_m[k] * dzi * dzi + rho_ae_K_m[k-1] * dzi * dzi
                          + D_env
-                         + self.Ref.rho0_half[k] * ae[k]  * pow(fmax(self.EnvVar.TKE.values[k],0), 0.5)/fmax(self.mixing_length[k],1.0) * self.tke_diss_coeff)
+                         + self.Ref.rho0_half[k] * ae[k]
+                         * pow(fmax(self.EnvVar.TKE.values[k],0), 0.5)/fmax(self.mixing_length[k],1.0) * self.tke_diss_coeff)
                 c[kk] = (self.Ref.rho0_half[k+1] * ae[k+1] * whalf[k+1] * dzi - rho_ae_K_m[k] * dzi * dzi)
                 x[kk] = (self.Ref.rho0_half[k] * ae_old[k] * self.EnvVar.HQTcov.values[k] * dti
                          + self.HQTcov_shear[k] + self.HQTcov_entr_gain[k]) #
