@@ -118,6 +118,7 @@ def Bomex():
     namelist['turbulence']['EDMF_PrognosticTKE']['extrapolate_buoyancy'] = True
     namelist['turbulence']['EDMF_PrognosticTKE']['use_steady_updrafts'] = False
     namelist['turbulence']['EDMF_PrognosticTKE']['use_scalar_var'] = True
+    namelist['turbulence']['EDMF_PrognosticTKE']['mixing length'] = 'thatal variance'
 
     namelist['output'] = {}
     namelist['output']['output_root'] = './'

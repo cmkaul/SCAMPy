@@ -19,7 +19,7 @@ from NetCDFIO cimport NetCDFIO_Stats
 from thermodynamic_functions cimport  *
 from turbulence_functions cimport *
 from utility_functions cimport *
-from libc.math cimport fmax, sqrt, exp, pow, cbrt, fmin
+from libc.math cimport fmax, sqrt, exp, pow, cbrt, fmin, fabs
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 
 cdef class EDMF_PrognosticTKE(ParameterizationBase):
@@ -59,6 +59,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         except:
             self.entr_detr_fp = entr_detr_b_w2
             print('Turbulence--EDMF_PrognosticTKE: defaulting to cloudy entrainment formulation')
+
+        try:
+            if namelist['turbulence']['EDMF_PrognosticTKE']['mixing length'] == 'Ellison_scale':
+                self.mixing_length_fp = 'Ellison_scale' # thetal variance based accounting for for stability
+        except:
+            self.mixing_length_fp = 'tke'
+            print('Turbulence--EDMF_PrognosticTKE: defaulting to tke formulation')
+
         try:
             self.similarity_diffusivity = namelist['turbulence']['EDMF_PrognosticTKE']['use_similarity_diffusivity']
         except:
@@ -522,18 +530,24 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double l1, l2, z_
             double grad, grad2, H
 
-
-        with nogil:
-            for k in xrange(gw, self.Gr.nzg-gw):
-                l1 = tau * sqrt(fmax(self.EnvVar.TKE.values[k],0.0))
-                z_ = self.Gr.z_half[k]
-                if obukhov_length < 0.0: #unstable
-                    l2 = vkb * z_ * ( (1.0 - 100.0 * z_/obukhov_length)**0.2 )
-                elif obukhov_length > 0.0: #stable
-                    l2 = vkb * z_ /  (1. + 2.7 *z_/obukhov_length)
-                else:
-                    l2 = vkb * z_
-                self.mixing_length[k] = fmax( 1.0/(1.0/fmax(l1,1e-10) + 1.0/l2), 1e-3)
+        if self.mixing_length_fp=='Ellison_scale':
+            with nogil:
+                for k in xrange(gw, self.Gr.nzg-gw):
+                    l1 = sqrt(self.EnvVar.Hvar.values[k])*2.0*self.Gr.dz/fmax((self.EnvVar.H.values[k+1]-self.EnvVar.H.values[k-1]),0.001)
+                    l2 = vkb * self.Gr.z_half[k]
+                    self.mixing_length[k] = fmin(fabs(l1),fabs(l2/2.0))
+        else:
+            with nogil:
+                for k in xrange(gw, self.Gr.nzg-gw):
+                    l1 = tau * sqrt(fmax(self.EnvVar.TKE.values[k],0.0))
+                    z_ = self.Gr.z_half[k]
+                    if obukhov_length < 0.0: #unstable
+                        l2 = vkb * z_ * ( (1.0 - 100.0 * z_/obukhov_length)**0.2 )
+                    elif obukhov_length > 0.0: #stable
+                        l2 = vkb * z_ /  (1. + 2.7 *z_/obukhov_length)
+                    else:
+                        l2 = vkb * z_
+                    self.mixing_length[k] = fmax( 1.0/(1.0/fmax(l1,1e-10) + 1.0/l2), 1e-3)
         return
 
     cpdef compute_eddy_diffusivities_tke(self, GridMeanVariables GMV, CasesBase Case):
@@ -883,7 +897,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         self.updraft_pressure_sink[i,k:] = 0.0
                         break
                     # the above lines were replaced by the followings to allow integration above negative w
-                    # the model output is sensitive to the choice of value inthe condition : <= 0.01
+                    # the model output is sensitive to the choice of value in the condition : <= 0.01
                     #     if self.UpdVar.W.new[i,k] <= 0.01:
                     #         self.UpdVar.W.new[i,k] = 0.0
                     #         self.UpdVar.Area.new[i,k+1] = 0.0
