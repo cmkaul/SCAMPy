@@ -7,6 +7,7 @@
 import numpy as np
 include "parameters.pxi"
 from thermodynamic_functions cimport  *
+from microphysics_functions cimport  *
 import cython
 cimport Grid
 cimport ReferenceState
@@ -70,6 +71,7 @@ cdef class UpdraftVariables:
         self.Area = UpdraftVariable(nu, nzg, 'full', 'scalar', 'area_fraction','[-]' )
         self.QT = UpdraftVariable(nu, nzg, 'half', 'scalar', 'qt','kg/kg' )
         self.QL = UpdraftVariable(nu, nzg, 'half', 'scalar', 'ql','kg/kg' )
+        self.QR = UpdraftVariable(nu, nzg, 'half', 'scalar', 'qr','kg/kg' )
         if namelist['thermodynamics']['thermal_variable'] == 'entropy':
             self.H = UpdraftVariable(nu, nzg, 'half', 'scalar', 's','J/kg/K' )
         elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
@@ -96,6 +98,7 @@ cdef class UpdraftVariables:
 
         self.cloud_base = np.zeros((nu,), dtype=np.double, order='c')
         self.cloud_top = np.zeros((nu,), dtype=np.double, order='c')
+        self.cloud_cover = np.zeros((nu,), dtype=np.double, order='c')
 
 
         return
@@ -119,13 +122,14 @@ cdef class UpdraftVariables:
                         self.Area.values[i,k] = self.updraft_fraction/self.n_updrafts
                     self.QT.values[i,k] = GMV.QT.values[k]
                     self.QL.values[i,k] = GMV.QL.values[k]
+                    self.QR.values[i,k] = GMV.QR.values[k]
                     self.H.values[i,k] = GMV.H.values[k]
                     self.T.values[i,k] = GMV.T.values[k]
                     self.B.values[i,k] = 0.0
                 self.Area.values[i,gw] = self.updraft_fraction/self.n_updrafts
 
-
         self.QT.set_bcs(self.Gr)
+        self.QR.set_bcs(self.Gr)
         self.H.set_bcs(self.Gr)
 
         return
@@ -135,6 +139,7 @@ cdef class UpdraftVariables:
         Stats.add_profile('updraft_w')
         Stats.add_profile('updraft_qt')
         Stats.add_profile('updraft_ql')
+        Stats.add_profile('updraft_qr')
         if self.H.name == 'thetal':
             Stats.add_profile('updraft_thetal')
         else:
@@ -144,9 +149,9 @@ cdef class UpdraftVariables:
         Stats.add_profile('updraft_buoyancy')
         Stats.add_profile('updraft_cloudfrac')
 
-        Stats.add_ts('cloud_cover')
-        Stats.add_ts('cloud_base')
-        Stats.add_ts('cloud_top')
+        Stats.add_ts('updraft_cloud_cover')
+        Stats.add_ts('updraft_cloud_base')
+        Stats.add_ts('updraft_cloud_top')
 
         return
 
@@ -159,6 +164,7 @@ cdef class UpdraftVariables:
         self.W.bulkvalues[:] = 0.0
         self.QT.bulkvalues[:] = 0.0
         self.QL.bulkvalues[:] = 0.0
+        self.QR.bulkvalues[:] = 0.0
         self.H.bulkvalues[:] = 0.0
         self.T.bulkvalues[:] = 0.0
         self.B.bulkvalues[:] = 0.0
@@ -170,6 +176,7 @@ cdef class UpdraftVariables:
                     for i in xrange(self.n_updrafts):
                         self.QT.bulkvalues[k] += self.Area.values[i,k] * self.QT.values[i,k]/self.Area.bulkvalues[k]
                         self.QL.bulkvalues[k] += self.Area.values[i,k] * self.QL.values[i,k]/self.Area.bulkvalues[k]
+                        self.QR.bulkvalues[k] += self.Area.values[i,k] * self.QR.values[i,k]/self.Area.bulkvalues[k]
                         self.H.bulkvalues[k] += self.Area.values[i,k] * self.H.values[i,k]/self.Area.bulkvalues[k]
                         self.T.bulkvalues[k] += self.Area.values[i,k] * self.T.values[i,k]/self.Area.bulkvalues[k]
                         self.B.bulkvalues[k] += self.Area.values[i,k] * self.B.values[i,k]/self.Area.bulkvalues[k]
@@ -177,6 +184,7 @@ cdef class UpdraftVariables:
                                             /(self.Area.bulkvalues[k] + self.Area.bulkvalues[k+1]))
                 else:
                     self.QT.bulkvalues[k] = GMV.QT.values[k]
+                    self.QR.bulkvalues[k] = GMV.QR.values[k]
                     self.QL.bulkvalues[k] = 0.0
                     self.H.bulkvalues[k] = GMV.H.values[k]
                     self.T.bulkvalues[k] = GMV.T.values[k]
@@ -193,6 +201,7 @@ cdef class UpdraftVariables:
                     self.Area.new[i,k] = self.Area.values[i,k]
                     self.QT.new[i,k] = self.QT.values[i,k]
                     self.QL.new[i,k] = self.QL.values[i,k]
+                    self.QR.new[i,k] = self.QR.values[i,k]
                     self.H.new[i,k] = self.H.values[i,k]
                     self.THL.new[i,k] = self.THL.values[i,k]
                     self.T.new[i,k] = self.T.values[i,k]
@@ -208,6 +217,7 @@ cdef class UpdraftVariables:
                     self.Area.old[i,k] = self.Area.values[i,k]
                     self.QT.old[i,k] = self.QT.values[i,k]
                     self.QL.old[i,k] = self.QL.values[i,k]
+                    self.QR.old[i,k] = self.QR.values[i,k]
                     self.H.old[i,k] = self.H.values[i,k]
                     self.THL.old[i,k] = self.THL.values[i,k]
                     self.T.old[i,k] = self.T.values[i,k]
@@ -222,6 +232,7 @@ cdef class UpdraftVariables:
                     self.Area.values[i,k] = self.Area.new[i,k]
                     self.QT.values[i,k] = self.QT.new[i,k]
                     self.QL.values[i,k] = self.QL.new[i,k]
+                    self.QR.values[i,k] = self.QR.new[i,k]
                     self.H.values[i,k] = self.H.new[i,k]
                     self.THL.values[i,k] = self.THL.new[i,k]
                     self.T.values[i,k] = self.T.new[i,k]
@@ -230,17 +241,13 @@ cdef class UpdraftVariables:
 
 
     cpdef io(self, NetCDFIO_Stats Stats):
-        cdef:
-            double cloud_cover= 0.0
-            double cloud_base = 99999.0
-            double cloud_top = -99999.0
-            Py_ssize_t k
-            double [:] cloudfrac = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
+
 
         Stats.write_profile('updraft_area', self.Area.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('updraft_w', self.W.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('updraft_qt', self.QT.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('updraft_ql', self.QL.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        Stats.write_profile('updraft_qr', self.QR.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         if self.H.name == 'thetal':
             Stats.write_profile('updraft_thetal', self.H.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         else:
@@ -248,30 +255,31 @@ cdef class UpdraftVariables:
             #Stats.write_profile('updraft_thetal', self.THL.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('updraft_temperature', self.T.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('updraft_buoyancy', self.B.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
-        #TODO--this definition of cloud fraction is not correct for multiple updrafts
-        for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-            if self.QL.bulkvalues[k] >0.0:
-                cloud_cover = fmax(cloud_cover, self.Area.bulkvalues[k])
-                cloud_base = fmin(cloud_base,self.Gr.z_half[k])
-                cloud_top = fmax(cloud_top, self.Gr.z_half[k])
-                cloudfrac[k] = self.Area.bulkvalues[k]
-        Stats.write_profile('updraft_cloudfrac', cloudfrac[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
-        Stats.write_ts('cloud_cover', cloud_cover)
-        Stats.write_ts('cloud_base', cloud_base)
-        Stats.write_ts('cloud_top', cloud_top)
+
+        self.get_cloud_base_top_cover()
+        # Note definition of cloud cover : each updraft is associated with a cloud cover equal to the maximum
+        # area fraction of the updraft where ql > 0. Each updraft is assumed to have maximum overlap with respect to
+        # itself (i.e. no consideration of tilting due to shear) while the updraft classes are assumed to have no overlap
+        # at all. Thus total updraft cover is the sum of each updraft's cover
+        Stats.write_ts('updraft_cloud_cover', np.sum(self.cloud_cover))
+        Stats.write_ts('updraft_cloud_base', np.amin(self.cloud_base))
+        Stats.write_ts('updraft_cloud_top', np.amax(self.cloud_top))
 
         return
 
-    cpdef get_cloud_base_top(self):
+    cpdef get_cloud_base_top_cover(self):
         cdef Py_ssize_t i, k
 
         for i in xrange(self.n_updrafts):
-            self.cloud_base[i] = 99999.0
-            self.cloud_top[i] = -99999.0
+            # Todo check the setting of ghost point z_half
+            self.cloud_base[i] = self.Gr.z_half[self.Gr.nzg-self.Gr.gw-1]
+            self.cloud_top[i] = 0.0
+            self.cloud_cover[i] = 0.0
             for k in xrange(self.Gr.gw,self.Gr.nzg-self.Gr.gw):
-                if self.QL.values[i,k] > 0.0:
+                if self.QL.values[i,k] > 1e-8 and self.Area.values[i,k] > 1e-3:
                     self.cloud_base[i] = fmin(self.cloud_base[i], self.Gr.z_half[k])
                     self.cloud_top[i] = fmax(self.cloud_top[i], self.Gr.z_half[k])
+                    self.cloud_cover[i] = fmax(self.cloud_cover[i], self.Area.values[i,k])
 
 
         return
@@ -364,29 +372,32 @@ cdef class UpdraftMicrophysics:
         self.prec_source_h_tot = np.zeros((Gr.nzg,), dtype=np.double, order='c')
         self.prec_source_qt_tot = np.zeros((Gr.nzg,), dtype=np.double, order='c')
         return
+
     cpdef compute_sources(self, UpdraftVariables UpdVar):
+        """
+        Compute precipitation source terms for QT, QR and H
+        """
         cdef:
             Py_ssize_t k, i
-            double psat, qsat, lh
-
+            double tmp_qr
 
         with nogil:
             for i in xrange(self.n_updraft):
                 for k in xrange(self.Gr.nzg):
-                    lh = latent_heat(UpdVar.T.values[i,k])
-                    psat = pv_star(UpdVar.T.values[i,k])
-                    qsat = qv_star_c(self.Ref.p0_half[k], UpdVar.QT.values[i,k], psat)
+                    tmp_qr = acnv_instant(UpdVar.QL.values[i,k], UpdVar.QT.values[i,k], self.max_supersaturation,\
+                                          UpdVar.T.values[i,k], self.Ref.p0_half[k])
+                    self.prec_source_qt[i,k] = -tmp_qr
+                    self.prec_source_h[i,k]  = rain_source_to_thetal(tmp_qr, self.Ref.p0_half[k], UpdVar.T.values[i,k]) 
 
-                    self.prec_source_qt[i,k] = -fmax(0.0, UpdVar.QL.values[i,k] - self.max_supersaturation*qsat )
-                    self.prec_source_h[i,k] = -self.prec_source_qt[i,k] /exner_c(self.Ref.p0_half[k]) * lh/cpd
-
-
-        self.prec_source_h_tot = np.sum(np.multiply(self.prec_source_h,UpdVar.Area.values), axis=0)
-        self.prec_source_qt_tot = np.sum(np.multiply(self.prec_source_qt,UpdVar.Area.values), axis=0)
+        self.prec_source_h_tot  = np.sum(np.multiply(self.prec_source_h,  UpdVar.Area.values), axis=0)
+        self.prec_source_qt_tot = np.sum(np.multiply(self.prec_source_qt, UpdVar.Area.values), axis=0)
 
         return
 
     cpdef update_updraftvars(self, UpdraftVariables UpdVar):
+        """
+        Apply precipitation source terms to QL, QR and H
+        """
         cdef:
             Py_ssize_t k, i
 
@@ -395,23 +406,23 @@ cdef class UpdraftMicrophysics:
                 for k in xrange(self.Gr.nzg):
                     UpdVar.QT.values[i,k] += self.prec_source_qt[i,k]
                     UpdVar.QL.values[i,k] += self.prec_source_qt[i,k]
+                    UpdVar.QR.values[i,k] -= self.prec_source_qt[i,k]
                     UpdVar.H.values[i,k] += self.prec_source_h[i,k]
-
         return
 
-    cdef void compute_update_combined_local_thetal(self, double p0, double t, double *qt, double *ql, double *h,
-                                                   Py_ssize_t i, Py_ssize_t k) nogil:
-        cdef:
-            double psat, qsat, lh
+    cdef void compute_update_combined_local_thetal(self, double p0, double T, double *qt, double *ql, double *qr, double *h,
+                                               Py_ssize_t i, Py_ssize_t k) nogil :
+
         # Language note: array indexing must be used to dereference pointers in Cython. * notation (C-style dereferencing)
         # is reserved for packing tuples
-        lh = latent_heat(t)
-        psat = pv_star(t)
-        qsat = qv_star_c(p0, qt[0], psat)
-        self.prec_source_qt[i,k] = -fmax(0.0, ql[0] - self.max_supersaturation*qsat )
-        self.prec_source_h[i,k] = -self.prec_source_qt[i,k] /exner_c(p0) * lh/cpd
+
+        tmp_qr =  acnv_instant(ql[0], qt[0], self.max_supersaturation, T, p0)
+        self.prec_source_qt[i,k] = -tmp_qr
+        self.prec_source_h[i,k]  = rain_source_to_thetal(tmp_qr, p0, T) 
+
         qt[0] += self.prec_source_qt[i,k]
         ql[0] += self.prec_source_qt[i,k]
-        h[0] += self.prec_source_h[i,k]
+        qr[0] -= self.prec_source_qt[i,k]
+        h[0]  += self.prec_source_h[i,k]
 
         return

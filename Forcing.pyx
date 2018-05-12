@@ -122,6 +122,9 @@ cdef class ForcingDYCOMS_RF01(ForcingBase):
         cdef:
             Py_ssize_t k
 
+            double zi
+            double rhoi
+
         # find zi (level of 8.0 g/kg isoline of qt)
         for k in xrange(self.Gr.gw, self.Gr.nzg - self.Gr.gw):
             if (GMV.QT.values[k] < 8.0 / 1000):
@@ -193,4 +196,3 @@ cdef class ForcingDYCOMS_RF01(ForcingBase):
         Stats.write_profile('rad_dTdt', self.dTdt[ self.Gr.gw     : self.Gr.nzg - self.Gr.gw])
         Stats.write_profile('rad_flux', self.f_rad[self.Gr.gw + 1 : self.Gr.nzg - self.Gr.gw + 1])
         return
-
