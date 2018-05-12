@@ -4,15 +4,14 @@ from distutils.extension import Extension
 import numpy as np
 import sys
 import platform
+import wget
 import subprocess as sp
 import os.path
 
 
-# Now get include paths from relevant python modules
-# include_path = [mpi4py.get_include()]
 
+# Now get include paths from relevant python modules
 include_path = [np.get_include()]
-# include_path += ['./Csrc']
 
 if sys.platform == 'darwin':
     #Compile flags for MacOSX
@@ -170,7 +169,11 @@ extensions.append(_ext)
 
 
 #Build RRTMG
-#
+# First check if RRTMG has been downloaded
+rrtmg_path = './RRTMG/'
+
+exists_lw = os.path.exists('./')
+
 # rrtmg_compiled = os.path.exists('./RRTMG/rrtmg_build/rrtmg_combined.o')
 # if not rrtmg_compiled:
 #     run_str = 'cd ./RRTMG; '
