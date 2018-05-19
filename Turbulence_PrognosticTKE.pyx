@@ -62,7 +62,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         try:
             if namelist['turbulence']['EDMF_PrognosticTKE']['mixing length'] == 'Ellison_scale':
-                self.mixing_length_fp = 'Ellison_scale' # thetal variance based accounting for for stability
+                if namelist['turbulence']['EDMF_PrognosticTKE']['use_scalar_var']:
+                    self.mixing_length_fp = 'Ellison_scale' # thetal variance based accounting for for stability
+                else:
+                    print 'scalar va riances must be used for Ellison scale mixing length'
+                    return
         except:
             self.mixing_length_fp = 'tke'
             print('Turbulence--EDMF_PrognosticTKE: defaulting to tke formulation')
@@ -487,7 +491,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
     cpdef compute_tke(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
         if self.similarity_diffusivity: # otherwise, we computed mixing length when we computed D_T
-            self.compute_mixing_length(Case.Sur.obukhov_length)
+            self.compute_mixing_length(Case.Sur.obukhov_length, GMV)
 
         self.compute_tke_buoy(GMV)
         self.compute_tke_entr()
@@ -514,28 +518,43 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
 
         self.reset_surface_tke(GMV, Case)
-        self.compute_mixing_length(Case.Sur.obukhov_length)
+        self.compute_mixing_length(Case.Sur.obukhov_length,  GMV)
         return
 
     cpdef update_inversion(self,GridMeanVariables GMV, option):
         ParameterizationBase.update_inversion(self, GMV,option)
         return
 
-    cpdef compute_mixing_length(self, double obukhov_length):
+    cpdef compute_mixing_length(self, double obukhov_length,  GridMeanVariables GMV):
 
         cdef:
             Py_ssize_t k
             Py_ssize_t gw = self.Gr.gw
             double tau =  get_mixing_tau(self.zi, self.wstar)
-            double l1, l2, z_
+            double l1, l2, l3, l4, l5, z_
             double grad, grad2, H
+            double du_high = 0.0
+            double dv_high = 0.0
+            double dw_high = 2.0 * self.EnvVar.W.values[gw]  * self.Gr.dzi
+            double du_low, dv_low, dw_low,
 
         if self.mixing_length_fp=='Ellison_scale':
             with nogil:
                 for k in xrange(gw, self.Gr.nzg-gw):
-                    l1 = sqrt(self.EnvVar.Hvar.values[k])*2.0*self.Gr.dz/fmax((self.EnvVar.H.values[k+1]-self.EnvVar.H.values[k-1]),0.001)
-                    l2 = vkb * self.Gr.z_half[k]
-                    self.mixing_length[k] = fmin(fabs(l1),fabs(l2/2.0))
+                    du_low = du_high
+                    dv_low = dv_high
+                    dw_low = dw_high
+                    du_high = (GMV.U.values[k+1] - GMV.U.values[k]) * self.Gr.dzi
+                    dv_high = (GMV.V.values[k+1] - GMV.V.values[k]) * self.Gr.dzi
+                    dw_high = (self.EnvVar.W.values[k+1] - self.EnvVar.W.values[k]) * self.Gr.dzi
+                    shear = ( pow(interp2pt(du_low, du_high),2.0) +  pow(interp2pt(dv_low, dv_high),2.0)+
+                              pow(interp2pt(dw_low, dw_high),2.0))
+                    l1 = vkb * self.Gr.z_half[k]
+                    l2 = sqrt(self.EnvVar.Hvar.values[k])*2.0*self.Gr.dz/fmax((self.EnvVar.H.values[k+1]-self.EnvVar.H.values[k-1]),0.001)
+                    l3 = sqrt(self.EnvVar.QTvar.values[k])*2.0*self.Gr.dz/fmax((self.EnvVar.QT.values[k+1]-self.EnvVar.QT.values[k-1]),0.001)
+                    l4 = sqrt(self.tke_diss_coeff/self.tke_ed_coeff*self.EnvVar.TKE.values[k]/fmax(fabs(shear),0.01))
+                    l5 = 10000.0 # GCM grid box
+                    self.mixing_length[k] = smooth_minimum(fabs(l1),fabs(l2),fabs(l3),fabs(l4),fabs(l5),10.0)
         else:
             with nogil:
                 for k in xrange(gw, self.Gr.nzg-gw):
@@ -560,7 +579,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         if self.similarity_diffusivity:
             ParameterizationBase.compute_eddy_diffusivities_similarity(self,GMV, Case)
         else:
-            self.compute_mixing_length(Case.Sur.obukhov_length)
+            self.compute_mixing_length(Case.Sur.obukhov_length,  GMV)
             with nogil:
                 for k in xrange(gw, self.Gr.nzg-gw):
                     lm = self.mixing_length[k]
@@ -1419,7 +1438,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         if TS.nstep > 0:
             if self.similarity_diffusivity: # otherwise, we computed mixing length when we computed
-                self.compute_mixing_length(Case.Sur.obukhov_length)
+                self.compute_mixing_length(Case.Sur.obukhov_length, GMV)
 
             self.compute_covariance_entr()
             self.compute_covariance_shear(GMV)
@@ -1447,7 +1466,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 GMV.QTvar.values[k]  = GMV.QTvar.values[self.Gr.gw] * ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
                 GMV.HQTcov.values[k] = GMV.HQTcov.values[self.Gr.gw] * ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
 
-        self.compute_mixing_length(Case.Sur.obukhov_length)
+        self.compute_mixing_length(Case.Sur.obukhov_length, GMV)
 
         return
 
