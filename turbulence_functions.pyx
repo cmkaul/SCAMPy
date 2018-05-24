@@ -40,7 +40,7 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
 cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
-        double wdw_mix, wdw_env
+        double wdw_mix, wdw_env, a1
 
     w_mix = (entr_in.w+entr_in.w_env)/2
     dw_mix = (entr_in.dw+entr_in.dw_env)/2
@@ -62,10 +62,11 @@ cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
     b_up = buoyancy_c(entr_in.alpha0, alpha_up)  - entr_in.b_mean
     wdw_mix = w_mix*dw_mix
     #b_rel = b_up-b_env+(entr_in.w-entr_in.w_env)*(entr_in.w-entr_in.w_env)/40.0
+    a1 = fabs(entr_in.Poisson_rand)
     if bmix==0.0:
         buoyancy_ratio = 0.0
     else:
-        buoyancy_ratio = (bmix-b_env)/fabs(bmix)
+        buoyancy_ratio = (a1*bmix-(1-a1)*b_env)/fabs(bmix)
     # with gil:
     #     print 'T',  entr_in.T_up-entr_in.T_env
     #     print 'qt', entr_in.qt_up - entr_in.qt_env
@@ -78,18 +79,16 @@ cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
     #             print 'Tmix',  bmix
     #             print 'T_env', b_env
 
-    eps_w = (0.12 * fabs(bmix) / fmax(w_mix* w_mix, 1e-2))
-    #eps_w = 1.0/(fmax(w_mix,1.0)* 400)
+    #eps_w = (0.12 * fabs(bmix) / fmax(w_mix* w_mix, 1e-2))
+    eps_w = 0.1/(fmax(w_mix,1.0)* 280)
 
     wdw_env = entr_in.w_env*entr_in.dw_env
     wdw_up = entr_in.w*entr_in.dw
 
     partiation_func = 1.0*(1.0+tanh(buoyancy_ratio))/2.0
     if entr_in.af>0.0:
-        _ret.entr_sc = partiation_func*eps_w#+(1-partiation_func)*1e-3
-        _ret.detr_sc = (1.0-partiation_func)*eps_w#+partiation_func*1e-3
-        with gil:
-            print 'partiation_func', partiation_func #, 'entr', _ret.entr_sc, 'detr', _ret.detr_sc
+        _ret.entr_sc = partiation_func*eps_w+(1-partiation_func)*1e-4
+        _ret.detr_sc = (1.0-partiation_func)*eps_w+partiation_func*1e-4
     else:
         _ret.entr_sc = 0.0
         _ret.detr_sc = 0.0
@@ -142,6 +141,63 @@ cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil:
 
     return  _ret
 
+
+cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
+    cdef:
+        entr_struct _ret
+        double wdw_mix, wdw_env, a1
+
+    w_mix = (entr_in.w+entr_in.w_env)/2
+    dw_mix = (entr_in.dw+entr_in.dw_env)/2
+    T_mean = (entr_in.T_up+entr_in.T_env)/2
+    qt_mix = (entr_in.qt_up+entr_in.qt_env)/2
+    ql_mix = (entr_in.ql_up+entr_in.ql_env)/2
+    qv_mix = qt_mix-ql_mix
+    thetal_ = t_to_thetali_c(entr_in.p0, T_mean,  qt_mix, ql_mix, 0.0)
+
+    evap = evap_sat_adjust(entr_in.p0, thetal_, qt_mix)
+    qv_mix = qt_mix-evap.ql
+    Tmix = evap.T
+    alpha_mix = alpha_c(entr_in.p0, Tmix, qt_mix, qv_mix)
+    bmix = buoyancy_c(entr_in.alpha0, alpha_mix) - entr_in.b_mean
+
+    alpha_env = alpha_c(entr_in.p0, entr_in.T_env, entr_in.qt_env, entr_in.qt_env-entr_in.ql_env)
+    alpha_up = alpha_c(entr_in.p0, entr_in.T_up, entr_in.qt_up, entr_in.qt_up-entr_in.ql_up)
+    b_env = buoyancy_c(entr_in.alpha0, alpha_env)  - entr_in.b_mean
+    b_up = buoyancy_c(entr_in.alpha0, alpha_up)  - entr_in.b_mean
+    wdw_mix = w_mix*dw_mix
+    #b_rel = b_up-b_env+(entr_in.w-entr_in.w_env)*(entr_in.w-entr_in.w_env)/40.0
+    a1 = fabs(entr_in.Poisson_rand)
+    if bmix==0.0:
+        buoyancy_ratio = 0.0
+    else:
+        buoyancy_ratio = (a1*bmix-(1-a1)*b_env)/fabs(bmix)
+    # with gil:
+    #     print 'T',  entr_in.T_up-entr_in.T_env
+    #     print 'qt', entr_in.qt_up - entr_in.qt_env
+    #     print 'ql', entr_in.ql_up-entr_in.ql_env
+
+    # if entr_in.z < entr_in.zi and entr_in.zi < 9999.0:
+    #     if buoyancy_ratio<0.0:
+    #         with gil:
+    #             print buoyancy_ratio
+    #             print 'Tmix',  bmix
+    #             print 'T_env', b_env
+
+    #eps_w = (0.12 * fabs(bmix) / fmax(w_mix* w_mix, 1e-2))
+    eps_w = 0.1/(fmax(w_mix,1.0)* 280)
+
+    wdw_env = entr_in.w_env*entr_in.dw_env
+    wdw_up = entr_in.w*entr_in.dw
+
+    partiation_func = 1.0*(1.0+tanh(buoyancy_ratio))/2.0
+    if entr_in.af>0.0:
+        _ret.entr_sc = partiation_func*eps_w+(1-partiation_func)*1e-4
+        _ret.detr_sc = (1.0-partiation_func)*eps_w+partiation_func*1e-4
+    else:
+        _ret.entr_sc = 0.0
+        _ret.detr_sc = 0.0
+    return  _ret
 
 cdef evap_struct evap_sat_adjust(double p0, double thetal_, double qt_mix) nogil:
     cdef:
