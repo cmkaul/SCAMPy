@@ -78,9 +78,6 @@ cdef class ForcingStandard(ForcingBase):
             GMV.H.tendencies[k] += self.convert_forcing_prog_fp(self.Ref.p0_half[k],GMV.QT.values[k],
                                                                 qv, GMV.T.values[k], self.dqtdt[k], self.dTdt[k])
             GMV.QT.tendencies[k] += self.dqtdt[k]
-            # Apply large-scale subsidence tendencies
-            GMV.H.tendencies[k] -= (GMV.H.values[k+1]-GMV.H.values[k]) * self.Gr.dzi * self.subsidence[k]
-            GMV.QT.tendencies[k] -= (GMV.QT.values[k+1]-GMV.QT.values[k]) * self.Gr.dzi * self.subsidence[k]
         if self.apply_subsidence:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                 # Apply large-scale subsidence tendencies
