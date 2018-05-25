@@ -93,7 +93,8 @@ cdef class EnvironmentVariables:
 
         if (self.EnvThermo_scheme == 'sommeria_deardorff' or self.EnvThermo_scheme == 'sa_quadrature'):
             if (self.use_scalar_var == False and self.use_prescribed_scalar_var == False ):
-                sys.exit('EDMF_Environment.pyx 96: scalar variance has to be specified for Sommeria Deardorff or quadrature saturation')
+                sys.exit('EDMF_Environment.pyx 96: scalar variance has to be specified for Sommeria Deardorff '
+                         'or quadrature saturation')
 
         return
 
