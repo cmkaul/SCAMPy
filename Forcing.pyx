@@ -83,7 +83,6 @@ cdef class ForcingStandard(ForcingBase):
                 GMV.H.tendencies[k] -= (GMV.H.values[k+1]-GMV.H.values[k]) * self.Gr.dzi * self.subsidence[k]
                 GMV.QT.tendencies[k] -= (GMV.QT.values[k+1]-GMV.QT.values[k]) * self.Gr.dzi * self.subsidence[k]
 
-
         if self.apply_coriolis:
             self.coriolis_force(GMV.U, GMV.V)
 
