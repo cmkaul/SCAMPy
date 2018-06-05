@@ -5,7 +5,6 @@
 #cython: cdivision=True
 
 import numpy as np
-cimport numpy as np
 import sys
 include "parameters.pxi"
 import cython
