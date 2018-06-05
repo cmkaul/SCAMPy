@@ -164,7 +164,7 @@ cdef class GridMeanVariables:
             self.use_tke = True
         else:
             self.use_tke = False
- 
+
         try:
             self.use_scalar_var = namelist['turbulence']['EDMF_PrognosticTKE']['use_scalar_var']
         except:
