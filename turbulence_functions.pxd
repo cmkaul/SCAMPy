@@ -6,8 +6,6 @@ cdef struct evap_struct:
     double T
     double ql
 
-
-
 cdef struct entr_in_struct:
     double zi
     double wstar
@@ -41,11 +39,9 @@ cdef entr_struct entr_detr_dry(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_inverse_z(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil
-cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil
 cdef evap_struct evap_sat_adjust(double p0, double thetal_, double qt_mix) nogil
 
-
-
+cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil
 cdef double get_wstar(double bflux, double zi )
 cdef double get_inversion(double *theta_rho, double *u, double *v, double *z_half,
                           Py_ssize_t kmin, Py_ssize_t kmax, double Ri_bulk_crit)

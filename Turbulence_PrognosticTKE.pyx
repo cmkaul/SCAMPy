@@ -21,6 +21,7 @@ from turbulence_functions cimport *
 from utility_functions cimport *
 from libc.math cimport fmax, sqrt, exp, pow, cbrt, fmin, fabs
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
+import sys
 
 cdef class EDMF_PrognosticTKE(ParameterizationBase):
     # Initialize the class
@@ -52,7 +53,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.entr_detr_fp = entr_detr_inverse_w
             elif namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] == 'b_w2':
                 self.entr_detr_fp = entr_detr_b_w2
-            elif namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] == 'buoyancy_sorting':                self.entr_detr_fp = entr_detr_buoyancy_sorting
             else:
                 print('Turbulence--EDMF_PrognosticTKE: Entrainment rate namelist option is not recognized')
         except:
@@ -64,7 +64,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 if namelist['turbulence']['EDMF_PrognosticTKE']['use_scalar_var']:
                     self.mixing_length_fp = 'Ellison_scale' # thetal variance based accounting for for stability
                 else:
-                    print 'scalar va riances must be used for Ellison scale mixing length'
+                    print 'scalar variances must be used for Ellison scale mixing length'
                     return
         except:
             self.mixing_length_fp = 'tke'
@@ -530,12 +530,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Py_ssize_t k
             Py_ssize_t gw = self.Gr.gw
             double tau =  get_mixing_tau(self.zi, self.wstar)
-            double l1, l2, l3, l4, l5, z_
+            double l1, l2, l3, l4, l5, l234, z_
             double grad, grad2, H
             double du_high = 0.0
             double dv_high = 0.0
             double dw_high = 2.0 * self.EnvVar.W.values[gw]  * self.Gr.dzi
-            double du_low, dv_low, dw_low,
+            double du_low, dv_low, dw_low, H_lapse_rate ,QT_lapse_rate
 
         if self.mixing_length_fp=='Ellison_scale':
             with nogil:
@@ -546,14 +546,18 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     du_high = (GMV.U.values[k+1] - GMV.U.values[k]) * self.Gr.dzi
                     dv_high = (GMV.V.values[k+1] - GMV.V.values[k]) * self.Gr.dzi
                     dw_high = (self.EnvVar.W.values[k+1] - self.EnvVar.W.values[k]) * self.Gr.dzi
-                    shear = ( pow(interp2pt(du_low, du_high),2.0) +  pow(interp2pt(dv_low, dv_high),2.0)+
-                              pow(interp2pt(dw_low, dw_high),2.0))
+                    shear = fmax(fabs( pow(interp2pt(du_low, du_high),2.0) +  pow(interp2pt(dv_low, dv_high),2.0)+
+                              pow(interp2pt(dw_low, dw_high),2.0)),1e-10)
+                    H_lapse_rate = fmax(fabs((self.EnvVar.H.values[k+1]-self.EnvVar.H.values[k-1])*0.5*self.Gr.dzi),1e-30)
+                    QT_lapse_rate = fmax(fabs((self.EnvVar.QT.values[k+1]-self.EnvVar.QT.values[k-1])*0.5*self.Gr.dzi),1e-30)
                     l1 = vkb * self.Gr.z_half[k]
-                    l2 = sqrt(self.EnvVar.Hvar.values[k])*2.0*self.Gr.dz/fmax((self.EnvVar.H.values[k+1]-self.EnvVar.H.values[k-1]),0.001)
-                    l3 = sqrt(self.EnvVar.QTvar.values[k])*2.0*self.Gr.dz/fmax((self.EnvVar.QT.values[k+1]-self.EnvVar.QT.values[k-1]),0.001)
-                    l4 = sqrt(self.tke_diss_coeff/self.tke_ed_coeff*self.EnvVar.TKE.values[k]/fmax(fabs(shear),0.01))
-                    l5 = 10000.0 # GCM grid box
-                    self.mixing_length[k] = smooth_minimum(fabs(l1),fabs(l2),fabs(l3),fabs(l4),fabs(l5),10.0)
+                    #l2 = fmin(sqrt(self.tke_diss_coeff/self.tke_ed_coeff*0.5*self.EnvVar.Hvar.values[k]/H_lapse_rate**2),1000.0)
+                    #l2 = fmin(sqrt(self.tke_diss_coeff/self.tke_ed_coeff*0.5*self.EnvVar.QTvar.values[k]/QT_lapse_rate**2),1000.0)
+                    l2 = fmin(sqrt(self.tke_diss_coeff/self.tke_ed_coeff*self.EnvVar.TKE.values[k]/shear),1000.0)
+                    l3 = 10000.0 # GCM grid box
+                    self.mixing_length[k] = smooth_minimum(fabs(l1/self.zi),fabs(l2/self.zi),fabs(l3/self.zi),1.0) #
+                    #self.mixing_length[k] = smooth_minimum(fabs(l1/self.zi),fabs(l2/self.zi),fabs(l3/self.zi),fabs(l4/self.zi),fabs(l5/self.zi),10.0)
+                    self.mixing_length[k] = self.zi*self.mixing_length[k]
         else:
             with nogil:
                 for k in xrange(gw, self.Gr.nzg-gw):
@@ -813,7 +817,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         #with nogil:
         for i in xrange(self.n_updrafts):
             input.zi = self.UpdVar.cloud_base[i]
-            Poisson_rand = np.random.poisson(4,100).astype(np.float)
+            Poisson_rand = np.random.poisson(10.0,self.Gr.nzg).astype(np.float)
+            Poisson_rand= np.clip(Poisson_rand,0.01,100.0)
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                 input.b = self.UpdVar.B.values[i,k]
                 input.b_mean = GMV.B.values[k]
@@ -836,7 +841,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 input.p0 = self.Ref.p0_half[k]
                 input.alpha0 = self.Ref.alpha0_half[k]
                 input.tke_ed_coeff  = self.tke_ed_coeff
-                input.Poisson_rand =  (Poisson_rand[i]-5.0)/10.0
+                input.Poisson_rand = Poisson_rand[k]/10.0
                 input.L = 20000.0 # need to define the scale of the GCM grid resolution
                 ret = self.entr_detr_fp(input)
                 self.entr_sc[i,k] = ret.entr_sc * self.entrainment_factor
