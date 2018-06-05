@@ -99,7 +99,8 @@ cdef mph_struct microphysics(double T, double ql, double p0, double qt,\
 
     _ret.T     = T
     _ret.ql    = ql
-    _ret.thl   = t_to_thetali_c(p0, T, qt, ql, 0.0)  # TODO - check: Before was:   thl_m = sa.T / exner_c(p0)
+    _ret.thl   = t_to_thetali_c(p0, T, qt, ql, 0.0)
+    _ret.th    = theta_c(p0, T)
     _ret.qv    = qt - ql
     _ret.alpha = alpha_c(p0, T, qt, _ret.qv)
     _ret.qr    = 0.0

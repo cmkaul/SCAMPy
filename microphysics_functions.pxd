@@ -1,6 +1,7 @@
 cdef struct mph_struct:
     double T
     double thl
+    double th
     double alpha
     double thl_rain_src
     double qt

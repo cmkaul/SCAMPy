@@ -185,17 +185,17 @@ cdef class EnvironmentThermodynamics:
         EnvVar.B.values[k]   = buoyancy_c(self.Ref.alpha0_half[k], alpha)
         return
 
-    cdef void update_cloud_dry(self, long k, EnvironmentVariables EnvVar, double T, double H, double qt, double ql, double qv) nogil :
+    cdef void update_cloud_dry(self, long k, EnvironmentVariables EnvVar, double T, double th, double qt, double ql, double qv) nogil :
 
         if ql > 0.0:
             EnvVar.CF.values[k] = 1.
-            self.th_cloudy[k]   = H
+            self.th_cloudy[k]   = th
             self.t_cloudy[k]    = T
             self.qt_cloudy[k]   = qt
             self.qv_cloudy[k]   = qv
         else:
             EnvVar.CF.values[k] = 0.
-            self.th_dry[k]      = H
+            self.th_dry[k]      = th
             self.qt_dry[k]      = qt
         return
 
@@ -218,7 +218,7 @@ cdef class EnvironmentThermodynamics:
                 mph = microphysics(sa.T, sa.ql, self.Ref.p0_half[k], EnvVar.QT.values[k], self.max_supersaturation, in_Env)
 
                 self.update_EnvVar(   k, EnvVar, mph.T, mph.thl, mph.qt, mph.ql, mph.qr, mph.alpha)
-                self.update_cloud_dry(k, EnvVar, mph.T, mph.thl, mph.qt, mph.ql, mph.qv)
+                self.update_cloud_dry(k, EnvVar, mph.T, mph.th,  mph.qt, mph.ql, mph.qv)
         return
 
     cdef void eos_update_SA_sgs(self, EnvironmentVariables EnvVar, bint in_Env):
@@ -349,11 +349,11 @@ cdef class EnvironmentThermodynamics:
                     # update cloudy/dry variables for buoyancy in TKE
                     EnvVar.CF.values[k]  = outer_env[i_cf]
                     self.qt_dry[k]    = outer_env[i_qt_dry]
-                    self.th_dry[k]    = outer_env[i_T_dry] / exner_c(self.Ref.p0_half[k])
+                    self.th_dry[k]    = theta_c(self.Ref.p0_half[k], outer_env[i_T_dry])
                     self.t_cloudy[k]  = outer_env[i_T_cld]
                     self.qv_cloudy[k] = outer_env[i_qt_cld] - outer_env[i_ql]
                     self.qt_cloudy[k] = outer_env[i_qt_cld]
-                    self.th_cloudy[k] = outer_env[i_T_cld] / exner_c(self.Ref.p0_half[k])
+                    self.th_cloudy[k] = theta_c(self.Ref.p0_half[k], outer_env[i_T_cld])
                     # update var/covar rain sources
                     if in_Env:
                         self.Hvar_rain_dt[k]   = outer_src[i_SH_H]   - outer_src[i_SH]  * EnvVar.H.values[k]
@@ -367,7 +367,7 @@ cdef class EnvironmentThermodynamics:
                     mph = microphysics(sa.T, sa.ql, self.Ref.p0_half[k], EnvVar.QT.values[k], self.max_supersaturation, in_Env)
 
                     self.update_EnvVar(   k, EnvVar, mph.T, mph.thl, mph.qt, mph.ql, mph.qr, mph.alpha)
-                    self.update_cloud_dry(k, EnvVar, mph.T, mph.thl, mph.qt, mph.ql, mph.qv)
+                    self.update_cloud_dry(k, EnvVar, mph.T, mph.th,  mph.qt, mph.ql, mph.qv)
 
                     if in_Env:
                         self.Hvar_rain_dt[k]   = 0.
