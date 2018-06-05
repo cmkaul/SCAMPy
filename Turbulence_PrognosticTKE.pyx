@@ -278,14 +278,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         #Stats.write_profile('Hvar', self.Hvar[kmin:kmax])
         #Stats.write_profile('QTvar', self.QTvar[kmin:kmax])
         #Stats.write_profile('HQTcov', self.HQTcov[kmin:kmax])
-        self.compute_covariance_dissipation() #TODO
+        self.compute_covariance_dissipation()
         Stats.write_profile('Hvar_dissipation', self.Hvar_dissipation[kmin:kmax])
         Stats.write_profile('QTvar_dissipation', self.QTvar_dissipation[kmin:kmax])
         Stats.write_profile('HQTcov_dissipation', self.HQTcov_dissipation[kmin:kmax])
         Stats.write_profile('Hvar_entr_gain', self.Hvar_entr_gain[kmin:kmax])
         Stats.write_profile('QTvar_entr_gain', self.QTvar_entr_gain[kmin:kmax])
         Stats.write_profile('HQTcov_entr_gain', self.HQTcov_entr_gain[kmin:kmax])
-        self.compute_covariance_detr()  #TODO
+        self.compute_covariance_detr()
         Stats.write_profile('Hvar_detr_loss', self.Hvar_detr_loss[kmin:kmax])
         Stats.write_profile('QTvar_detr_loss', self.QTvar_detr_loss[kmin:kmax])
         Stats.write_profile('HQTcov_detr_loss', self.HQTcov_detr_loss[kmin:kmax])
@@ -485,7 +485,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         self.UpdVar.H.values[i,k] = GMV.H.values[k]
                         self.UpdVar.QT.values[i,k] = GMV.QT.values[k]
                         self.UpdVar.QR.values[i,k] = GMV.QR.values[k]
-                        #TODO wouldnt it be more consistent to have
+                        #TODO wouldnt it be more consistent to have here?
                         #self.UpdVar.QL.values[i,k] = GMV.QL.values[k]
                         #self.UpdVar.T.values[i,k] = GMV.T.values[k]
                         sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[k],
@@ -1430,7 +1430,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.update_covariance_ED(GMV, Case, TS)
         self.cleanup_covariance(GMV) 
         #else: #TODO - its initialized in the update calls
-        #    print "AQQ calling init covariance from compute covariance "
         #    self.initialize_covariance(GMV, Case)
 
         return
@@ -1448,26 +1447,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         with nogil:
             for k in xrange(self.Gr.nzg):
                 z = self.Gr.z_half[k]
-                # need to rethink of how to initilize the covarinace profiles - for nowmI took the TKE profile
-                #GMV.Hvar.values[k]   = GMV.Hvar.values[self.Gr.gw] * ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
-                #GMV.QTvar.values[k]  = GMV.QTvar.values[self.Gr.gw] * ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
-                #GMV.HQTcov.values[k] = GMV.HQTcov.values[self.Gr.gw] * ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
-                GMV.Hvar.values[k]   = GMV.Hvar.values[self.Gr.gw]   * GMV.TKE.values[k] / GMV.TKE.values[self.Gr.gw] 
-                GMV.QTvar.values[k]  = GMV.QTvar.values[self.Gr.gw]  * GMV.TKE.values[k] / GMV.TKE.values[self.Gr.gw] 
-                GMV.HQTcov.values[k] = GMV.HQTcov.values[self.Gr.gw] * GMV.TKE.values[k] / GMV.TKE.values[self.Gr.gw] 
+                GMV.Hvar.values[k]   = GMV.Hvar.values[self.Gr.gw]   * GMV.TKE.values[k] / GMV.TKE.values[self.Gr.gw]
+                GMV.QTvar.values[k]  = GMV.QTvar.values[self.Gr.gw]  * GMV.TKE.values[k] / GMV.TKE.values[self.Gr.gw]
+                GMV.HQTcov.values[k] = GMV.HQTcov.values[self.Gr.gw] * GMV.TKE.values[k] / GMV.TKE.values[self.Gr.gw]
 
         self.compute_mixing_length(Case.Sur.obukhov_length)
-
-        #print "GMV variances in initialize"
-        #import matplotlib.pyplot as plt
-        #fig = plt.figure()
-        #plt.subplot(1,3,1) #dupa
-        #plt.plot(GMV.Hvar.values, self.Gr.z_half)
-        #plt.subplot(1,3,2)
-        #plt.plot(GMV.QTvar.values, self.Gr.z_half)
-        #plt.subplot(1,3,3)
-        #plt.plot(GMV.HQTcov.values, self.Gr.z_half)
-        #plt.show()
 
         return
 
@@ -1540,7 +1524,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.Hvar_detr_loss[k] = 0.0
                 self.QTvar_detr_loss[k] = 0.0
                 self.HQTcov_detr_loss[k] = 0.0
-                # TODO the same for HQTcov_detr_loss ?
                 for i in xrange(self.n_updrafts):
                     w_u = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
                     self.Hvar_detr_loss[k]   += self.UpdVar.Area.values[i,k] * w_u * self.entr_sc[i,k]
@@ -1559,27 +1542,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         with nogil:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-
                 self.Hvar_rain[k]   = self.Ref.rho0_half[k] * ae[k] * 2. * self.EnvThermo.Hvar_rain_dt[k]   * TS.dti
                 self.QTvar_rain[k]  = self.Ref.rho0_half[k] * ae[k] * 2. * self.EnvThermo.QTvar_rain_dt[k]  * TS.dti
                 self.HQTcov_rain[k] = self.Ref.rho0_half[k] * ae[k] *      self.EnvThermo.HQTcov_rain_dt[k] * TS.dti
-
-        #if (np.min(self.Hvar_rain) != 0.0 or np.max(self.Hvar_rain) != 0.0):
-        #    import matplotlib.pyplot as plt
-        #    fig = plt.figure()
-        #    plt.subplot(2,3,1)
-        #    plt.plot(self.Hvar_rain, self.Gr.z_half)
-        #    plt.subplot(2,3,2)
-        #    plt.plot(self.QTvar_rain, self.Gr.z_half)
-        #    plt.subplot(2,3,3)
-        #    plt.plot(self.HQTcov_rain, self.Gr.z_half)
-        #    plt.subplot(2,3,4)
-        #    plt.plot(GMV.Hvar.values[1:-1], self.Gr.z_half[1:-1])
-        #    plt.subplot(2,3,5)
-        #    plt.plot(GMV.QTvar.values[1:-1], self.Gr.z_half[1:-1])
-        #    plt.subplot(2,3,6)
-        #    plt.plot(GMV.HQTcov.values[1:-1], self.Gr.z_half[1:-1])
-        #    plt.show()
 
         return
 
