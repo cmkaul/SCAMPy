@@ -516,6 +516,13 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     z = self.Gr.z_half[k]
                     GMV.TKE.values[k] = ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
 
+        if Case.casename =='GABLS':
+            with nogil:
+                for k in xrange(self.Gr.nzg):
+                    z = self.Gr.z_half[k]
+                    if (z<=250.0):
+                        GMV.TKE.values[k] = 0.4*(1.0-z/250.0)*(1.0-z/250.0)*(1.0-z/250.0)       
+                        
 
         self.reset_surface_tke(GMV, Case)
         self.compute_mixing_length(Case.Sur.obukhov_length)
@@ -1448,9 +1455,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for k in xrange(self.Gr.nzg):
                 z = self.Gr.z_half[k]
                 # need to rethink of how to initilize the covarinace profiles - for nowmI took the TKE profile
-                GMV.Hvar.values[k]   = GMV.Hvar.values[self.Gr.gw] * ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
-                GMV.QTvar.values[k]  = GMV.QTvar.values[self.Gr.gw] * ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
-                GMV.HQTcov.values[k] = GMV.HQTcov.values[self.Gr.gw] * ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
+                if ws==0:
+                    GMV.Hvar.values[k]   = 0.0
+                    GMV.QTvar.values[k]  = 0.0
+                    GMV.HQTcov.values[k] = 0.0
+                else:
+                    GMV.Hvar.values[k]   = GMV.Hvar.values[self.Gr.gw] * ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
+                    GMV.QTvar.values[k]  = GMV.QTvar.values[self.Gr.gw] * ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
+                    GMV.HQTcov.values[k] = GMV.HQTcov.values[self.Gr.gw] * ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
 
         self.compute_mixing_length(Case.Sur.obukhov_length)
 
