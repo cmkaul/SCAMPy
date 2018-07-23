@@ -207,11 +207,11 @@ cdef class EnvironmentThermodynamics:
                         inner_int_T_dry = 0.0
                         for m_h in xrange(self.quadrature_order):
                             h_hat = sqrt2 * sigma_h_star * abscissas[m_h] + mu_h_star
-                            sa = eos(self.t_to_prog_fp,self.prog_to_t_fp, self.Ref.p0_half[k], qt_hat, h_hat)
+                            sa = eos(self.t_to_prog_fp,self.prog_to_t_fp, self.Ref.p0[k], qt_hat, h_hat)
                             temp_m = sa.T
                             ql_m = sa.ql
                             qv_m = EnvVar.QT.values[k] - ql_m
-                            alpha_m = alpha_c(self.Ref.p0_half[k], temp_m, qt_hat, qv_m)
+                            alpha_m = alpha_c(self.Ref.p0[k], temp_m, qt_hat, qv_m)
                             inner_int_ql    += ql_m    * weights[m_h] * sqpi_inv
                             inner_int_T     += temp_m  * weights[m_h] * sqpi_inv
                             inner_int_alpha += alpha_m * weights[m_h] * sqpi_inv
@@ -235,16 +235,16 @@ cdef class EnvironmentThermodynamics:
                         outer_int_T_dry     += inner_int_T_dry     * weights[m_q] * sqpi_inv # anna's fix (changed outer to inner)
 
                     EnvVar.QL.values[k] = outer_int_ql
-                    EnvVar.B.values[k]  = g * (outer_int_alpha - self.Ref.alpha0_half[k])/self.Ref.alpha0_half[k] #- GMV_B.values[k]
+                    EnvVar.B.values[k]  = g * (outer_int_alpha - self.Ref.alpha0[k])/self.Ref.alpha0[k] #- GMV_B.values[k]
                     EnvVar.T.values[k]  = outer_int_T
                     EnvVar.CF.values[k] = outer_int_cf
-                    EnvVar.THL.values[k] = t_to_thetali_c(self.Ref.p0_half[k], EnvVar.T.values[k], EnvVar.QT.values[k], EnvVar.QL.values[k], 0.0) # anna's fix
+                    EnvVar.THL.values[k] = t_to_thetali_c(self.Ref.p0[k], EnvVar.T.values[k], EnvVar.QT.values[k], EnvVar.QL.values[k], 0.0) # anna's fix
                     self.qt_dry[k]      = outer_int_qt_dry
-                    self.th_dry[k]      = outer_int_T_dry/exner_c(self.Ref.p0_half[k])
+                    self.th_dry[k]      = outer_int_T_dry/exner_c(self.Ref.p0[k])
                     self.t_cloudy[k]    = outer_int_T_cloudy
                     self.qv_cloudy[k]   = outer_int_qt_cloudy - outer_int_ql
                     self.qt_cloudy[k]   = outer_int_qt_cloudy
-                    self.th_cloudy[k]   = outer_int_T_cloudy/exner_c(self.Ref.p0_half[k])
+                    self.th_cloudy[k]   = outer_int_T_cloudy/exner_c(self.Ref.p0[k])
 
 
         elif EnvVar.H.name == 's':
@@ -279,12 +279,12 @@ cdef class EnvironmentThermodynamics:
                         inner_int_T_dry = 0.0
                         for m_h in xrange(self.quadrature_order):
                             h_hat = sqrt2 * sigma_h_star * abscissas[m_h] + mu_h_star
-                            sa = eos(self.t_to_prog_fp,self.prog_to_t_fp, self.Ref.p0_half[k], qt_hat, h_hat)
+                            sa = eos(self.t_to_prog_fp,self.prog_to_t_fp, self.Ref.p0[k], qt_hat, h_hat)
                             temp_m = sa.T
                             ql_m = sa.ql
                             qv_m = EnvVar.QT.values[k] - ql_m
-                            alpha_m = alpha_c(self.Ref.p0_half[k], temp_m, qt_hat, qv_m)
-                            #thetal_m = t_to_thetali_c(self.Ref.p0_half[k], temp_m, qt_hat, ql_m, 0.0)
+                            alpha_m = alpha_c(self.Ref.p0[k], temp_m, qt_hat, qv_m)
+                            #thetal_m = t_to_thetali_c(self.Ref.p0[k], temp_m, qt_hat, ql_m, 0.0)
                             inner_int_ql    += ql_m    * weights[m_h] * sqpi_inv
                             inner_int_T     += temp_m  * weights[m_h] * sqpi_inv
                             inner_int_alpha += alpha_m * weights[m_h] * sqpi_inv
@@ -306,15 +306,15 @@ cdef class EnvironmentThermodynamics:
 
 
                     EnvVar.QL.values[k] = outer_int_ql
-                    EnvVar.B.values[k]  = g * (outer_int_alpha - self.Ref.alpha0_half[k])/self.Ref.alpha0_half[k] # - GMV_B.values[k]
+                    EnvVar.B.values[k]  = g * (outer_int_alpha - self.Ref.alpha0[k])/self.Ref.alpha0[k] # - GMV_B.values[k]
                     EnvVar.T.values[k]  = outer_int_T
                     EnvVar.CF.values[k] = outer_int_cf
                     self.qt_dry[k]      = outer_int_qt_dry
-                    self.th_dry[k]      = outer_int_T_dry/exner_c(self.Ref.p0_half[k])
+                    self.th_dry[k]      = outer_int_T_dry/exner_c(self.Ref.p0[k])
                     self.t_cloudy[k]    = outer_int_T_cloudy
                     self.qv_cloudy[k]   = outer_int_qt_cloudy - outer_int_ql
                     self.qt_cloudy[k]   = outer_int_qt_cloudy
-                    self.t_cloudy[k]    = outer_int_T_cloudy/exner_c(self.Ref.p0_half[k])
+                    self.t_cloudy[k]    = outer_int_T_cloudy/exner_c(self.Ref.p0[k])
         return
 
     cdef void sommeria_deardorff(self, EnvironmentVariables EnvVar):
@@ -331,7 +331,7 @@ cdef class EnvironmentThermodynamics:
                     Lv = latent_heat(EnvVar.T.values[k])
                     cp = cpd
                     # paper notation used below
-                    Tl = EnvVar.H.values[k]*exner_c(self.Ref.p0_half[k])
+                    Tl = EnvVar.H.values[k]*exner_c(self.Ref.p0[k])
                     q_sl = qv_star_t(self.Ref.p0[k], Tl) # using the qv_star_c function instead of the approximation in eq. (4) in SD
                     beta1 = 0.622*Lv**2/(Rd*cp*Tl**2) # eq. (8) in SD
                     #q_s = q_sl*(1+beta1*EnvVar.QT.values[k])/(1+beta1*q_sl) # eq. (7) in SD
@@ -356,17 +356,17 @@ cdef class EnvironmentThermodynamics:
                     EnvVar.T.values[k] = Tl + Lv/cp*EnvVar.QL.values[k] # should this be the differnece in ql - would it work for evaporation as well ?
                     EnvVar.CF.values[k] = R
                     qv = EnvVar.QT.values[k] - EnvVar.QL.values[k]
-                    alpha = alpha_c(self.Ref.p0_half[k], EnvVar.T.values[k], EnvVar.QT.values[k], qv)
-                    EnvVar.B.values[k] = buoyancy_c(self.Ref.alpha0_half[k], alpha) #- GMV.B.values[k]
-                    EnvVar.THL.values[k] = t_to_thetali_c(self.Ref.p0_half[k], EnvVar.T.values[k], EnvVar.QT.values[k],
+                    alpha = alpha_c(self.Ref.p0[k], EnvVar.T.values[k], EnvVar.QT.values[k], qv)
+                    EnvVar.B.values[k] = buoyancy_c(self.Ref.alpha0[k], alpha) #- GMV.B.values[k]
+                    EnvVar.THL.values[k] = t_to_thetali_c(self.Ref.p0[k], EnvVar.T.values[k], EnvVar.QT.values[k],
                                                           EnvVar.QL.values[k], 0.0)
 
                     self.qt_dry[k] = EnvVar.QT.values[k]
-                    self.th_dry[k] = EnvVar.T.values[k]/exner_c(self.Ref.p0_half[k])
+                    self.th_dry[k] = EnvVar.T.values[k]/exner_c(self.Ref.p0[k])
                     self.t_cloudy[k] = EnvVar.T.values[k]
                     self.qv_cloudy[k] = EnvVar.QT.values[k] - EnvVar.QL.values[k]
                     self.qt_cloudy[k] = EnvVar.QT.values[k]
-                    self.th_cloudy[k] = EnvVar.T.values[k]/exner_c(self.Ref.p0_half[k])
+                    self.th_cloudy[k] = EnvVar.T.values[k]/exner_c(self.Ref.p0[k])
 
 
                     #using the approximation in eq. (25) in SD, noting that in the paper there is a typo in the first
@@ -402,22 +402,22 @@ cdef class EnvironmentThermodynamics:
         else:
             with nogil:
                 for k in xrange(gw,self.Gr.nzg-gw):
-                    sa = eos(self.t_to_prog_fp,self.prog_to_t_fp, self.Ref.p0_half[k], EnvVar.QT.values[k], EnvVar.H.values[k])
+                    sa = eos(self.t_to_prog_fp,self.prog_to_t_fp, self.Ref.p0[k], EnvVar.QT.values[k], EnvVar.H.values[k])
                     EnvVar.QL.values[k] = sa.ql
                     EnvVar.T.values[k] = sa.T
                     qv = EnvVar.QT.values[k] - EnvVar.QL.values[k]
-                    alpha = alpha_c(self.Ref.p0_half[k], EnvVar.T.values[k], EnvVar.QT.values[k], qv)
-                    EnvVar.B.values[k] = buoyancy_c(self.Ref.alpha0_half[k], alpha) #- GMV.B.values[k]
-                    EnvVar.THL.values[k] = t_to_thetali_c(self.Ref.p0_half[k], EnvVar.T.values[k], EnvVar.QT.values[k],
+                    alpha = alpha_c(self.Ref.p0[k], EnvVar.T.values[k], EnvVar.QT.values[k], qv)
+                    EnvVar.B.values[k] = buoyancy_c(self.Ref.alpha0[k], alpha) #- GMV.B.values[k]
+                    EnvVar.THL.values[k] = t_to_thetali_c(self.Ref.p0[k], EnvVar.T.values[k], EnvVar.QT.values[k],
                                                           EnvVar.QL.values[k], 0.0)
                     if EnvVar.QL.values[k] > 0.0:
                         EnvVar.CF.values[k] = 1.0
                     else:
                         EnvVar.CF.values[k] = 0.0
                     self.qt_dry[k] = EnvVar.QT.values[k]
-                    self.th_dry[k] = EnvVar.T.values[k]/exner_c(self.Ref.p0_half[k])
+                    self.th_dry[k] = EnvVar.T.values[k]/exner_c(self.Ref.p0[k])
                     self.t_cloudy[k] = EnvVar.T.values[k]
                     self.qv_cloudy[k] = EnvVar.QT.values[k] - EnvVar.QL.values[k]
                     self.qt_cloudy[k] = EnvVar.QT.values[k]
-                    self.th_cloudy[k] = EnvVar.T.values[k]/exner_c(self.Ref.p0_half[k])
+                    self.th_cloudy[k] = EnvVar.T.values[k]/exner_c(self.Ref.p0[k])
         return

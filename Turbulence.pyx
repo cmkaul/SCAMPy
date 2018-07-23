@@ -85,14 +85,14 @@ cdef class ParameterizationBase:
         with nogil:
             for k in xrange(gw, self.Gr.nzg-gw):
                 qv = GMV.QT.values[k] - GMV.QL.values[k]
-                theta_rho[k] = theta_rho_c(self.Ref.p0_half[k], GMV.T.values[k], GMV.QT.values[k], qv)
+                theta_rho[k] = theta_rho_c(self.Ref.p0[k], GMV.T.values[k], GMV.QT.values[k], qv)
 
 
         if option == 'theta_rho':
             with nogil:
                 for k in xrange(kmin,kmax):
                     if theta_rho[k] > theta_rho[kmin]:
-                        self.zi = self.Gr.z_half[k]
+                        self.zi = self.Gr.z[k]
                         break
         elif option == 'thetal_maxgrad':
 
@@ -103,7 +103,7 @@ cdef class ParameterizationBase:
                         maxgrad = grad
                         self.zi = self.Gr.z[k]
         elif option == 'critical_Ri':
-            self.zi = get_inversion(&theta_rho[0], &GMV.U.values[0], &GMV.V.values[0], &self.Gr.z_half[0], kmin, kmax, self.Ri_bulk_crit)
+            self.zi = get_inversion(&theta_rho[0], &GMV.U.values[0], &GMV.V.values[0], &self.Gr.z[0], kmin, kmax, self.Ri_bulk_crit)
 
         else:
             print('INVERSION HEIGHT OPTION NOT RECOGNIZED')
@@ -129,7 +129,7 @@ cdef class ParameterizationBase:
 
         with nogil:
             for k in xrange(gw,nzg-gw):
-                zzi = self.Gr.z_half[k]/self.zi
+                zzi = self.Gr.z[k]/self.zi
                 if zzi <= 1.0:
                     self.KH.values[k] = vkb * ( (ustar/self.wstar)**3 + 39.0*vkb*zzi)**(1.0/3.0) * zzi * (1.0-zzi) * (1.0-zzi) * self.wstar * self.zi
                     self.KM.values[k] = self.KH.values[k] * self.prandtl_number
@@ -196,13 +196,13 @@ cdef class SimilarityED(ParameterizationBase):
 
         # Matrix is the same for all variables that use the same eddy diffusivity
         construct_tridiag_diffusion(nzg, gw, self.Gr.dzi, TS.dt, &rho_K_m[0],
-                                    &self.Ref.rho0_half[0], &dummy_ae[0] ,&a[0], &b[0], &c[0])
+                                    &self.Ref.rho0[0], &dummy_ae[0] ,&a[0], &b[0], &c[0])
 
         # Solve QT
         with nogil:
             for k in xrange(nz):
                 x[k] = GMV.QT.values[k+gw]
-            x[0] = x[0] + TS.dt * Case.Sur.rho_qtflux * self.Gr.dzi * self.Ref.alpha0_half[gw]
+            x[0] = x[0] + TS.dt * Case.Sur.rho_qtflux * self.Gr.dzi * self.Ref.alpha0[gw]
 
         tridiag_solve(self.Gr.nz, &x[0],&a[0], &b[0], &c[0])
         with nogil:
@@ -214,7 +214,7 @@ cdef class SimilarityED(ParameterizationBase):
         with nogil:
             for k in xrange(nz):
                 x[k] = GMV.H.values[k+gw]
-            x[0] = x[0] + TS.dt * Case.Sur.rho_hflux * self.Gr.dzi * self.Ref.alpha0_half[gw]
+            x[0] = x[0] + TS.dt * Case.Sur.rho_hflux * self.Gr.dzi * self.Ref.alpha0[gw]
 
         tridiag_solve(self.Gr.nz, &x[0],&a[0], &b[0], &c[0])
         with nogil:
@@ -226,7 +226,7 @@ cdef class SimilarityED(ParameterizationBase):
         with nogil:
             for k in xrange(nz):
                 x[k] = GMV.U.values[k+gw]
-            x[0] = x[0] + TS.dt * Case.Sur.rho_uflux * self.Gr.dzi * self.Ref.alpha0_half[gw]
+            x[0] = x[0] + TS.dt * Case.Sur.rho_uflux * self.Gr.dzi * self.Ref.alpha0[gw]
 
         tridiag_solve(self.Gr.nz, &x[0],&a[0], &b[0], &c[0])
         with nogil:
@@ -237,7 +237,7 @@ cdef class SimilarityED(ParameterizationBase):
         with nogil:
             for k in xrange(nz):
                 x[k] = GMV.V.values[k+gw]
-            x[0] = x[0] + TS.dt * Case.Sur.rho_vflux * self.Gr.dzi * self.Ref.alpha0_half[gw]
+            x[0] = x[0] + TS.dt * Case.Sur.rho_vflux * self.Gr.dzi * self.Ref.alpha0[gw]
 
         tridiag_solve(self.Gr.nz, &x[0],&a[0], &b[0], &c[0])
         with nogil:

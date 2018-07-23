@@ -40,7 +40,7 @@ cdef class Grid:
         cdef int i, count = 0
         for i in xrange(-self.gw,self.nz+self.gw,1):
             self.z[count] = (i + 1) * self.dz
-            self.z_half[count] = (i+0.5)*self.dz
+            self.z_half[count] = self.z[count]
             count += 1
 
 
