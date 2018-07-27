@@ -39,8 +39,8 @@ cdef class ParameterizationBase:
         self.turbulence_tendency  = np.zeros((Gr.nzg,), dtype=np.double, order='c')
         self.Gr = Gr # grid class
         self.Ref = Ref # reference state class
-        self.KM = VariableDiagnostic(Gr.nzg,'half', 'scalar','sym', 'diffusivity', 'm^2/s') # eddy viscosity
-        self.KH = VariableDiagnostic(Gr.nzg,'half', 'scalar','sym', 'viscosity', 'm^2/s') # eddy diffusivity
+        self.KM = VariableDiagnostic(Gr.nzg,'full', 'scalar','sym', 'diffusivity', 'm^2/s') # eddy viscosity
+        self.KH = VariableDiagnostic(Gr.nzg,'full', 'scalar','sym', 'viscosity', 'm^2/s') # eddy diffusivity
         # get values from paramlist
         self.prandtl_number = paramlist['turbulence']['prandtl_number']
         self.Ri_bulk_crit = paramlist['turbulence']['Ri_bulk_crit']

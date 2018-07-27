@@ -26,8 +26,8 @@ cdef class VariablePrognostic:
         self.tendencies = np.zeros((nz_tot,),dtype=np.double, order='c')
         # Placement on staggered grid
         loc = 'full'
-        if loc != 'half' and loc != 'full':
-            print('Invalid location setting for variable! Must be half or full')
+        if loc != 'full':
+            print('Invalid location setting for variable! Must be full')
         self.loc = loc
         if kind != 'scalar' and kind != 'velocity':
             print ('Invalid kind setting for variable! Must be scalar or velocity')
@@ -94,8 +94,8 @@ cdef class VariableDiagnostic:
         self.values = np.zeros((nz_tot,),dtype=np.double, order='c')
         # Placement on staggered grid
         loc = 'full'
-        if loc != 'half' and loc != 'full':
-            print('Invalid location setting for variable! Must be half or full')
+        if loc != 'full':
+            print('Invalid location setting for variable! Must be full')
         self.loc = loc
         if kind != 'scalar' and kind != 'velocity':
             print ('Invalid kind setting for variable! Must be scalar or velocity')

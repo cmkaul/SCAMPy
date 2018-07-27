@@ -17,8 +17,8 @@ cdef class EnvironmentVariable:
     def __init__(self, nz, loc, kind, name, units):
         self.values = np.zeros((nz,),dtype=np.double, order='c')
         self.flux = np.zeros((nz,),dtype=np.double, order='c')
-        if loc != 'half' and loc != 'full':
-            print('Invalid location setting for variable! Must be half or full')
+        if loc != 'full':
+            print('Invalid location setting for variable! Must be full')
         self.loc = loc
         if kind != 'scalar' and kind != 'velocity':
             print ('Invalid kind setting for variable! Must be scalar or velocity')
@@ -37,16 +37,16 @@ cdef class EnvironmentVariables:
 
         self.W = EnvironmentVariable(nz, 'full', 'velocity', 'w','m/s' )
 
-        self.QT = EnvironmentVariable( nz, 'half', 'scalar', 'qt','kg/kg' )
-        self.QL = EnvironmentVariable( nz, 'half', 'scalar', 'w','kg/kg' )
+        self.QT = EnvironmentVariable( nz, 'full', 'scalar', 'qt','kg/kg' )
+        self.QL = EnvironmentVariable( nz, 'full', 'scalar', 'w','kg/kg' )
         if namelist['thermodynamics']['thermal_variable'] == 'entropy':
-            self.H = EnvironmentVariable( nz, 'half', 'scalar', 's','J/kg/K' )
+            self.H = EnvironmentVariable( nz, 'full', 'scalar', 's','J/kg/K' )
         elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
-            self.H = EnvironmentVariable( nz, 'half', 'scalar', 'thetal','K' )
-        self.THL = EnvironmentVariable(nz, 'half', 'scalar', 'thetal', 'K')
-        self.T = EnvironmentVariable( nz, 'half', 'scalar', 'temperature','K' )
-        self.B = EnvironmentVariable( nz, 'half', 'scalar', 'buoyancy','m^2/s^3' )
-        self.CF = EnvironmentVariable(nz, 'half', 'scalar','cloud_fraction', '-')
+            self.H = EnvironmentVariable( nz, 'full', 'scalar', 'thetal','K' )
+        self.THL = EnvironmentVariable(nz, 'full', 'scalar', 'thetal', 'K')
+        self.T = EnvironmentVariable( nz, 'full', 'scalar', 'temperature','K' )
+        self.B = EnvironmentVariable( nz, 'full', 'scalar', 'buoyancy','m^2/s^3' )
+        self.CF = EnvironmentVariable(nz, 'full', 'scalar','cloud_fraction', '-')
 
         # Determine whether we need 2nd moment variables
         if  namelist['turbulence']['scheme'] == 'EDMF_PrognosticTKE':
@@ -68,18 +68,18 @@ cdef class EnvironmentVariables:
 
 
         if self.use_tke:
-            self.TKE = EnvironmentVariable( nz, 'half', 'scalar', 'tke','m^2/s^2' )
+            self.TKE = EnvironmentVariable( nz, 'full', 'scalar', 'tke','m^2/s^2' )
 
         if self.use_scalar_var:
-            self.QTvar = EnvironmentVariable( nz, 'half', 'scalar', 'qt_var','kg^2/kg^2' )
+            self.QTvar = EnvironmentVariable( nz, 'full', 'scalar', 'qt_var','kg^2/kg^2' )
             if namelist['thermodynamics']['thermal_variable'] == 'entropy':
-                self.Hvar = EnvironmentVariable(nz, 'half', 'scalar', 's_var', '(J/kg/K)^2')
-                self.HQTcov = EnvironmentVariable(nz, 'half', 'scalar', 's_qt_covar', '(J/kg/K)(kg/kg)' )
+                self.Hvar = EnvironmentVariable(nz, 'full', 'scalar', 's_var', '(J/kg/K)^2')
+                self.HQTcov = EnvironmentVariable(nz, 'full', 'scalar', 's_qt_covar', '(J/kg/K)(kg/kg)' )
             elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
-                self.Hvar = EnvironmentVariable(nz, 'half', 'scalar', 'thetal_var', 'K^2')
-                self.HQTcov = EnvironmentVariable(nz, 'half', 'scalar', 'thetal_qt_covar', 'K(kg/kg)' )
+                self.Hvar = EnvironmentVariable(nz, 'full', 'scalar', 'thetal_var', 'K^2')
+                self.HQTcov = EnvironmentVariable(nz, 'full', 'scalar', 'thetal_qt_covar', 'K(kg/kg)' )
                 if self.EnvThermo_scheme == 'sommeria_deardorff':
-                    self.THVvar = EnvironmentVariable(nz, 'half', 'scalar', 'thetav_var', 'K^2' )
+                    self.THVvar = EnvironmentVariable(nz, 'full', 'scalar', 'thetav_var', 'K^2' )
 
         #
         return

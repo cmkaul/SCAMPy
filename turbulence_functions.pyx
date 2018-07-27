@@ -200,7 +200,7 @@ cdef double get_wstar(double bflux, double zi ):
     return cbrt(fmax(bflux * zi, 0.0))
 
 # BL height
-cdef double get_inversion(double *theta_rho, double *u, double *v, double *z_half,
+cdef double get_inversion(double *theta_rho, double *u, double *v, double *z,
                           Py_ssize_t kmin, Py_ssize_t kmax, double Ri_bulk_crit):
     cdef:
         double theta_rho_b = theta_rho[kmin]
@@ -214,15 +214,15 @@ cdef double get_inversion(double *theta_rho, double *u, double *v, double *z_hal
             for k in xrange(kmin,kmax):
                 if theta_rho[k] > theta_rho_b:
                     break
-        h = (z_half[k] - z_half[k-1])/(theta_rho[k] - theta_rho[k-1]) * (theta_rho_b - theta_rho[k-1]) + z_half[k-1]
+        h = (z[k] - z[k-1])/(theta_rho[k] - theta_rho[k-1]) * (theta_rho_b - theta_rho[k-1]) + z[k-1]
     else:
         with nogil:
             for k in xrange(kmin,kmax):
                 Ri_bulk_low = Ri_bulk
-                Ri_bulk = g * (theta_rho[k] - theta_rho_b) * z_half[k]/theta_rho_b / (u[k] * u[k] + v[k] * v[k])
+                Ri_bulk = g * (theta_rho[k] - theta_rho_b) * z[k]/theta_rho_b / (u[k] * u[k] + v[k] * v[k])
                 if Ri_bulk > Ri_bulk_crit:
                     break
-        h = (z_half[k] - z_half[k-1])/(Ri_bulk - Ri_bulk_low) * (Ri_bulk_crit - Ri_bulk_low) + z_half[k-1]
+        h = (z[k] - z[k-1])/(Ri_bulk - Ri_bulk_low) * (Ri_bulk_crit - Ri_bulk_low) + z[k-1]
 
     return h
 

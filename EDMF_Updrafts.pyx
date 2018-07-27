@@ -25,8 +25,8 @@ cdef class UpdraftVariable:
         self.tendencies = np.zeros((nu,nz),dtype=np.double, order='c')
         self.flux = np.zeros((nu,nz),dtype=np.double, order='c')
         self.bulkvalues = np.zeros((nz,), dtype=np.double, order = 'c')
-        if loc != 'half' and loc != 'full':
-            print('Invalid location setting for variable! Must be half or full')
+        if loc != 'full':
+            print('Invalid location setting for variable! Must be full')
         self.loc = loc
         if kind != 'scalar' and kind != 'velocity':
             print ('Invalid kind setting for variable! Must be scalar or velocity')
@@ -68,16 +68,16 @@ cdef class UpdraftVariables:
 
         self.W = UpdraftVariable(nu, nzg, 'full', 'velocity', 'w','m/s' )
         self.Area = UpdraftVariable(nu, nzg, 'full', 'scalar', 'area_fraction','[-]' )
-        self.QT = UpdraftVariable(nu, nzg, 'half', 'scalar', 'qt','kg/kg' )
-        self.QL = UpdraftVariable(nu, nzg, 'half', 'scalar', 'ql','kg/kg' )
+        self.QT = UpdraftVariable(nu, nzg, 'full', 'scalar', 'qt','kg/kg' )
+        self.QL = UpdraftVariable(nu, nzg, 'full', 'scalar', 'ql','kg/kg' )
         if namelist['thermodynamics']['thermal_variable'] == 'entropy':
-            self.H = UpdraftVariable(nu, nzg, 'half', 'scalar', 's','J/kg/K' )
+            self.H = UpdraftVariable(nu, nzg, 'full', 'scalar', 's','J/kg/K' )
         elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
-            self.H = UpdraftVariable(nu, nzg, 'half', 'scalar', 'thetal','K' )
+            self.H = UpdraftVariable(nu, nzg, 'full', 'scalar', 'thetal','K' )
 
-        self.THL = UpdraftVariable(nu, nzg, 'half', 'scalar', 'thetal', 'K')
-        self.T = UpdraftVariable(nu, nzg, 'half', 'scalar', 'temperature','K' )
-        self.B = UpdraftVariable(nu, nzg, 'half', 'scalar', 'buoyancy','m^2/s^3' )
+        self.THL = UpdraftVariable(nu, nzg, 'full', 'scalar', 'thetal', 'K')
+        self.T = UpdraftVariable(nu, nzg, 'full', 'scalar', 'temperature','K' )
+        self.B = UpdraftVariable(nu, nzg, 'full', 'scalar', 'buoyancy','m^2/s^3' )
 
         if namelist['turbulence']['scheme'] == 'EDMF_PrognosticTKE':
             try:

@@ -13,4 +13,3 @@ cdef class Grid:
         Py_ssize_t nz
         Py_ssize_t nzg
         double [:] z
-        double [:] z_half

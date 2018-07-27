@@ -33,14 +33,12 @@ cdef class Grid:
         self.nz = namelist['grid']['nz']
         self.nzg = self.nz + 2 * self.gw
 
-        self.z_half = np.empty((self.nz+2*self.gw),dtype=np.double,order='c')
         self.z = np.empty((self.nz+2*self.gw),dtype=np.double,order='c')
 
 
         cdef int i, count = 0
         for i in xrange(-self.gw,self.nz+self.gw,1):
             self.z[count] = (i + 1) * self.dz
-            self.z_half[count] = self.z[count]
             count += 1
 
 
