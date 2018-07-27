@@ -383,8 +383,9 @@ cdef class UpdraftMicrophysics:
                     tmp_qr = acnv_instant(UpdVar.QL.values[i,k], UpdVar.QT.values[i,k], self.max_supersaturation,\
                                           UpdVar.T.values[i,k], self.Ref.p0_half[k])
                     self.prec_source_qt[i,k] = -tmp_qr
-                    self.prec_source_h[i,k]  = rain_source_to_thetal(tmp_qr, self.Ref.p0_half[k], UpdVar.T.values[i,k]) 
-
+                    self.prec_source_h[i,k]  = rain_source_to_thetal(self.Ref.p0_half[k], UpdVar.T.values[i,k],\
+                                                 UpdVar.QT.values[i,k], UpdVar.QL.values[i,k], 0.0, tmp_qr)
+                                                                                              #TODO assumes no ice
         self.prec_source_h_tot  = np.sum(np.multiply(self.prec_source_h,  UpdVar.Area.values), axis=0)
         self.prec_source_qt_tot = np.sum(np.multiply(self.prec_source_qt, UpdVar.Area.values), axis=0)
 
@@ -414,8 +415,8 @@ cdef class UpdraftMicrophysics:
 
         tmp_qr =  acnv_instant(ql[0], qt[0], self.max_supersaturation, T, p0)
         self.prec_source_qt[i,k] = -tmp_qr
-        self.prec_source_h[i,k]  = rain_source_to_thetal(tmp_qr, p0, T) 
-
+        self.prec_source_h[i,k]  = rain_source_to_thetal(p0, T, qt[0], ql[0], 0.0, tmp_qr)
+                                                                             #TODO - assumes no ice
         qt[0] += self.prec_source_qt[i,k]
         ql[0] += self.prec_source_qt[i,k]
         qr[0] -= self.prec_source_qt[i,k]
