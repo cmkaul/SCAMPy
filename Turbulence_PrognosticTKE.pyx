@@ -454,7 +454,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 au_lim = self.max_area_factor * self.area_surface_bc[i]
                 self.UpdVar.Area.values[i,gw] = self.area_surface_bc[i]
                 w_mid = 0.5* (self.UpdVar.W.values[i,gw])
-                for k in xrange(gw+1, self.Gr.nzg):
+                for k in xrange(gw, self.Gr.nzg): # yair +1
                     w_low = w_mid
                     w_mid = self.UpdVar.W.values[i,k]
                     if w_mid > 0.0:
@@ -863,7 +863,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double dti_ = 1.0/self.dt_upd
             double dt_ = 1.0/dti_
             double a1, a2 # groupings of terms in area fraction discrete equation
-            double au_lim
+            double au_lim,alpha_srf
             double entr_w, detr_w, entr_term, detr_term, rho_ratio, a_kp
             double adv, buoy, exch, press, press_buoy, press_drag # groupings of terms in velocity discrete equation
 
@@ -874,8 +874,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.detr_sc[i,gw] = 0.0
             self.UpdVar.Area.new[i,gw] = self.area_surface_bc[i]
             au_lim = self.area_surface_bc[i] * self.max_area_factor
+            #self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar, GMV, self.extrapolate_buoyancy)
+            #alpha_srf = alpha_c(self.Ref.p0[gw], self.UpdVar.T.values[i,gw], self.UpdVar.QT.values[i,gw],self.UpdVar.QT.values[i,gw])
+            #self.UpdVar.B.values[i,gw]= buoyancy_c(self.Ref.alpha0[gw], alpha_srf)
+            print 'self.UpdVar.B.values[i,gw]',self.UpdVar.B.values[i,gw], self.EnvVar.B.values[gw]
 
-            self.UpdVar.B.values[i,gw]= self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar, GMV, self.extrapolate_buoyancy)
             adv = (self.Ref.rho0[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.W.values[i,gw] * self.UpdVar.W.values[i,gw] * dzi/2.0)
             exch = (self.Ref.rho0[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.W.values[i,gw]
                                 * (self.entr_sc[i,gw] * self.EnvVar.W.values[gw] - self.detr_sc[i,gw] * self.UpdVar.W.values[i,gw] ))
