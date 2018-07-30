@@ -877,7 +877,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             #self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar, GMV, self.extrapolate_buoyancy)
             #alpha_srf = alpha_c(self.Ref.p0[gw], self.UpdVar.T.values[i,gw], self.UpdVar.QT.values[i,gw],self.UpdVar.QT.values[i,gw])
             #self.UpdVar.B.values[i,gw]= buoyancy_c(self.Ref.alpha0[gw], alpha_srf)
-            print 'self.UpdVar.B.values[i,gw]',self.UpdVar.B.values[i,gw], self.EnvVar.B.values[gw]
+            print 'self.UpdVar.B.values[i,gw]',self.UpdVar.B.values[i,gw]
+            print 'self.UpdVar.B.values[i,gw]',self.UpdVar.B.new[i,gw]
             print 'self.h_surface_bc[i]', self.h_surface_bc[i]
             print 'self.UpdVar.QT.values[i,gw]', self.UpdVar.QT.values[i,gw]
 
