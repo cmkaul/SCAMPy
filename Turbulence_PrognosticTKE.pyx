@@ -619,21 +619,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                                                    1.0-self.surface_area + (i+1)*a_ , 1000)
             # use the w equation with w[gw-1] = 0 and dzi divided by 2 to obtain w[gw] - this need to change for diagnostic updrafts
             self.area_surface_bc[i] = self.surface_area/self.n_updrafts
-            adv = (self.Ref.rho0[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.W.values[i,gw] * self.UpdVar.W.values[i,gw] * dzi/2.0)
-            exch = (self.Ref.rho0[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.W.values[i,gw]
-                                * (self.entr_sc[i,gw] * self.EnvVar.W.values[gw] - self.detr_sc[i,gw] * self.UpdVar.W.values[i,gw] ))
-            buoy= self.Ref.rho0[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.B.values[i,gw]
-            press_buoy =  -1.0 * self.Ref.rho0[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.B.values[i,gw] * self.pressure_buoy_coeff
-            press_drag = -1.0 * self.Ref.rho0[gw] * self.UpdVar.Area.values[i,gw] * (self.pressure_drag_coeff/self.pressure_plume_spacing
-                                                                     * (self.UpdVar.W.values[i,gw] -self.EnvVar.W.values[gw])**2.0/sqrt(fmax(self.UpdVar.Area.values[i,gw],self.minimum_area)))
-            press = press_buoy + press_drag
-            self.w_surface_bc[i] = (self.Ref.rho0[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.W.values[i,gw] * dti_
-                                                  -adv + exch + buoy + press)/(self.Ref.rho0[gw] * self.UpdVar.Area.new[i,gw] * dti_)
-            print 'BC', -adv ,exch ,buoy ,press, 'self.UpdVar.B.values[i,gw]', self.UpdVar.B.values[i,gw]
             self.updraft_pressure_sink[i,gw] = press
 
             self.h_surface_bc[i] = (GMV.H.values[gw] + surface_scalar_coeff * sqrt(h_var))
             self.qt_surface_bc[i] = (GMV.QT.values[gw] + surface_scalar_coeff * sqrt(qt_var))
+
         return
 
     cpdef reset_surface_tke(self, GridMeanVariables GMV, CasesBase Case):
@@ -882,9 +872,24 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         for i in xrange(self.n_updrafts):
             self.entr_sc[i,gw] = 2.0 * dzi
             self.detr_sc[i,gw] = 0.0
-            self.UpdVar.W.new[i,gw] = self.w_surface_bc[i]
             self.UpdVar.Area.new[i,gw] = self.area_surface_bc[i]
             au_lim = self.area_surface_bc[i] * self.max_area_factor
+
+            self.UpdVar.B.values[i,gw]= self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar, GMV, self.extrapolate_buoyancy)
+            adv = (self.Ref.rho0[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.W.values[i,gw] * self.UpdVar.W.values[i,gw] * dzi/2.0)
+            exch = (self.Ref.rho0[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.W.values[i,gw]
+                                * (self.entr_sc[i,gw] * self.EnvVar.W.values[gw] - self.detr_sc[i,gw] * self.UpdVar.W.values[i,gw] ))
+            buoy= self.Ref.rho0[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.B.values[i,gw]
+            press_buoy =  -1.0 * self.Ref.rho0[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.B.values[i,gw] * self.pressure_buoy_coeff
+            press_drag = -1.0 * self.Ref.rho0[gw] * self.UpdVar.Area.values[i,gw] * (self.pressure_drag_coeff/self.pressure_plume_spacing
+                                                                     * (self.UpdVar.W.values[i,gw] -self.EnvVar.W.values[gw])**2.0/sqrt(fmax(self.UpdVar.Area.values[i,gw],self.minimum_area)))
+            press = press_buoy + press_drag
+            self.UpdVar.W.new[i,gw] = (self.Ref.rho0[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.W.values[i,gw] * dti_
+                                                  -adv + exch + buoy + press)/(self.Ref.rho0[gw] * self.UpdVar.Area.new[i,gw] * dti_)
+            print adv ,exch, buoy, press,self.UpdVar.W.new[i,gw]
+            plt.figure()
+            plt.show()
+
             #self.UpdVar.W.values[i,gw] = sqrt(2.0*self.UpdVar.B.values[i,gw])
             for k in range(gw+1, self.Gr.nzg-gw):
                 # First solve for updated area fraction at k+1
