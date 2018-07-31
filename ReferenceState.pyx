@@ -73,7 +73,8 @@ cdef class ReferenceState:
         print 'np.shape(np.multiply(Gr.z[Gr.gw:-Gr.gw],1.0))',np.shape(np.multiply(Gr.z[Gr.gw:-Gr.gw],1.0))
         print 'np.shape(np.multiply(p,1.0))',np.shape(np.multiply(p,1.0))
         # Perform the integration
-        p[Gr.gw - 1:-Gr.gw +1] = odeint(rhs, p0, z, hmax=1.0)[:, 0]
+        p[Gr.gw:-Gr.gw] = odeint(rhs, p0, z, hmax=1.0)[:, 0]
+        print 'p[Gr.gw]',p[Gr.gw]
 
         # Set boundary conditions
         p[:Gr.gw] = p[2 * Gr.gw - 1:Gr.gw - 1:-1]
