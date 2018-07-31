@@ -10,7 +10,6 @@ from Grid cimport Grid
 from NetCDFIO cimport NetCDFIO_Stats
 cimport numpy as np
 import numpy as np
-import pylab as plt
 
 from scipy.integrate import odeint
 from thermodynamic_functions cimport t_to_entropy_c, eos_first_guess_entropy, eos, alpha_c
@@ -41,10 +40,6 @@ cdef class ReferenceState:
         '''
 
         self.sg = t_to_entropy_c(self.Pg, self.Tg, self.qtg, 0.0, 0.0)
-        print 'self.Pg, self.Tg, self.qtg', self.Pg, self.Tg, self.qtg
-        plt.figure()
-        plt.show()
-
 
         # Form a right hand side for integrating the hydrostatic equation to
         # determine the reference pressure
@@ -105,9 +100,6 @@ cdef class ReferenceState:
             alpha[k] = alpha_c(p_[k], temperature[k], self.qtg, qv[k])
 
 
-        print alpha[Gr.gw]
-        plt.figure()
-        plt.show()
         # Now do a sanity check to make sure that the Reference State entropy profile is uniform following
         # saturation adjustment
         cdef double s
