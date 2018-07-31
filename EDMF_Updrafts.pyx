@@ -335,6 +335,15 @@ cdef class UpdraftThermodynamics:
                             t = sa.T
                             alpha = alpha_c(self.Ref.p0[k], t, qt, qv)
                             UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0[k], alpha)
+                        if k==self.Gr.gw:
+                            with gil:
+                                print k, self.Gr.gw
+                                print 'UpdVar.B.values[i,k] ', UpdVar.B.values[i,k]
+                                print 'alpha', alpha
+                                print self.Ref.p0[k], t, qt, qv
+                                plt.figure()
+                                plt.plot()
+
         with nogil:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                 GMV.B.values[k] = (1.0 - UpdVar.Area.bulkvalues[k]) * EnvVar.B.values[k]
