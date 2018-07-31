@@ -59,7 +59,7 @@ cdef class ReferenceState:
 
         # Construct arrays for integration points
         z = np.array(Gr.z[Gr.gw-1:-Gr.gw+1])
-        print
+
         #z = np.append([0.0], np.array(Gr.z[Gr.gw:-Gr.gw]))
 
         # We are integrating the log pressure so need to take the log of the
@@ -67,7 +67,10 @@ cdef class ReferenceState:
         p0 = np.log(self.Pg)
 
         p = np.zeros(Gr.nzg, dtype=np.double, order='c')
-
+        print Gr.gw
+        print np.shape(np.multiply(Gr.z,1.0))
+        print np.shape(np.multiply(z,1.0))
+        print np.shape(np.multiply(p,1.0))
         # Perform the integration
         p[Gr.gw - 1:-Gr.gw +1] = odeint(rhs, p0, z, hmax=1.0)[:, 0]
 
