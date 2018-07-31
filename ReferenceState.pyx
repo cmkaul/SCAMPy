@@ -107,7 +107,9 @@ cdef class ReferenceState:
             alpha[k] = alpha_c(p_[k], temperature[k], self.qtg, qv[k])
 
 
-
+        print alpha[Gr.gw]
+        plt.figure()
+        plt.show()
         # Now do a sanity check to make sure that the Reference State entropy profile is uniform following
         # saturation adjustment
         cdef double s
