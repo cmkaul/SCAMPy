@@ -58,7 +58,9 @@ cdef class ReferenceState:
         ##_____________TO COMPILE______________
 
         # Construct arrays for integration points
-        z = np.array(Gr.z[Gr.gw - 1:-Gr.gw + 1])
+        z = np.array(Gr.z[Gr.gw-1:-Gr.gw+1])
+        print
+        #z = np.append([0.0], np.array(Gr.z[Gr.gw:-Gr.gw]))
 
         # We are integrating the log pressure so need to take the log of the
         # surface pressure
@@ -70,9 +72,8 @@ cdef class ReferenceState:
         p[Gr.gw - 1:-Gr.gw +1] = odeint(rhs, p0, z, hmax=1.0)[:, 0]
 
         # Set boundary conditions
-        p[:Gr.gw - 1] = p[2 * Gr.gw - 2:Gr.gw - 1:-1]
-        p[-Gr.gw + 1:] = p[-Gr.gw - 1:-2 * Gr.gw:-1]
-
+        p[:Gr.gw] = p[2 * Gr.gw - 1:Gr.gw - 1:-1]
+        p[-Gr.gw:] = p[-Gr.gw - 1:-2 * Gr.gw - 1:-1]
 
         p = np.exp(p)
 
@@ -93,6 +94,13 @@ cdef class ReferenceState:
             ql[k] = ret.ql
             qv[k] = self.qtg - (ql[k] + qi[k])
             alpha[k] = alpha_c(p_[k], temperature[k], self.qtg, qv[k])
+            ret = eos(t_to_entropy_c, eos_first_guess_entropy, p_[k], self.qtg, self.sg)
+            temperature[k] = ret.T
+            ql[k] = ret.ql
+            qv[k] = self.qtg - (ql[k] + qi[k])
+            alpha[k] = alpha_c(p_[k], temperature[k], self.qtg, qv[k])
+
+
 
         # Now do a sanity check to make sure that the Reference State entropy profile is uniform following
         # saturation adjustment

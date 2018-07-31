@@ -328,7 +328,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.decompose_environment(GMV, 'values')
 
         if self.use_steady_updrafts:
-            self.compute_diagnostic_updrafts(GMV, Case, TS)
+            self.compute_diagnostic_updrafts(GMV, Case)
         else:
             self.compute_prognostic_updrafts(GMV, Case, TS)
 
@@ -358,7 +358,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         self.UpdVar.set_new_with_values()
         self.UpdVar.set_old_with_values()
-        self.set_updraft_surface_bc(GMV, Case, TS)
+        self.set_updraft_surface_bc(GMV, Case)
         self.dt_upd = np.minimum(TS.dt, 0.5 * self.Gr.dz/fmax(np.max(self.UpdVar.W.values),1e-10))
         while time_elapsed < TS.dt:
             self.compute_entrainment_detrainment(GMV, Case)
@@ -372,7 +372,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar, GMV, self.extrapolate_buoyancy)
         return
 
-    cpdef compute_diagnostic_updrafts(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
+    cpdef compute_diagnostic_updrafts(self, GridMeanVariables GMV, CasesBase Case):
         cdef:
             Py_ssize_t i, k
             Py_ssize_t gw = self.Gr.gw
@@ -384,7 +384,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double a,b,c, w, w_km,  w_mid, w_low, denom, arg
             double entr_w, detr_w, B_k, area_k, w2
 
-        self.set_updraft_surface_bc(GMV, Case, TS)
+        self.set_updraft_surface_bc(GMV, Case)
         self.compute_entrainment_detrainment(GMV, Case)
 
 
@@ -392,6 +392,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for i in xrange(self.n_updrafts):
                 self.UpdVar.H.values[i,gw] = self.h_surface_bc[i]
                 self.UpdVar.QT.values[i,gw] = self.qt_surface_bc[i]
+                with gil:
+                    print '393:','self.h_surface_bc[i]', self.h_surface_bc[i], 'self.qt_surface_bc[i]', self.qt_surface_bc[i]
                 # Find the cloud liquid content
                 sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0[gw],
                          self.UpdVar.QT.values[i,gw], self.UpdVar.H.values[i,gw])
@@ -588,7 +590,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         return
 
-    cpdef set_updraft_surface_bc(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
+    cpdef set_updraft_surface_bc(self, GridMeanVariables GMV, CasesBase Case):
 
         self.update_inversion(GMV, Case.inversion_option)
         self.wstar = get_wstar(Case.Sur.bflux, self.zi)
@@ -609,8 +611,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double a_ = self.surface_area/self.n_updrafts
             double surface_scalar_coeff
 
-        if self.dt_upd>0.0:
-            dti_ = 1.0/self.dt_upd
+        #if self.dt_upd>0.0:
+           # dti_ = 1.0/self.dt_upd
 
 
         # with nogil:
@@ -623,6 +625,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
             self.h_surface_bc[i] = (GMV.H.values[gw] + surface_scalar_coeff * sqrt(h_var))
             self.qt_surface_bc[i] = (GMV.QT.values[gw] + surface_scalar_coeff * sqrt(qt_var))
+            print 'self.h_surface_bc[i]', self.h_surface_bc[i], 'self.qt_surface_bc[i]', self.qt_surface_bc[i]
 
         return
 
