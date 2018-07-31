@@ -58,7 +58,8 @@ cdef class ReferenceState:
         ##_____________TO COMPILE______________
 
         # Construct arrays for integration points
-        z = np.array(Gr.z[Gr.gw-1:-Gr.gw+1])
+        #z = np.array(Gr.z[Gr.gw-1:-Gr.gw+1])
+        z = np.append([0.0], np.array(Gr.z[Gr.gw:-Gr.gw]))
 
         #z = np.append([0.0], np.array(Gr.z[Gr.gw:-Gr.gw]))
 
@@ -67,10 +68,10 @@ cdef class ReferenceState:
         p0 = np.log(self.Pg)
 
         p = np.zeros(Gr.nzg, dtype=np.double, order='c')
-        print Gr.gw
-        print np.shape(np.multiply(Gr.z,1.0))
-        print np.shape(np.multiply(z,1.0))
-        print np.shape(np.multiply(p,1.0))
+        print 'Gr.z[0]', Gr.z[0]
+        print 'np.shape(np.multiply(z,1.0))',np.shape(np.multiply(z,1.0))
+        print 'np.shape(np.multiply(Gr.z[Gr.gw:-Gr.gw],1.0))',np.shape(np.multiply(Gr.z[Gr.gw:-Gr.gw],1.0))
+        print 'np.shape(np.multiply(p,1.0))',np.shape(np.multiply(p,1.0))
         # Perform the integration
         p[Gr.gw - 1:-Gr.gw +1] = odeint(rhs, p0, z, hmax=1.0)[:, 0]
 
