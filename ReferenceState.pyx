@@ -41,6 +41,9 @@ cdef class ReferenceState:
         '''
 
         self.sg = t_to_entropy_c(self.Pg, self.Tg, self.qtg, 0.0, 0.0)
+        print 'self.Pg, self.Tg, self.qtg', self.Pg, self.Tg, self.qtg
+        plt.figure()
+        plt.show()
 
 
         # Form a right hand side for integrating the hydrostatic equation to
@@ -68,14 +71,9 @@ cdef class ReferenceState:
         p0 = np.log(self.Pg)
 
         p = np.zeros(Gr.nzg, dtype=np.double, order='c')
-        print 'Gr.z[0]', Gr.z[0]
-        print 'np.shape(np.multiply(z,1.0))',np.shape(np.multiply(z,1.0))
-        print 'np.shape(np.multiply(Gr.z[Gr.gw:-Gr.gw],1.0))',np.shape(np.multiply(Gr.z[Gr.gw:-Gr.gw],1.0))
-        print 'np.shape(np.multiply(p,1.0))',np.shape(np.multiply(p,1.0))
+
         # Perform the integration
         p[Gr.gw:-Gr.gw] = odeint(rhs, p0, z, hmax=1.0)[1:, 0]
-        print 'p[Gr.gw]',p[Gr.gw]
-        print 'Gr.z[Gr.gw]',Gr.z[Gr.gw]
 
         # Set boundary conditions
         p[:Gr.gw] = p[2 * Gr.gw - 1:Gr.gw - 1:-1]

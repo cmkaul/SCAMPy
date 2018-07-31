@@ -337,7 +337,7 @@ cdef class UpdraftThermodynamics:
                             UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0[k], alpha)
                         if k==self.Gr.gw:
                             with gil:
-                                print k, self.Gr.gw
+                                print k, self.Gr.gw, self.Gr.z[k]
                                 print 'UpdVar.B.values[i,k] ', UpdVar.B.values[i,k]
                                 print 'alpha', alpha
                                 print self.Ref.p0[k], t, qt, qv
