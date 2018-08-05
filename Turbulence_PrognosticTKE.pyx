@@ -676,7 +676,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     self.EnvVar.H.values[k] = val1 * GMV.H.values[k] - val2 * self.UpdVar.H.bulkvalues[k]
                     # Have to account for staggering of W--interpolate area fraction to the "full" grid points
                     # Assuming GMV.W = 0!
-                    au_full = 0.5 * (self.UpdVar.Area.bulkvalues[k+1] + self.UpdVar.Area.bulkvalues[k])
+                    au_full = self.UpdVar.Area.bulkvalues[k]
                     self.EnvVar.W.values[k] = -au_full/(1.0-au_full) * self.UpdVar.W.bulkvalues[k]
 
             self.get_GMV_TKE(self.UpdVar.Area,self.UpdVar.W, self.EnvVar.W, self.EnvVar.TKE,
@@ -701,7 +701,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     self.EnvVar.H.values[k] = val1 * GMV.H.mf_update[k] - val2 * self.UpdVar.H.bulkvalues[k]
                     # Have to account for staggering of W
                     # Assuming GMV.W = 0!
-                    au_full = 0.5 * (self.UpdVar.Area.bulkvalues[k+1] + self.UpdVar.Area.bulkvalues[k])
+                    au_full = self.UpdVar.Area.bulkvalues[k]
                     self.EnvVar.W.values[k] = -au_full/(1.0-au_full) * self.UpdVar.W.bulkvalues[k]
 
             self.get_GMV_TKE(self.UpdVar.Area,self.UpdVar.W, self.EnvVar.W, self.EnvVar.TKE,
