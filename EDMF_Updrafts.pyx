@@ -42,18 +42,18 @@ cdef class UpdraftVariable:
 
         n_updrafts = np.shape(self.values)[0]
 
-        if self.name == 'w':
+        # if self.name == 'w':
+        #     for i in xrange(n_updrafts):
+        #         self.values[i,start_high] = 0.0
+        #         self.values[i,start_low] = 0.0
+        #         for k in xrange(1,Gr.gw):
+        #             self.values[i,start_high+ k] = -self.values[i,start_high - k ]
+        #             self.values[i,start_low- k] = -self.values[i,start_low + k  ]
+        # else:
+        for k in xrange(Gr.gw):
             for i in xrange(n_updrafts):
-                self.values[i,start_high] = 0.0
-                self.values[i,start_low] = 0.0
-                for k in xrange(1,Gr.gw):
-                    self.values[i,start_high+ k] = -self.values[i,start_high - k ]
-                    self.values[i,start_low- k] = -self.values[i,start_low + k  ]
-        else:
-            for k in xrange(Gr.gw):
-                for i in xrange(n_updrafts):
-                    self.values[i,start_high + k +1] = self.values[i,start_high  - k]
-                    self.values[i,start_low - k] = self.values[i,start_low + 1 + k]
+                self.values[i,start_high + k +1] = self.values[i,start_high  - k]
+                self.values[i,start_low - k] = self.values[i,start_low + 1 + k]
 
         return
 
@@ -335,9 +335,9 @@ cdef class UpdraftThermodynamics:
                             t = sa.T
                             alpha = alpha_c(self.Ref.p0[k], t, qt, qv)
                             UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0[k], alpha)
-                        if k==self.Gr.gw:
-                            with gil:
-                                print 'alpha in upd the', alpha, UpdVar.B.values[i,k]
+                        #if k==self.Gr.gw:
+                        #    with gil:
+                        #        print 'alpha in upd is:', alpha, UpdVar.B.values[i,k]
         with nogil:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                 GMV.B.values[k] = (1.0 - UpdVar.Area.bulkvalues[k]) * EnvVar.B.values[k]

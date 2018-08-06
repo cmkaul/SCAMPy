@@ -328,7 +328,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.decompose_environment(GMV, 'values')
             self.EnvThermo.satadjust(self.EnvVar, GMV)
             self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar,GMV, self.extrapolate_buoyancy)
-            print '331', self.UpdVar.B.values[0,self.Gr.gw]
         self.decompose_environment(GMV, 'values')
 
         if self.use_steady_updrafts:
@@ -342,7 +341,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.decompose_environment(GMV, 'mf_update')
         self.EnvThermo.satadjust(self.EnvVar, GMV)
         self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar,GMV, self.extrapolate_buoyancy)
-        print '346', self.UpdVar.B.values[0,self.Gr.gw]
 
         self.compute_eddy_diffusivities_tke(GMV, Case)
 
@@ -367,7 +365,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.dt_upd = np.minimum(TS.dt, 0.5 * self.Gr.dz/fmax(np.max(self.UpdVar.W.values),1e-10))
         while time_elapsed < TS.dt:
             self.compute_entrainment_detrainment(GMV, Case)
-            print '374', self.UpdVar.B.values[0,self.Gr.gw]
             self.solve_updraft_velocity_area(GMV,TS)
             self.solve_updraft_scalars(GMV, Case, TS)
             self.UpdVar.set_values_with_new()
@@ -426,7 +423,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.decompose_environment(GMV, 'values')
         self.EnvThermo.satadjust(self.EnvVar, GMV)
         self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar, GMV, self.extrapolate_buoyancy)
-        print '424', self.UpdVar.B.values[0,self.Gr.gw]
 
         # Solve updraft velocity equation
         with nogil:
@@ -489,7 +485,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.decompose_environment(GMV, 'values')
         self.EnvThermo.satadjust(self.EnvVar, GMV)
         self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar, GMV, self.extrapolate_buoyancy)
-        print '487', self.UpdVar.B.values[0,self.Gr.gw]
 
         self.UpdVar.Area.set_bcs(self.Gr)
 
@@ -630,9 +625,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.area_surface_bc[i] = self.surface_area/self.n_updrafts
             self.h_surface_bc[i] = (GMV.H.values[gw] + surface_scalar_coeff * sqrt(h_var))
             self.qt_surface_bc[i] = (GMV.QT.values[gw] + surface_scalar_coeff * sqrt(qt_var))
-            print '624 qt_var, h_var', qt_var, h_var, GMV.H.values[gw], GMV.QT.values[gw], surface_scalar_coeff
-            plt.figure()
-            plt.show()
 
         return
 
@@ -902,11 +894,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             press = press_buoy + press_drag
             self.UpdVar.W.new[i,gw] = (self.Ref.rho0[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.W.values[i,gw] * dti_
                                                   -adv + exch + buoy + press)/(self.Ref.rho0[gw] * self.UpdVar.Area.new[i,gw] * dti_)
-            #self.UpdVar.W.values[i,gw] = sqrt(2.0*self.UpdVar.B.values[i,gw])
-            print 'first print ', adv ,exch, buoy, press,self.UpdVar.W.new[i,gw], self.UpdVar.Area.values[i,gw]
-            print 'self.UpdVar.B.values[i,gw]', self.UpdVar.B.values[i,gw], 'self.Ref.rho0[gw]',self.Ref.rho0[gw],
-            plt.figure()
-            plt.show()
+            self.UpdVar.W.new[i,gw] = sqrt(2.0*fmax(self.UpdVar.B.values[i,gw],0.0))
+            #print 'self.UpdVar.W.new[i,gw]', self.UpdVar.W.new[i,gw]
 
             #self.UpdVar.W.values[i,gw] = sqrt(2.0*self.UpdVar.B.values[i,gw])
             for k in range(gw+1, self.Gr.nzg-gw):
@@ -918,11 +907,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
 
                 self.UpdVar.Area.new[i,k]  = fmax(dt_ * (adv + entr_term + detr_term) + self.UpdVar.Area.values[i,k], 0.0)
-                print '.Area.new[i,k]', self.UpdVar.Area.new[i,k], 'Area.values[i,k],', self.UpdVar.Area.values[i,k], 'adv',adv,'entr',entr_term ,'detr', detr_term
-                plt.figure()
-                plt.show()
 
-                print self.UpdVar.Area.new[i,k], adv ,entr_term ,detr_term, self.UpdVar.Area.values[i,k]
                 if self.UpdVar.Area.new[i,k] > au_lim:
                     self.UpdVar.Area.new[i,k] = au_lim
                     if self.UpdVar.Area.values[i,k] > 0.0:
@@ -933,7 +918,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
                 # Now solve for updraft velocity at k
                 rho_ratio = self.Ref.rho0[k-1]/self.Ref.rho0[k]
-                print '912', self.UpdVar.Area.new[i,k], self.minimum_area, self.UpdVar.Area.new[i,gw], self.UpdVar.W.new[i,gw]
+
                 if self.UpdVar.Area.new[i,k] >= self.minimum_area:
                     entr_w = self.entr_sc[i,k]
                     detr_w = self.detr_sc[i,k]
@@ -950,9 +935,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     self.UpdVar.W.new[i,k] = (self.Ref.rho0[k] * self.UpdVar.Area.values[i,k] * self.UpdVar.W.values[i,k] * dti_
                                               -adv + exch + buoy + press)/(self.Ref.rho0[k] * self.UpdVar.Area.new[i,k] * dti_)
 
-                    print '924',  k, 'W.new', self.UpdVar.W.new[i,k], 'W.values[i,k]', self.UpdVar.W.values[i,k], 'W.values[i,k-1]', self.UpdVar.W.values[i,k-1], 'adv',adv ,'exch', exch, 'buoy', buoy, 'press', press
-                    plt.figure()
-                    plt.show()
                     if self.UpdVar.W.new[i,k] <= 0.0:
                         self.UpdVar.W.new[i,k:] = 0.0
                         self.UpdVar.Area.new[i,k+1:] = 0.0
@@ -982,13 +964,13 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         if self.use_local_micro:
             with nogil:
                 for i in xrange(self.n_updrafts):
-                    self.UpdVar.H.values[i,gw] = self.h_surface_bc[i]
-                    self.UpdVar.QT.values[i,gw]  = self.qt_surface_bc[i]
+                    self.UpdVar.H.new[i,gw] = self.h_surface_bc[i]
+                    self.UpdVar.QT.new[i,gw]  = self.qt_surface_bc[i]
 
                     sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp,
                              self.Ref.p0[gw], self.UpdVar.QT.values[i,gw], self.UpdVar.H.values[i,gw])
-                    self.UpdVar.QL.values[i,gw] = sa.ql
-                    self.UpdVar.T.values[i,gw] = sa.T
+                    self.UpdVar.QL.new[i,gw] = sa.ql
+                    self.UpdVar.T.new[i,gw] = sa.T
                     self.UpdMicro.compute_update_combined_local_thetal(self.Ref.p0[gw], self.UpdVar.T.values[i,gw],
                                                                        &self.UpdVar.QT.values[i,gw], &self.UpdVar.QL.values[i,gw],
                                                                        &self.UpdVar.H.values[i,gw], i, gw)
