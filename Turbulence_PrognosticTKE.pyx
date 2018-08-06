@@ -935,10 +935,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     self.UpdVar.W.new[i,k] = (self.Ref.rho0[k] * self.UpdVar.Area.values[i,k] * self.UpdVar.W.values[i,k] * dti_
                                               -adv + exch + buoy + press)/(self.Ref.rho0[k] * self.UpdVar.Area.new[i,k] * dti_)
 
-                    if self.UpdVar.W.new[i,k] <= 0.0:
-                        self.UpdVar.W.new[i,k:] = 0.0
-                        self.UpdVar.Area.new[i,k+1:] = 0.0
-                        break
+                    # if self.UpdVar.W.new[i,k] <= 0.0:
+                    #     self.UpdVar.W.new[i,k:] = 0.0
+                    #     self.UpdVar.Area.new[i,k+1:] = 0.0
+                    #     break
 
                 else:
                     self.UpdVar.W.new[i,k:] = 0.0
