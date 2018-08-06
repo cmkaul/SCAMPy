@@ -902,7 +902,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             press = press_buoy + press_drag
             self.UpdVar.W.new[i,gw] = (self.Ref.rho0[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.W.values[i,gw] * dti_
                                                   -adv + exch + buoy + press)/(self.Ref.rho0[gw] * self.UpdVar.Area.new[i,gw] * dti_)
-            self.UpdVar.W.values[i,gw] = sqrt(2.0*self.UpdVar.B.values[i,gw])
+            #self.UpdVar.W.values[i,gw] = sqrt(2.0*self.UpdVar.B.values[i,gw])
             print 'first print ', adv ,exch, buoy, press,self.UpdVar.W.new[i,gw], self.UpdVar.Area.values[i,gw]
             print 'self.UpdVar.B.values[i,gw]', self.UpdVar.B.values[i,gw], 'self.Ref.rho0[gw]',self.Ref.rho0[gw],
             plt.figure()
