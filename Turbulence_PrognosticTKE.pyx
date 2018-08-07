@@ -870,7 +870,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double adv, buoy, exch, press, press_buoy, press_drag # groupings of terms in velocity discrete equation
 
         with nogil:
-            # issues wth whether the BC is applied to values or new and at which k
             for i in xrange(self.n_updrafts):
                 self.entr_sc[i,gw] = 20.0 * dzi
                 self.detr_sc[i,gw] = 0.0
@@ -882,14 +881,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                     * (self.entr_sc[i,gw] * self.EnvVar.W.values[gw] - self.detr_sc[i,gw] * self.UpdVar.W.values[i,gw] ))
                 buoy= self.Ref.rho0[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.B.values[i,gw]
                 press_buoy =  -1.0 * self.Ref.rho0[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.B.values[i,gw] * self.pressure_buoy_coeff
-                #press_drag = -1.0 * self.Ref.rho0[gw] * self.UpdVar.Area.values[i,gw] * (self.pressure_drag_coeff/self.pressure_plume_spacing
-                #                                                         * (self.UpdVar.W.values[i,gw] -self.EnvVar.W.values[gw])**2.0/sqrt(fmax(self.UpdVar.Area.values[i,gw],self.minimum_area)))
                 press_drag = -1.0 * self.Ref.rho0[gw]*sqrt(self.UpdVar.Area.values[i,gw])*self.pressure_drag_coeff/self.pressure_plume_spacing \
                              * (self.UpdVar.W.values[i,gw] -self.EnvVar.W.values[gw])*fabs(self.UpdVar.W.values[i,gw] -self.EnvVar.W.values[gw])
                 press = press_buoy + press_drag
                 self.UpdVar.W.values[i,gw] = (self.Ref.rho0[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.W.values[i,gw] * dti_
                                                       -adv + exch + buoy + press)/(self.Ref.rho0[gw] * self.UpdVar.Area.new[i,gw] * dti_)
-                #self.UpdVar.W.values[i,gw] = sqrt(2.0*fmax(self.UpdVar.B.values[i,gw],0.0))
+
                 self.UpdVar.W.new[i,gw] = self.UpdVar.W.values[i,gw]
                 with gil:
                     print self.UpdVar.W.new[i,gw], -adv, exch, buoy , press
