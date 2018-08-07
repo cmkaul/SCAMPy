@@ -66,7 +66,6 @@ cdef class ReferenceState:
         p0 = np.log(self.Pg)
 
         p = np.zeros(Gr.nzg, dtype=np.double, order='c')
-
         # Perform the integration
         p[Gr.gw:-Gr.gw] = odeint(rhs, p0, z, hmax=1.0)[1:, 0]
 
