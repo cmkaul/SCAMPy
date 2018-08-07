@@ -902,7 +902,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for k in range(gw+1, self.Gr.nzg-gw):
                 # First solve for updated area fraction at k+1
 
-                if self.UpdVar.W.new[i,k]<0:
+                if self.UpdVar.W.values[i,k]<0:
                     sgn_w = 0.0
                 else:
                     sgn_w = 1.0
@@ -913,8 +913,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                                           -self.Ref.rho0[k] * self.UpdVar.Area.values[i,k] * self.UpdVar.W.values[i,k])
                 adv = sgn_w*adv_up + (1.0-sgn_w)*adv_dw
 
-                entr_term = self.UpdVar.Area.values[i,k] * self.UpdVar.W.values[i,k] * (2.0*sgn_w-1.0)*(self.entr_sc[i,k] )
-                detr_term = self.UpdVar.Area.values[i,k] * self.UpdVar.W.values[i,k] * (1.0-2.0*sgn_w)*(- self.detr_sc[i,k])
+                entr_term = self.UpdVar.Area.values[i,k] * self.UpdVar.W.values[i,k] * (2.0*sgn_w-1.0)*self.entr_sc[i,k]
+                detr_term = self.UpdVar.Area.values[i,k] * self.UpdVar.W.values[i,k] * (1.0-2.0*sgn_w)*self.detr_sc[i,k]
                 self.UpdVar.Area.new[i,k]  = fmax(dt_ * (adv + entr_term + detr_term) + self.UpdVar.Area.values[i,k], 0.0)
                 #print '----------------------------------------------------'
                 #print 'self.UpdVar.Area.new[i,k]', self.UpdVar.Area.new[i,k], 'adv', adv, 'sgn_w', sgn_w
@@ -942,11 +942,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     adv = sgn_w*adv_up + (1.0-sgn_w)*adv_dw
 
                     exch = (self.Ref.rho0[k] * self.UpdVar.Area.values[i,k] * self.UpdVar.W.values[i,k]
-                            * ((2.0*sgn_w-1.0)**entr_w * self.EnvVar.W.values[k] - (2.0*sgn_w-1.0)**detr_w * self.UpdVar.W.values[i,k] ))
+                            * ((2.0*sgn_w-1.0)*entr_w * self.EnvVar.W.values[k] - (2.0*sgn_w-1.0)*detr_w * self.UpdVar.W.values[i,k] ))
                     buoy= self.Ref.rho0[k] * self.UpdVar.Area.values[i,k] * self.UpdVar.B.values[i,k]
                     press_buoy =  -1.0 * self.Ref.rho0[k] * self.UpdVar.Area.values[i,k] * self.UpdVar.B.values[i,k] * self.pressure_buoy_coeff
-                    press_drag = -1.0 * self.Ref.rho0[k] * self.UpdVar.Area.values[i,k] * (self.pressure_drag_coeff/self.pressure_plume_spacing
-                                                                 * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k])**2.0/sqrt(fmax(self.UpdVar.Area.values[i,k],self.minimum_area)))
+                    press_drag = -1.0 * self.Ref.rho0[k]*(sqrt(self.UpdVar.Area.values[i,k] )*self.pressure_drag_coeff/self.pressure_plume_spacing
+                                                                    * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k])**2.0)
                     press = press_buoy + press_drag
                     self.updraft_pressure_sink[i,k] = press
                     self.UpdVar.W.new[i,k] = (self.Ref.rho0[k] * self.UpdVar.Area.values[i,k] * self.UpdVar.W.values[i,k] * dti_
@@ -1004,7 +1004,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         # write the discrete equations in form:
                         # c1 * phi_new[k] = c2 * phi[k] + c3 * phi[k-1] + c4 * phi_entr
                         if self.UpdVar.Area.new[i,k] >= self.minimum_area:
-                            if self.UpdVar.W.values[i,k-1]<0:
+                            if self.UpdVar.W.values[i,k]<0:
                                 sgn_w = 0.0
                             else:
                                 sgn_w = 1.0
