@@ -892,9 +892,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             press_drag = -1.0 * self.Ref.rho0[gw] * self.UpdVar.Area.values[i,gw] * (self.pressure_drag_coeff/self.pressure_plume_spacing
                                                                      * (self.UpdVar.W.values[i,gw] -self.EnvVar.W.values[gw])**2.0/sqrt(fmax(self.UpdVar.Area.values[i,gw],self.minimum_area)))
             press = press_buoy + press_drag
-            self.UpdVar.W.new[i,gw] = (self.Ref.rho0[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.W.values[i,gw] * dti_
-                                                  -adv + exch + buoy + press)/(self.Ref.rho0[gw] * self.UpdVar.Area.new[i,gw] * dti_)
-            self.UpdVar.W.new[i,gw] = sqrt(2.0*fmax(self.UpdVar.B.values[i,gw],0.0))
+            #self.UpdVar.W.new[i,gw] = (self.Ref.rho0[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.W.values[i,gw] * dti_
+            #                                      -adv + exch + buoy + press)/(self.Ref.rho0[gw] * self.UpdVar.Area.new[i,gw] * dti_)
+            self.UpdVar.W.values[i,gw] = sqrt(2.0*fmax(self.UpdVar.B.values[i,gw],0.0))
+            self.UpdVar.W.new[i,gw] = self.UpdVar.W.values[i,gw]
             #print 'self.UpdVar.W.new[i,gw]', self.UpdVar.W.new[i,gw]
 
             #self.UpdVar.W.values[i,gw] = sqrt(2.0*self.UpdVar.B.values[i,gw])
@@ -922,7 +923,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         self.detr_sc[i,k] = (((au_lim-self.UpdVar.Area.values[i,k])* dti_ - adv -entr_term)/(-self.UpdVar.Area.values[i,k]  * self.UpdVar.W.values[i,k]))
                     else:
                         # this detrainment rate won't affect scalars but would affect velocity
-                        self.detr_sc[i,k] = (((au_lim-self.UpdVar.Area.values[i,k])* dti_ - adv -entr_term)/(-au_lim  * self.UpdVar.W.values[i,k+1]))
+                        self.detr_sc[i,k] = (((au_lim-self.UpdVar.Area.values[i,k])* dti_ - adv -entr_term)/(-au_lim  * self.UpdVar.W.values[i,k]))
 
                 # Now solve for updraft velocity at k
                 rho_ratio = self.Ref.rho0[k-1]/self.Ref.rho0[k]
