@@ -896,7 +896,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             #                                      -adv + exch + buoy + press)/(self.Ref.rho0[gw] * self.UpdVar.Area.new[i,gw] * dti_)
             self.UpdVar.W.values[i,gw] = sqrt(2.0*fmax(self.UpdVar.B.values[i,gw],0.0))
             self.UpdVar.W.new[i,gw] = self.UpdVar.W.values[i,gw]
-            #print 'self.UpdVar.W.new[i,gw]', self.UpdVar.W.new[i,gw]
+
 
             #self.UpdVar.W.values[i,gw] = sqrt(2.0*self.UpdVar.B.values[i,gw])
             for k in range(gw+1, self.Gr.nzg-gw):
@@ -913,9 +913,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                                           -self.Ref.rho0[k] * self.UpdVar.Area.values[i,k] * self.UpdVar.W.values[i,k])
                 adv = sgn_w*adv_up + (1.0-sgn_w)*adv_dw
 
-                entr_term = self.UpdVar.Area.values[i,k] * self.UpdVar.W.values[i,k] * (self.entr_sc[i,k] )
-                detr_term = self.UpdVar.Area.values[i,k] * self.UpdVar.W.values[i,k] * (- self.detr_sc[i,k])
+                entr_term = self.UpdVar.Area.values[i,k] * self.UpdVar.W.values[i,k] * (2.0*sgn_w-1.0)*(self.entr_sc[i,k] )
+                detr_term = self.UpdVar.Area.values[i,k] * self.UpdVar.W.values[i,k] * (1.0-2.0*sgn_w)*(- self.detr_sc[i,k])
                 self.UpdVar.Area.new[i,k]  = fmax(dt_ * (adv + entr_term + detr_term) + self.UpdVar.Area.values[i,k], 0.0)
+                #print '----------------------------------------------------'
+                #print 'self.UpdVar.Area.new[i,k]', self.UpdVar.Area.new[i,k], 'adv', adv, 'sgn_w', sgn_w
+
 
                 if self.UpdVar.Area.new[i,k] > au_lim:
                     self.UpdVar.Area.new[i,k] = au_lim
@@ -939,7 +942,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     adv = sgn_w*adv_up + (1.0-sgn_w)*adv_dw
 
                     exch = (self.Ref.rho0[k] * self.UpdVar.Area.values[i,k] * self.UpdVar.W.values[i,k]
-                            * (entr_w * self.EnvVar.W.values[k] - detr_w * self.UpdVar.W.values[i,k] ))
+                            * ((2.0*sgn_w-1.0)**entr_w * self.EnvVar.W.values[k] - (2.0*sgn_w-1.0)**detr_w * self.UpdVar.W.values[i,k] ))
                     buoy= self.Ref.rho0[k] * self.UpdVar.Area.values[i,k] * self.UpdVar.B.values[i,k]
                     press_buoy =  -1.0 * self.Ref.rho0[k] * self.UpdVar.Area.values[i,k] * self.UpdVar.B.values[i,k] * self.pressure_buoy_coeff
                     press_drag = -1.0 * self.Ref.rho0[k] * self.UpdVar.Area.values[i,k] * (self.pressure_drag_coeff/self.pressure_plume_spacing
@@ -948,11 +951,18 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     self.updraft_pressure_sink[i,k] = press
                     self.UpdVar.W.new[i,k] = (self.Ref.rho0[k] * self.UpdVar.Area.values[i,k] * self.UpdVar.W.values[i,k] * dti_
                                               -adv + exch + buoy + press)/(self.Ref.rho0[k] * self.UpdVar.Area.new[i,k] * dti_)
+                    #print '----------------------------------------------------'
+                    #print 'self.UpdVar.W.new[i,k]', self.UpdVar.W.new[i,k], 'adv', adv, 'sgn_w', sgn_w
+
 
                     # if self.UpdVar.W.new[i,k] <= 0.0:
                     #     self.UpdVar.W.new[i,k:] = 0.0
                     #     self.UpdVar.Area.new[i,k:] = 0.0
                     #     break
+
+
+                    # plt.figure()
+                    # plt.show()
 
                 else:
                     self.UpdVar.W.new[i,k:] = 0.0
@@ -1005,14 +1015,20 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
                             c1 = self.Ref.rho0[k] * self.UpdVar.Area.new[i,k] * dti_
                             c2 = (self.Ref.rho0[k] * self.UpdVar.Area.values[i,k] * dti_
-                                  - m_k * (dzi + self.detr_sc[i,k]))
-                            c3 = m_km * dzi
-                            c4 = m_k * self.entr_sc[i,k]
+                                  - (2.0*sgn_w-1.0)*m_k * (dzi + self.detr_sc[i,k]))
+                            c3 = sgn_w*m_km * dzi - (1.0-sgn_w)*m_kp*dzi
+                            c4 = (2.0*sgn_w-1.0)*m_k * self.entr_sc[i,k]
 
-                            self.UpdVar.H.new[i,k] =  (c2 * self.UpdVar.H.values[i,k]  + c3 * self.UpdVar.H.values[i,k-1]
-                                                       + c4 * H_entr)/c1
-                            self.UpdVar.QT.new[i,k] = (c2 * self.UpdVar.QT.values[i,k] + c3 * self.UpdVar.QT.values[i,k-1]
-                                                       + c4* QT_entr)/c1
+                            self.UpdVar.H.new[i,k] =  (c2 * self.UpdVar.H.values[i,k]  + c3*sgn_w * self.UpdVar.H.values[i,k-1]
+                                                       + c3*(1.0-sgn_w) * self.UpdVar.H.values[i,k+1]  + c4 * H_entr  )/c1
+                            self.UpdVar.QT.new[i,k] = (c2 * self.UpdVar.QT.values[i,k] + c3*sgn_w * self.UpdVar.QT.values[i,k-1]
+                                                       + c3*(1.0-sgn_w) * self.UpdVar.QT.values[i,k+1]  + c4* QT_entr)/c1
+
+                            if self.UpdVar.H.new[i,k]>310.0 or self.UpdVar.H.new[i,k]<290.0:
+                                with gil:
+                                    print'self.UpdVar.H.new[i,k]', self.UpdVar.H.new[i,k], 'self.UpdVar.QT.new[i,k] ',self.UpdVar.QT.new[i,k]
+                                    print 'self.UpdVar.Area.values[i,k+1]', self.UpdVar.Area.values[i,k+1], 'self.UpdVar.Area.values[i,k]', self.UpdVar.Area.values[i,k], 'self.UpdVar.Area.values[i,k-1]', self.UpdVar.Area.values[i,k-1]
+                                    print c1,c2,c3,c4
 
                         else:
                             self.UpdVar.H.new[i,k] = GMV.H.values[k]
@@ -1020,9 +1036,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
                         sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0[k],
                                  self.UpdVar.QT.new[i,k], self.UpdVar.H.new[i,k])
-                        if self.UpdVar.H.new[i,k] > 330.0 or self.UpdVar.H.new[i,k] <290.0:
+                        if self.UpdVar.H.new[i,k]>310.0 or self.UpdVar.H.new[i,k]<290.0:
                             with gil:
-                                print 'sa.ql',sa.ql, 'sa.T', sa.T, 'self.UpdVar.H.new[i,k]', self.UpdVar.H.new[i,k], 'self.UpdVar.QT.new[i,k] ',self.UpdVar.QT.new[i,k]
+                                print 'sa.ql',sa.ql, 'self.UpdVar.QT.new[i,k]', self.UpdVar.QT.new[i,k], 'sa.T', sa.T, 'self.UpdVar.H.new[i,k]',self.UpdVar.H.new[i,k]
+
+
                         self.UpdVar.QL.new[i,k] = sa.ql
                         self.UpdVar.T.new[i,k] = sa.T
                         self.UpdMicro.compute_update_combined_local_thetal(self.Ref.p0[k], self.UpdVar.T.new[i,k],
