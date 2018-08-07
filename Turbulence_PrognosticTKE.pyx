@@ -876,13 +876,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.detr_sc[i,gw] = 0.0
             self.UpdVar.Area.new[i,gw] = self.area_surface_bc[i]
             au_lim = self.area_surface_bc[i] * self.max_area_factor
-            #self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar, GMV, self.extrapolate_buoyancy)
-            #alpha_srf = alpha_c(self.Ref.p0[gw], self.UpdVar.T.values[i,gw], self.UpdVar.QT.values[i,gw],self.UpdVar.QT.values[i,gw])
-            #self.UpdVar.B.values[i,gw]= buoyancy_c(self.Ref.alpha0[gw], alpha_srf)
-            #print 'self.UpdVar.B.values[i,gw]',self.UpdVar.B.values[i,gw]
-            #print 'self.UpdVar.B.values[i,gw]',self.UpdVar.B.new[i,gw]
-            #print 'self.h_surface_bc[i]', self.h_surface_bc[i]
-            #print 'self.UpdVar.QT.values[i,gw]', self.UpdVar.QT.values[i,gw]
 
             adv = (self.Ref.rho0[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.W.values[i,gw] * self.UpdVar.W.values[i,gw] * dzi/2.0)
             exch = (self.Ref.rho0[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.W.values[i,gw]
@@ -906,7 +899,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     sgn_w = 0.0
                 else:
                     sgn_w = 1.0
-                #sgn_w=1.0
+
                 adv_up = -self.Ref.alpha0[k] * dzi *( self.Ref.rho0[k] * self.UpdVar.Area.values[i,k] * self.UpdVar.W.values[i,k]
                                                           -self.Ref.rho0[k-1] * self.UpdVar.Area.values[i,k-1] * self.UpdVar.W.values[i,k-1])
                 adv_dw = -self.Ref.alpha0[k] * dzi *( self.Ref.rho0[k+1] * self.UpdVar.Area.values[i,k+1] * self.UpdVar.W.values[i,k+1]
@@ -916,8 +909,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 entr_term = self.UpdVar.Area.values[i,k] * self.UpdVar.W.values[i,k] * (2.0*sgn_w-1.0)*self.entr_sc[i,k]
                 detr_term = self.UpdVar.Area.values[i,k] * self.UpdVar.W.values[i,k] * (1.0-2.0*sgn_w)*self.detr_sc[i,k]
                 self.UpdVar.Area.new[i,k]  = fmax(dt_ * (adv + entr_term + detr_term) + self.UpdVar.Area.values[i,k], 0.0)
-                #print '----------------------------------------------------'
-                #print 'self.UpdVar.Area.new[i,k]', self.UpdVar.Area.new[i,k], 'adv', adv, 'sgn_w', sgn_w
 
 
                 if self.UpdVar.Area.new[i,k] > au_lim:
@@ -951,18 +942,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     self.updraft_pressure_sink[i,k] = press
                     self.UpdVar.W.new[i,k] = (self.Ref.rho0[k] * self.UpdVar.Area.values[i,k] * self.UpdVar.W.values[i,k] * dti_
                                               -adv + exch + buoy + press)/(self.Ref.rho0[k] * self.UpdVar.Area.new[i,k] * dti_)
-                    #print '----------------------------------------------------'
-                    #print 'self.UpdVar.W.new[i,k]', self.UpdVar.W.new[i,k], 'adv', adv, 'sgn_w', sgn_w
 
-
-                    # if self.UpdVar.W.new[i,k] <= 0.0:
-                    #     self.UpdVar.W.new[i,k:] = 0.0
-                    #     self.UpdVar.Area.new[i,k:] = 0.0
-                    #     break
-
-
-                    # plt.figure()
-                    # plt.show()
 
                 else:
                     self.UpdVar.W.new[i,k:] = 0.0
@@ -1001,6 +981,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     for k in xrange(gw+1, self.Gr.nzg-gw):
                         H_entr = self.EnvVar.H.values[k]
                         QT_entr = self.EnvVar.QT.values[k]
+
                         # write the discrete equations in form:
                         # c1 * phi_new[k] = c2 * phi[k] + c3 * phi[k-1] + c4 * phi_entr
                         if self.UpdVar.Area.new[i,k] >= self.minimum_area:
@@ -1008,7 +989,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                 sgn_w = 0.0
                             else:
                                 sgn_w = 1.0
-                            #sgn_w = 1.0
                             m_kp = (self.Ref.rho0[k+1] * self.UpdVar.Area.values[i,k+1]*self.UpdVar.W.values[i,k+1])
                             m_k = (self.Ref.rho0[k] * self.UpdVar.Area.values[i,k]*self.UpdVar.W.values[i,k])
                             m_km = (self.Ref.rho0[k-1] * self.UpdVar.Area.values[i,k-1]*  self.UpdVar.W.values[i,k-1])
@@ -1024,11 +1004,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                             self.UpdVar.QT.new[i,k] = (c2 * self.UpdVar.QT.values[i,k] + c3*sgn_w * self.UpdVar.QT.values[i,k-1]
                                                        + c3*(1.0-sgn_w) * self.UpdVar.QT.values[i,k+1]  + c4* QT_entr)/c1
 
-                            if self.UpdVar.H.new[i,k]>310.0 or self.UpdVar.H.new[i,k]<290.0:
-                                with gil:
-                                    print'self.UpdVar.H.new[i,k]', self.UpdVar.H.new[i,k], 'self.UpdVar.QT.new[i,k] ',self.UpdVar.QT.new[i,k]
-                                    print 'self.UpdVar.Area.values[i,k+1]', self.UpdVar.Area.values[i,k+1], 'self.UpdVar.Area.values[i,k]', self.UpdVar.Area.values[i,k], 'self.UpdVar.Area.values[i,k-1]', self.UpdVar.Area.values[i,k-1]
-                                    print c1,c2,c3,c4
+                            # if self.UpdVar.H.new[i,k]>310.0 or self.UpdVar.H.new[i,k]<290.0:
+                            #     with gil:
+                            #         print'self.UpdVar.H.new[i,k]', self.UpdVar.H.new[i,k], 'self.UpdVar.QT.new[i,k] ',self.UpdVar.QT.new[i,k]
+                            #         print 'self.UpdVar.Area.values[i,k+1]', self.UpdVar.Area.values[i,k+1], 'self.UpdVar.Area.values[i,k]', self.UpdVar.Area.values[i,k], 'self.UpdVar.Area.values[i,k-1]', self.UpdVar.Area.values[i,k-1]
+                            #         print c1,c2,c3,c4
 
                         else:
                             self.UpdVar.H.new[i,k] = GMV.H.values[k]
@@ -1067,7 +1047,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                 sgn_w = 0.0
                             else:
                                 sgn_w = 1.0
-                            sgn_w = 1.0
                             m_kp = (self.Ref.rho0[k+1] * self.UpdVar.Area.values[i,k+1]*self.UpdVar.W.values[i,k+1])
                             m_k = (self.Ref.rho0[k] * self.UpdVar.Area.values[i,k]*self.UpdVar.W.values[i,k])
                             m_km = (self.Ref.rho0[k-1] * self.UpdVar.Area.values[i,k-1]*  self.UpdVar.W.values[i,k-1])
