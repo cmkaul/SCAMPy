@@ -95,8 +95,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef set_updraft_surface_bc(self, GridMeanVariables GMV, CasesBase Case)
     cpdef decompose_environment(self, GridMeanVariables GMV, whichvals)
     cpdef compute_entrainment_detrainment(self, GridMeanVariables GMV, CasesBase Case)
-    cpdef solve_updraft_velocity_area(self, GridMeanVariables GMV, TimeStepping TS)
-    cpdef solve_updraft_scalars(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
+    cpdef solve_updraft(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
+    cpdef upwind_integration(self, EDMF_Updrafts.UpdraftVariable area,
+                                   EDMF_Updrafts.UpdraftVariable var, int k, int i, double env_var)
     cpdef update_GMV_MF(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef update_GMV_ED(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
     cpdef compute_tke(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
