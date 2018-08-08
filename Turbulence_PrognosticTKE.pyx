@@ -901,6 +901,15 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
             for k in range(gw+1, self.Gr.nzg-gw):
                 self.upwind_integration(self.UpdVar.Area, self.UpdVar.Area, k, i, 1.0)
+
+                if self.UpdVar.Area.new[i,k] > au_lim:
+                    self.UpdVar.Area.new[i,k] = au_lim
+                    if self.UpdVar.Area.values[i,k] > 0.0:
+                        self.detr_sc[i,k] = (((au_lim-self.UpdVar.Area.values[i,k])* dti_ - adv -entr_term)/(-self.UpdVar.Area.values[i,k]  * self.UpdVar.W.values[i,k]))
+                    else:
+                        # this detrainment rate won't affect scalars but would affect velocity
+                        self.detr_sc[i,k] = (((au_lim-self.UpdVar.Area.values[i,k])* dti_ - adv -entr_term)/(-au_lim  * self.UpdVar.W.values[i,k]))
+
                 if self.UpdVar.Area.new[i,k] >= self.minimum_area:
                     self.upwind_integration(self.UpdVar.Area, self.UpdVar.W, k, i, self.EnvVar.W.values[k])
                     self.upwind_integration(self.UpdVar.Area, self.UpdVar.H, k, i, self.EnvVar.H.values[k])
