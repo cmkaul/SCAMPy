@@ -900,9 +900,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                                                &self.UpdVar.H.values[i,gw], i, gw)
 
             for k in range(gw+1, self.Gr.nzg-gw):
-                #print '903', self.UpdVar.Area.values[i,gw], self.UpdVar.W.values[i,gw]
                 self.upwind_integration(self.UpdVar.Area, self.UpdVar.Area, k, i, 1.0)
-                print self.UpdVar.Area.new[i,k]
                 if self.UpdVar.Area.new[i,k] >= self.minimum_area:
                     self.upwind_integration(self.UpdVar.Area, self.UpdVar.W, k, i, self.EnvVar.W.values[k])
                     self.upwind_integration(self.UpdVar.Area, self.UpdVar.H, k, i, self.EnvVar.H.values[k])
@@ -937,41 +935,32 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         return
 
     cpdef upwind_integration(self, EDMF_Updrafts.UpdraftVariable area, EDMF_Updrafts.UpdraftVariable var, int k, int i, double env_var):
-
         cdef:
             double dzi = self.Gr.dzi
             double dti_ = 1.0/self.dt_upd
-            double adv, buoy, exch, press, press_buoy, press_drag, area_new
-            double var_km, var_k, var_kp
+            double adv, exch, press_buoy, press_drag
+            double buoy = 0.0
+            double press = 0.0
+            double var_kp = 1.0
+            double var_k = 1.0
+            double var_km = 1.0
+            double area_new = 1.0
 
-        if var.name == 'area_fraction':
-            buoy = 0.0
-            press = 0.0
-            area_new = 1.0
-            var_kp = 1.0
-            var_k = 1.0
-            var_km = 1.0
-
-        elif var.name == 'w':
+        if var.name == 'w':
             buoy = self.Ref.rho0[k] * self.UpdVar.Area.values[i,k] * self.UpdVar.B.values[i,k]
             press_buoy =  -1.0 * self.Ref.rho0[k] * self.UpdVar.Area.values[i,k] * self.UpdVar.B.values[i,k] * self.pressure_buoy_coeff
             press_drag = -1.0 * self.Ref.rho0[k]*(sqrt(self.UpdVar.Area.values[i,k] )*self.pressure_drag_coeff/self.pressure_plume_spacing
-                                                        * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k])*fabs(self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k]))
+                              * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k])*fabs(self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k]))
             press = press_buoy + press_drag
             area_new = area.new[i,k]
             var_kp = var.values[i,k+1]
             var_k = var.values[i,k]
             var_km = var.values[i,k-1]
-
-
         elif var.name == 'thetal' or var.name == 'qt':
-            buoy = 0.0
-            press = 0.0
             area_new = area.new[i,k]
             var_kp = var.values[i,k+1]
             var_k = var.values[i,k]
             var_km = var.values[i,k-1]
-
 
         if self.UpdVar.W.values[i,k]<0:
             adv = (self.Ref.rho0[k+1] * area.values[i,k+1] * self.UpdVar.W.values[i,k+1] * var_kp
@@ -984,20 +973,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             exch = (self.Ref.rho0[k] * area.values[i,k] * self.UpdVar.W.values[i,k]
                 * (self.entr_sc[i,k] * env_var - self.detr_sc[i,k] * var_k ))
 
-        #print adv, exch, press, buoy, var1new, dti_
-        #print var1.name, var2.name ,  k , i, env_var
-
         self.updraft_pressure_sink[i,k] = press
-        if area_new== 0.0:
-            print var.name, k
-            plt.figure()
-            plt.show()
         var.new[i,k] = (self.Ref.rho0[k] * area.values[i,k] * var_k * dti_ -adv + exch + buoy + press)\
                       /(self.Ref.rho0[k] * area_new * dti_)
-        print var.new[i,k], var_k , adv , exch ,buoy , press
-
-        # plt.figure()
-        # plt.show()
 
 
     # After updating the updraft variables themselves:
