@@ -1631,6 +1631,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 x[kk] = (self.Ref.rho0[k] * ae_old[k] * self.EnvVar.HQTcov.values[k] * dti
                          + self.HQTcov_shear[k] + self.HQTcov_entr_gain[k]) #
 
+
             a[0] = 0.0
             b[0] = 1.0
             c[0] = 0.0
