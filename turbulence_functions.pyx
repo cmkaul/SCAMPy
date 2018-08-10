@@ -352,8 +352,6 @@ cdef void tridiag_solve(Py_ssize_t nz, double *x, double *a, double *b, double *
 
 
 
-
-
 # Dustbin
 
 cdef bint set_cloudbase_flag(double ql, bint current_flag) nogil:

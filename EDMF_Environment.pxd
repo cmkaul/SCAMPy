@@ -12,6 +12,21 @@ cdef class EnvironmentVariable:
         str name
         str units
 
+
+cdef class EnvironmentVariable:
+    cdef:
+        double [:] values
+        double [:] dissipation
+        double [:] shear
+        double [:] entr_gain
+        double [:] detr_loss
+        double [:] buoy_src
+        double [:] press
+        str loc
+        str kind
+        str name
+        str units
+
 cdef class EnvironmentVariables:
     cdef:
 
