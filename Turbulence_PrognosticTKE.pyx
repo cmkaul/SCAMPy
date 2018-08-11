@@ -618,7 +618,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     val2 = self.UpdVar.Area.bulkvalues[k] * val1
                     self.EnvVar.QT.values[k] = val1 * GMV.QT.values[k] - val2 * self.UpdVar.QT.bulkvalues[k]
                     self.EnvVar.H.values[k] = val1 * GMV.H.values[k] - val2 * self.UpdVar.H.bulkvalues[k]
-                    # Have to account for staggering of W--interpolate area fraction to the "full" grid points
                     # Assuming GMV.W = 0!
                     self.EnvVar.W.values[k] = -self.UpdVar.Area.bulkvalues[k]/(1.0-self.UpdVar.Area.bulkvalues[k]) * self.UpdVar.W.bulkvalues[k]
 
@@ -638,7 +637,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
                     self.EnvVar.QT.values[k] = val1 * GMV.QT.mf_update[k] - val2 * self.UpdVar.QT.bulkvalues[k]
                     self.EnvVar.H.values[k] = val1 * GMV.H.mf_update[k] - val2 * self.UpdVar.H.bulkvalues[k]
-                    # Have to account for staggering of W
                     # Assuming GMV.W = 0!
                     self.EnvVar.W.values[k] = -self.UpdVar.Area.bulkvalues[k]/(1.0-self.UpdVar.Area.bulkvalues[k]) * self.UpdVar.W.bulkvalues[k]
 
@@ -649,11 +647,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         return
 
-
-
-
-
-    # Note: this assumes all variables are defined on half levels not full levels (i.e. phi, psi are not w)
     cdef get_GMV_CoVar(self, EDMF_Updrafts.UpdraftVariable au,
                         EDMF_Updrafts.UpdraftVariable phi_u, EDMF_Updrafts.UpdraftVariable psi_u,
                         EDMF_Environment.EnvironmentVariable phi_e,  EDMF_Environment.EnvironmentVariable psi_e,
@@ -666,18 +659,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         with nogil:
             for k in xrange(self.Gr.nzg):
-                if ae[k] > 0.0:
-                    phi_diff = phi_e.values[k]-gmv_phi[k]
-                    psi_diff = psi_e.values[k]-gmv_psi[k]
-                    gmv_covar[k] = ae[k] * phi_diff * psi_diff + ae[k] * covar_e.values[k]
-                    for i in xrange(self.n_updrafts):
-                        phi_diff = phi_u.values[i,k]-gmv_phi[k]
-                        psi_diff = psi_u.values[i,k]-gmv_psi[k]
-                        gmv_covar[k] += au.values[i,k] * phi_diff * psi_diff
-                else:
-                    gmv_covar[k] = 0.0
+                phi_diff = phi_e.values[k]-gmv_phi[k]
+                psi_diff = psi_e.values[k]-gmv_psi[k]
+                gmv_covar[k] = ae[k] * phi_diff * psi_diff + ae[k] * covar_e.values[k]
+                for i in xrange(self.n_updrafts):
+                    phi_diff = phi_u.values[i,k]-gmv_phi[k]
+                    psi_diff = psi_u.values[i,k]-gmv_psi[k]
+                    gmv_covar[k] += au.values[i,k] * phi_diff * psi_diff
         return
-#         self.get_env_covar_from_GMV(self.UpdVar.Area, UpdVar1, UpdVar2, EnvVar1, EnvVar2,Covar, &GmvVar1.values[0], &GmvVar2.values[0], &GmvCovar.values[0])
 
     cdef get_env_covar_from_GMV(self, EDMF_Updrafts.UpdraftVariable au,
                                 EDMF_Updrafts.UpdraftVariable phi_u, EDMF_Updrafts.UpdraftVariable psi_u,
@@ -696,7 +685,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     psi_diff = psi_e.values[k] - gmv_psi[k]
                     covar_e.values[k] = gmv_covar[k] - ae[k] * phi_diff * psi_diff
                     for i in xrange(self.n_updrafts):
-                        phi_diff = phi_u.values[i,k]-gmv_phi[k]
+                        phi_diff = phi_u.values[i,k] - gmv_phi[k]
                         psi_diff = psi_u.values[i,k] - gmv_psi[k]
                         covar_e.values[k] -= au.values[i,k] * phi_diff * psi_diff
                     covar_e.values[k] = covar_e.values[k]/ae[k]
@@ -704,35 +693,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     covar_e.values[k] = 0.0
         return
 
-    # cdef get_env_tke_from_GMV(self, EDMF_Updrafts.UpdraftVariable au, EDMF_Updrafts.UpdraftVariable wu,
-    #                   EDMF_Environment.EnvironmentVariable we, EDMF_Environment.EnvironmentVariable tke_e,
-    #                   double *gmv_w, double *gmv_tke):
-    #     cdef:
-    #         Py_ssize_t i,k
-    #         double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),au.bulkvalues)
-    #         double interp_w_diff
-    #
-    #     with nogil:
-    #         for k in xrange(self.Gr.nzg):
-    #             if ae[k] > 0.0:
-    #                 interp_w_diff = we.values[k]-gmv_w[k]
-    #                 tke_e.values[k] = gmv_tke[k] - ae.values[k] * interp_w_diff * interp_w_diff
-    #
-    #                 for i in xrange(self.n_updrafts):
-    #                     interp_w_diff = wu.values[i,k]-gmv_w[k]
-    #                     tke_e.values[k] -= au.values[i,k] *interp_w_diff * interp_w_diff
-    #                 tke_e.values[k] = tke_e.values[k]/ae[k]
-    #             else:
-    #                 tke_e.values[k] = 0.0
-    #     return
-
     cpdef compute_entrainment_detrainment(self, GridMeanVariables GMV, CasesBase Case):
         cdef:
             Py_ssize_t k
             entr_struct ret
             entr_in_struct input
             eos_struct sa
-            #double [:] Poisson_rand
             double [:] Poisson_rand
 
 
@@ -920,7 +886,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Py_ssize_t k, i
             Py_ssize_t gw = self.Gr.gw
             double mf_tend_h=0.0, mf_tend_qt=0.0
-            double env_h_interp, env_qt_interp
+            double env_h, env_qt
         self.massflux_h[:] = 0.0
         self.massflux_qt[:] = 0.0
 
@@ -937,11 +903,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for k in xrange(gw, self.Gr.nzg-gw):
                 self.massflux_h[k] = 0.0
                 self.massflux_qt[k] = 0.0
-                env_h_interp = self.EnvVar.H.values[k]
-                env_qt_interp = self.EnvVar.QT.values[k]
+                env_h = self.EnvVar.H.values[k]
+                env_qt = self.EnvVar.QT.values[k]
                 for i in xrange(self.n_updrafts):
-                    self.massflux_h[k] += self.m[i,k] * (self.UpdVar.H.values[i,k] - env_h_interp )
-                    self.massflux_qt[k] += self.m[i,k] * (self.UpdVar.QT.values[i,k] - env_qt_interp )
+                    self.massflux_h[k] += self.m[i,k] * (self.UpdVar.H.values[i,k] - env_h )
+                    self.massflux_qt[k] += self.m[i,k] * (self.UpdVar.QT.values[i,k] - env_qt )
 
         # Compute the  mass flux tendencies
         # Adjust the values of the grid mean variables
