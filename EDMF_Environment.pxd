@@ -13,14 +13,13 @@ cdef class EnvironmentVariable:
         str units
 
 
-cdef class EnvironmentVariable_m2:
+cdef class EnvironmentVariable_2m:
     cdef:
         double [:] values
         double [:] dissipation
         double [:] shear
         double [:] entr_gain
         double [:] detr_loss
-        double [:] buoy_src
         double [:] press
         double [:] buoy
         str loc
@@ -38,12 +37,12 @@ cdef class EnvironmentVariables:
         EnvironmentVariable THL
         EnvironmentVariable T
         EnvironmentVariable B
-        EnvironmentVariable TKE
-        EnvironmentVariable Hvar
-        EnvironmentVariable QTvar
-        EnvironmentVariable HQTcov
+        EnvironmentVariable_2m TKE
+        EnvironmentVariable_2m Hvar
+        EnvironmentVariable_2m QTvar
+        EnvironmentVariable_2m HQTcov
         EnvironmentVariable CF
-        EnvironmentVariable THVvar
+        EnvironmentVariable_2m THVvar
         Grid Gr
         bint use_tke
         bint use_scalar_var

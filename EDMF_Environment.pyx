@@ -13,6 +13,7 @@ from Variables cimport VariableDiagnostic, GridMeanVariables
 from libc.math cimport fmax, fmin, sqrt, exp, erf
 from thermodynamic_functions cimport  *
 import pylab as plt
+
 cdef class EnvironmentVariable:
     def __init__(self, nz, loc, kind, name, units):
         self.values = np.zeros((nz,),dtype=np.double, order='c')
@@ -32,7 +33,7 @@ cdef class EnvironmentVariable_2m:
         self.dissipation = np.zeros((nz,),dtype=np.double, order='c')
         self.entr_gain = np.zeros((nz,),dtype=np.double, order='c')
         self.detr_loss = np.zeros((nz,),dtype=np.double, order='c')
-        self.buoy_src = np.zeros((nz,),dtype=np.double, order='c')
+        self.buoy = np.zeros((nz,),dtype=np.double, order='c')
         self.press = np.zeros((nz,),dtype=np.double, order='c')
         self.shear = np.zeros((nz,),dtype=np.double, order='c') # think of a more general name as "mean_grad_production" or something
         if loc != 'full':
@@ -47,7 +48,7 @@ cdef class EnvironmentVariable_2m:
 
 
 cdef class EnvironmentVariables:
-    def __init__(self,  namelist, Grid Gr  ):
+    def __init__(self,  namelist, Grid Gr):
         cdef Py_ssize_t nz = Gr.nzg
         self.Gr = Gr
 

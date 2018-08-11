@@ -200,29 +200,29 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         Stats.add_profile('total_flux_qt')
         Stats.add_profile('massflux_tke')
         Stats.add_profile('mixing_length')
-        # Stats.add_profile('tke_buoy')
-        # Stats.add_profile('tke_dissipation')
-        # Stats.add_profile('tke_entr_gain')
-        # Stats.add_profile('tke_detr_loss')
-        # Stats.add_profile('tke_shear')
-        # Stats.add_profile('tke_pressure')
+        Stats.add_profile('tke_buoy')
+        Stats.add_profile('tke_dissipation')
+        Stats.add_profile('tke_entr_gain')
+        Stats.add_profile('tke_detr_loss')
+        Stats.add_profile('tke_shear')
+        Stats.add_profile('tke_pressure')
         Stats.add_profile('updraft_qt_precip')
         Stats.add_profile('updraft_thetal_precip')
         #Stats.add_profile('Hvar')
         #Stats.add_profile('QTvar')
         #Stats.add_profile('HQTcov')
-        # Stats.add_profile('Hvar_dissipation')
-        # Stats.add_profile('QTvar_dissipation')
-        # Stats.add_profile('HQTcov_dissipation')
-        # Stats.add_profile('Hvar_entr_gain')
-        # Stats.add_profile('QTvar_entr_gain')
-        # Stats.add_profile('Hvar_detr_loss')
-        # Stats.add_profile('QTvar_detr_loss')
-        # Stats.add_profile('HQTcov_detr_loss')
-        # Stats.add_profile('HQTcov_entr_gain')
-        # Stats.add_profile('Hvar_shear')
-        # Stats.add_profile('QTvar_shear')
-        # Stats.add_profile('HQTcov_shear')
+        Stats.add_profile('Hvar_dissipation')
+        Stats.add_profile('QTvar_dissipation')
+        Stats.add_profile('HQTcov_dissipation')
+        Stats.add_profile('Hvar_entr_gain')
+        Stats.add_profile('QTvar_entr_gain')
+        Stats.add_profile('Hvar_detr_loss')
+        Stats.add_profile('QTvar_detr_loss')
+        Stats.add_profile('HQTcov_detr_loss')
+        Stats.add_profile('HQTcov_entr_gain')
+        Stats.add_profile('Hvar_shear')
+        Stats.add_profile('QTvar_shear')
+        Stats.add_profile('HQTcov_shear')
 
         return
 
@@ -277,15 +277,15 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         # can these pointer function called inside the write command , or should they be called before it?
         self.compute_covariance_dissipation(self.EnvVar.TKE)
-        Stats.write_profile('TKE_dissipation', self.EnvVar.TKE.dissipation)
+        Stats.write_profile('tke_dissipation', self.EnvVar.TKE.dissipation[kmin:kmax])
         self.compute_covariance_dissipation(self.EnvVar.Hvar)
-        Stats.write_profile('Hvar_dissipation', self.EnvVar.Hvar.dissipation)
+        Stats.write_profile('Hvar_dissipation', self.EnvVar.Hvar.dissipation[kmin:kmax])
         self.compute_covariance_dissipation(self.EnvVar.QTvar)
-        Stats.write_profile('Hvar_dissipation', self.EnvVar.QTvar.dissipation)
+        Stats.write_profile('Hvar_dissipation', self.EnvVar.QTvar.dissipation[kmin:kmax])
         self.compute_covariance_dissipation(self.EnvVar.HQTcov)
-        Stats.write_profile('Hvar_dissipation', self.EnvVar.HQTcov.dissipation)
+        Stats.write_profile('Hvar_dissipation', self.EnvVar.HQTcov.dissipation[kmin:kmax])
 
-        Stats.write_profile('TKE_entr_gain', self.EnvVar.TKE.entr_gain[kmin:kmax])
+        Stats.write_profile('tke_entr_gain', self.EnvVar.TKE.entr_gain[kmin:kmax])
         Stats.write_profile('Hvar_entr_gain', self.EnvVar.Hvar.entr_gain[kmin:kmax])
         Stats.write_profile('QTvar_entr_gain', self.EnvVar.QTvar.entr_gain[kmin:kmax])
         Stats.write_profile('HQTcov_entr_gain', self.EnvVar.HQTcov.entr_gain[kmin:kmax])
@@ -293,11 +293,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.compute_covariance_detr(self.EnvVar.Hvar)
         self.compute_covariance_detr(self.EnvVar.QTvar)
         self.compute_covariance_detr(self.EnvVar.HQTcov)
-        Stats.write_profile('TKE_detr_loss', self.EnvVar.TKE.detr_loss[kmin:kmax])
+        Stats.write_profile('tke_detr_loss', self.EnvVar.TKE.detr_loss[kmin:kmax])
         Stats.write_profile('Hvar_detr_loss', self.EnvVar.Hvar.detr_loss[kmin:kmax])
         Stats.write_profile('QTvar_detr_loss', self.EnvVar.QTvar.detr_loss[kmin:kmax])
         Stats.write_profile('HQTcov_detr_loss', self.EnvVar.HQTcov.detr_loss[kmin:kmax])
-        Stats.write_profile('TKE_shear', self.EnvVar.TKE.shear[kmin:kmax])
+        Stats.write_profile('tke_shear', self.EnvVar.TKE.shear[kmin:kmax])
         Stats.write_profile('Hvar_shear', self.EnvVar.Hvar.shear[kmin:kmax])
         Stats.write_profile('QTvar_shear', self.EnvVar.QTvar.shear[kmin:kmax])
         Stats.write_profile('HQTcov_shear', self.EnvVar.HQTcov.shear[kmin:kmax])
@@ -657,7 +657,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cdef get_GMV_CoVar(self, EDMF_Updrafts.UpdraftVariable au,
                         EDMF_Updrafts.UpdraftVariable phi_u, EDMF_Updrafts.UpdraftVariable psi_u,
                         EDMF_Environment.EnvironmentVariable phi_e,  EDMF_Environment.EnvironmentVariable psi_e,
-                        EDMF_Environment.EnvironmentVariable covar_e,
+                        EDMF_Environment.EnvironmentVariable_2m covar_e,
                        double *gmv_phi, double *gmv_psi, double *gmv_covar):
         cdef:
             Py_ssize_t i,k
@@ -681,7 +681,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cdef get_env_covar_from_GMV(self, EDMF_Updrafts.UpdraftVariable au,
                                 EDMF_Updrafts.UpdraftVariable phi_u, EDMF_Updrafts.UpdraftVariable psi_u,
                                 EDMF_Environment.EnvironmentVariable phi_e, EDMF_Environment.EnvironmentVariable psi_e,
-                                EDMF_Environment.EnvironmentVariable covar_e,
+                                EDMF_Environment.EnvironmentVariable_2m covar_e,
                                 double *gmv_phi, double *gmv_psi, double *gmv_covar):
         cdef:
             Py_ssize_t i,k
@@ -1185,6 +1185,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.update_covariance_ED(GMV, Case,TS, GMV.QT,GMV.QT,GMV.QTvar, self.EnvVar.QTvar, self.EnvVar.QT, self.EnvVar.QT, self.UpdVar.QT, self.UpdVar.QT)
             self.update_covariance_ED(GMV, Case,TS, GMV.H, GMV.H, GMV.HQTcov, self.EnvVar.HQTcov, self.EnvVar.H, self.EnvVar.QT, self.UpdVar.H, self.UpdVar.QT)
 
+
         else:
             self.initialize_covariance(GMV, Case)
         return
@@ -1239,7 +1240,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         return
 
 
-    cdef void compute_covariance_shear(self,GridMeanVariables GMV, EDMF_Environment.EnvironmentVariable_m2 Covar, double *UpdVar1, double *UpdVar2, double *EnvVar1, double *EnvVar2):
+    cdef void compute_covariance_shear(self,GridMeanVariables GMV, EDMF_Environment.EnvironmentVariable_2m Covar, double *UpdVar1, double *UpdVar2, double *EnvVar1, double *EnvVar2):
         cdef:
             Py_ssize_t k
             double var1_high = 0.0
@@ -1265,7 +1266,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                     (var1_high*var2_high + pow(du_high,2.0) +  pow(dv_high,2.0)))
         return
 
-    cdef void compute_covariance_dissipation(self, EDMF_Environment.EnvironmentVariable_m2 Covar):
+    cdef void compute_covariance_dissipation(self, EDMF_Environment.EnvironmentVariable_2m Covar):
         cdef:
             Py_ssize_t i
             double m
@@ -1277,8 +1278,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                     *pow(fmax(self.EnvVar.TKE.values[k],0), 0.5)/fmax(self.mixing_length[k],1.0) * self.tke_diss_coeff)
         return
 
-    cdef void compute_covariance_entr(self, EDMF_Environment.EnvironmentVariable_m2 Covar, EDMF_Updrafts.UpdraftVariable UpdVar1,
-                EDMF_Updrafts.UpdraftVariable UpdVar2, EDMF_Environment.EnvironmentVariable EnvVar1, EDMF_Environment.EnvironmentVariable_m2 EnvVar2):
+    cdef void compute_covariance_entr(self, EDMF_Environment.EnvironmentVariable_2m Covar, EDMF_Updrafts.UpdraftVariable UpdVar1,
+                EDMF_Updrafts.UpdraftVariable UpdVar2, EDMF_Environment.EnvironmentVariable EnvVar1, EDMF_Environment.EnvironmentVariable EnvVar2):
         cdef:
             Py_ssize_t i, k
             double tke_factor = 1.0
@@ -1293,7 +1294,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 Covar.entr_gain[k] *= self.Ref.rho0[k]
         return
 
-    cdef void compute_covariance_detr(self, EDMF_Environment.EnvironmentVariable_m2 Covar):
+    cdef void compute_covariance_detr(self, EDMF_Environment.EnvironmentVariable_2m Covar):
         cdef:
             Py_ssize_t i, k
         with nogil:
@@ -1306,7 +1307,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
 # verfy that everythong from tke is here and unify and cvert to pointers with cdef void
     cdef void update_covariance_ED(self, GridMeanVariables GMV, CasesBase Case,TimeStepping TS, VariablePrognostic GmvVar1, VariablePrognostic GmvVar2,
-            VariablePrognostic GmvCovar, EDMF_Environment.EnvironmentVariable_m2 Covar, EDMF_Environment.EnvironmentVariable  EnvVar1, EDMF_Environment.EnvironmentVariable  EnvVar2,
+            VariableDiagnostic GmvCovar, EDMF_Environment.EnvironmentVariable_2m Covar, EDMF_Environment.EnvironmentVariable  EnvVar1, EDMF_Environment.EnvironmentVariable  EnvVar2,
                                    EDMF_Updrafts.UpdraftVariable  UpdVar1, EDMF_Updrafts.UpdraftVariable  UpdVar2):
         cdef:
             Py_ssize_t k, kk, i
