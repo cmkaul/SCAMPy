@@ -13,7 +13,7 @@ cdef class EnvironmentVariable:
         str units
 
 
-cdef class EnvironmentVariable:
+cdef class EnvironmentVariable_m2:
     cdef:
         double [:] values
         double [:] dissipation
@@ -22,6 +22,7 @@ cdef class EnvironmentVariable:
         double [:] detr_loss
         double [:] buoy_src
         double [:] press
+        double [:] buoy
         str loc
         str kind
         str name

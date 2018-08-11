@@ -100,32 +100,27 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                    EDMF_Updrafts.UpdraftVariable var, int k, int i, double env_var)
     cpdef update_GMV_MF(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef update_GMV_ED(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
-    cpdef compute_tke(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
     cpdef compute_covariance(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
     cpdef initialize_covariance(self, GridMeanVariables GMV, CasesBase Case)
     cpdef compute_tke_buoy(self, GridMeanVariables GMV)
     cpdef compute_tke_pressure(self)
-    cdef void compute_covariance_detr(self, double *detr_loss, double *Var)
-    cdef void compute_covariance_entr(self, double *entr_gain, double *Var, double *UpdVar1, double *UpdVar2, double *EnvVar1, double *EnvVar2)
-    cdef void compute_covariance_entr(self, double *covar_entr_gain, double *Var, double *UpdVar1, double *UpdVar2, double *EnvVar1, double *EnvVar2)
-    cdef void compute_covariance_dissipation(self, double *var)
-    cdef void compute_covariance_shear(self,GridMeanVariables GMV, double *shear, double *Var, double *UpdVar1, double *UpdVar2, double *EnvVar1, double *EnvVar2)
-    cpdef update_tke_ED(self, GridMeanVariables GMV, CasesBase Case,TimeStepping TS)
-    cpdef update_covariance_ED(self, GridMeanVariables GMV, CasesBase Case,TimeStepping TS)
+    cdef void compute_covariance_detr(self, EDMF_Environment.EnvironmentVariable_m2 Covar)
+    cdef void compute_covariance_entr(self, EDMF_Environment.EnvironmentVariable_m2 Covar, EDMF_Updrafts.UpdraftVariable UpdVar1,
+                EDMF_Updrafts.UpdraftVariable UpdVar2, EDMF_Environment.EnvironmentVariable EnvVar1, EDMF_Environment.EnvironmentVariable_m2 EnvVar2)
+    cdef void compute_covariance_dissipation(self, EDMF_Environment.EnvironmentVariable_m2 Covar)
+    cdef void compute_covariance_shear(self,GridMeanVariables GMV, EDMF_Environment.EnvironmentVariable_m2 Covar, double *UpdVar1, double *UpdVar2, double *EnvVar1, double *EnvVar2)
+    cdef void update_covariance_ED(self, GridMeanVariables GMV, CasesBase Case,TimeStepping TS, VariablePrognostic GmvVar1, VariablePrognostic GmvVar2,
+            VariablePrognostic GmvCovar, EDMF_Environment.EnvironmentVariable_m2 Covar, EDMF_Environment.EnvironmentVariable  EnvVar1, EDMF_Environment.EnvironmentVariable  EnvVar2,
+                                   EDMF_Updrafts.UpdraftVariable  UpdVar1, EDMF_Updrafts.UpdraftVariable  UpdVar2)
     cpdef update_GMV_diagnostics(self, GridMeanVariables GMV)
-    cdef get_GMV_TKE(self, EDMF_Updrafts.UpdraftVariable au, EDMF_Updrafts.UpdraftVariable wu,
-                      EDMF_Environment.EnvironmentVariable we, EDMF_Environment.EnvironmentVariable tke_e,
-                      double *gmv_w, double *gmv_tke)
-    cdef get_env_tke_from_GMV(self, EDMF_Updrafts.UpdraftVariable au, EDMF_Updrafts.UpdraftVariable wu,
-                      EDMF_Environment.EnvironmentVariable we, EDMF_Environment.EnvironmentVariable tke_e,
-                      double *gmv_w, double *gmv_tke)
-
+    # cdef get_env_tke_from_GMV(self, EDMF_Updrafts.UpdraftVariable au, EDMF_Updrafts.UpdraftVariable wu,
+    #                   EDMF_Environment.EnvironmentVariable we, EDMF_Environment.EnvironmentVariable tke_e,
+    #                   double *gmv_w, double *gmv_tke)
     cdef get_GMV_CoVar(self, EDMF_Updrafts.UpdraftVariable au,
                         EDMF_Updrafts.UpdraftVariable phi_u, EDMF_Updrafts.UpdraftVariable psi_u,
                         EDMF_Environment.EnvironmentVariable phi_e,  EDMF_Environment.EnvironmentVariable psi_e,
                         EDMF_Environment.EnvironmentVariable covar_e,
                        double *gmv_phi, double *gmv_psi, double *gmv_covar)
-
     cdef get_env_covar_from_GMV(self, EDMF_Updrafts.UpdraftVariable au,
                                 EDMF_Updrafts.UpdraftVariable phi_u, EDMF_Updrafts.UpdraftVariable psi_u,
                                 EDMF_Environment.EnvironmentVariable phi_e, EDMF_Environment.EnvironmentVariable psi_e,
