@@ -717,15 +717,15 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         cdef:
             Py_ssize_t i,k
             double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),au.bulkvalues)
-            double interp_w_diff
+            double w_diff
 
         with nogil:
             for k in xrange(self.Gr.nzg):
-                interp_w_diff = we.values[k]-gmv_w[k]
-                gmv_tke[k] = ae[k] * interp_w_diff * interp_w_diff + ae[k] * tke_e.values[k]
+                w_diff = we.values[k]-gmv_w[k]
+                gmv_tke[k] = ae[k] * w_diff * w_diff + ae[k] * tke_e.values[k]
                 for i in xrange(self.n_updrafts):
-                    interp_w_diff = wu.values[i,k]-gmv_w[k]
-                    gmv_tke[k] += au.values[i,k] *interp_w_diff * interp_w_diff
+                    w_diff = wu.values[i,k]-gmv_w[k]
+                    gmv_tke[k] += au.values[i,k] *w_diff * w_diff
         return
 
 
@@ -736,17 +736,17 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         cdef:
             Py_ssize_t i,k
             double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),au.bulkvalues)
-            double interp_w_diff
+            double w_diff
 
         with nogil:
             for k in xrange(self.Gr.nzg):
                 if ae[k] > 0.0:
-                    interp_w_diff = we.values[k]-gmv_w[k]
-                    tke_e.values[k] = gmv_tke[k] - ae[k] * interp_w_diff * interp_w_diff
+                    w_diff = we.values[k]-gmv_w[k]
+                    tke_e.values[k] = gmv_tke[k] - ae[k] * w_diff * w_diff
 
                     for i in xrange(self.n_updrafts):
-                        interp_w_diff = wu.values[i,k]-gmv_w[k]
-                        tke_e.values[k] -= au.values[i,k] *interp_w_diff * interp_w_diff
+                        w_diff = wu.values[i,k]-gmv_w[k]
+                        tke_e.values[k] -= au.values[i,k] *w_diff * w_diff
                     tke_e.values[k] = tke_e.values[k]/ae[k]
                 else:
                     tke_e.values[k] = 0.0
@@ -999,7 +999,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Py_ssize_t k, i
             Py_ssize_t gw = self.Gr.gw
             double mf_tend_h=0.0, mf_tend_qt=0.0
-            double env_h_interp, env_qt_interp
+            double env_h, env_qt
         self.massflux_h[:] = 0.0
         self.massflux_qt[:] = 0.0
 
@@ -1016,11 +1016,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for k in xrange(gw, self.Gr.nzg-gw):
                 self.massflux_h[k] = 0.0
                 self.massflux_qt[k] = 0.0
-                env_h_interp = self.EnvVar.H.values[k]
-                env_qt_interp = self.EnvVar.QT.values[k]
+                env_h = self.EnvVar.H.values[k]
+                env_qt = self.EnvVar.QT.values[k]
                 for i in xrange(self.n_updrafts):
-                    self.massflux_h[k] += self.m[i,k] * (self.UpdVar.H.values[i,k] - env_h_interp )
-                    self.massflux_qt[k] += self.m[i,k] * (self.UpdVar.QT.values[i,k] - env_qt_interp )
+                    self.massflux_h[k] += self.m[i,k] * (self.UpdVar.H.values[i,k] - env_h )
+                    self.massflux_qt[k] += self.m[i,k] * (self.UpdVar.QT.values[i,k] - env_qt )
 
         # Compute the  mass flux tendencies
         # Adjust the values of the grid mean variables
