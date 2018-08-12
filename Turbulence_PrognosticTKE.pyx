@@ -667,7 +667,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     psi_diff = psi_u.values[i,k]-gmv_psi[k]
                     gmv_covar[k] += au.values[i,k] * phi_diff * psi_diff
         return
-
+#   self.get_env_covar_from_GMV(self.UpdVar.Area, UpdVar1, UpdVar2, EnvVar1, EnvVar2,Covar, &GmvVar1.values[0], &GmvVar2.values[0], &GmvCovar.values[0]
     cdef get_env_covar_from_GMV(self, EDMF_Updrafts.UpdraftVariable au,
                                 EDMF_Updrafts.UpdraftVariable phi_u, EDMF_Updrafts.UpdraftVariable psi_u,
                                 EDMF_Environment.EnvironmentVariable phi_e, EDMF_Environment.EnvironmentVariable psi_e,
@@ -681,7 +681,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         with nogil:
             for k in xrange(self.Gr.nzg):
                 if ae[k] > 0.0:
-                    phi_diff = phi_e.values[k]-gmv_phi[k]
+                    phi_diff = phi_e.values[k] - gmv_phi[k]
                     psi_diff = psi_e.values[k] - gmv_psi[k]
                     covar_e.values[k] = gmv_covar[k] - ae[k] * phi_diff * psi_diff
                     for i in xrange(self.n_updrafts):
@@ -1266,7 +1266,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 Covar.detr_loss[k] *= self.Ref.rho0[k] * Covar.values[k]
         return
 
-# verfy that everythong from tke is here and unify and cvert to pointers with cdef void
     cdef void update_covariance_ED(self, GridMeanVariables GMV, CasesBase Case,TimeStepping TS, VariablePrognostic GmvVar1, VariablePrognostic GmvVar2,
             VariableDiagnostic GmvCovar, EDMF_Environment.EnvironmentVariable_2m Covar, EDMF_Environment.EnvironmentVariable  EnvVar1, EDMF_Environment.EnvironmentVariable  EnvVar2,
                                    EDMF_Updrafts.UpdraftVariable  UpdVar1, EDMF_Updrafts.UpdraftVariable  UpdVar2):
@@ -1279,38 +1278,33 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double dti = TS.dti
             double alpha0LL  = self.Ref.alpha0[self.Gr.gw]
             double zLL = self.Gr.z[self.Gr.gw]
-            double [:] a = np.zeros((nz,),dtype=np.double, order='c') # for tridiag solver
-            double [:] b = np.zeros((nz,),dtype=np.double, order='c') # for tridiag solver
-            double [:] c = np.zeros((nz,),dtype=np.double, order='c') # for tridiag solver
-            double [:] x = np.zeros((nz,),dtype=np.double, order='c') # for tridiag solver
-            double [:] ae = np.subtract(np.ones((nzg,),dtype=np.double, order='c'),self.UpdVar.Area.bulkvalues) # area of environment
+            double [:] a = np.zeros((nz,),dtype=np.double, order='c')
+            double [:] b = np.zeros((nz,),dtype=np.double, order='c')
+            double [:] c = np.zeros((nz,),dtype=np.double, order='c')
+            double [:] x = np.zeros((nz,),dtype=np.double, order='c')
+            double [:] ae = np.subtract(np.ones((nzg,),dtype=np.double, order='c'),self.UpdVar.Area.bulkvalues)
             double [:] ae_old = np.subtract(np.ones((nzg,),dtype=np.double, order='c'), np.sum(self.UpdVar.Area.old,axis=0))
             double [:] rho_ae_K_m = np.zeros((nzg,),dtype=np.double, order='c')
             double  D_env = 0.0
-            # missing flux1 and 2 in get_surface_variance
-            double Hvar_gmv_surf =  get_surface_variance(Case.Sur.rho_hflux * alpha0LL, Case.Sur.rho_hflux * alpha0LL, Case.Sur.ustar, zLL, Case.Sur.obukhov_length)
-            double QTvar_gmv_surf =  get_surface_variance(Case.Sur.rho_qtflux * alpha0LL, Case.Sur.rho_qtflux * alpha0LL, Case.Sur.ustar, zLL, Case.Sur.obukhov_length)
-            double HQTcov_gmv_surf =  get_surface_variance(Case.Sur.rho_hflux * alpha0LL, Case.Sur.rho_qtflux * alpha0LL, Case.Sur.ustar, zLL, Case.Sur.obukhov_length)
-            double Var_0_surf
-
+            double Covar_surf
 
         with nogil:
             for k in xrange(1,nzg-1):
                 rho_ae_K_m[k] = 0.5 * (ae[k]*self.KH.values[k]+ ae[k+1]*self.KH.values[k+1]) * self.Ref.rho0[k]
-        Hu = self.UpdVar.H.bulkvalues[gw]
-        QTu = self.UpdVar.QT.bulkvalues[gw]
 
-        GmvCovar.values[gw] = get_surface_variance(Case.Sur.rho_hflux * alpha0LL, Case.Sur.rho_hflux * alpha0LL, Case.Sur.ustar, zLL, Case.Sur.obukhov_length)
+        if GmvCovar.name=='tke':
+            GmvCovar.values[gw] =get_surface_tke(Case.Sur.ustar, self.wstar, self.Gr.z[gw], Case.Sur.obukhov_length)
+        elif GmvCovar.name=='thetal_var':
+            GmvCovar.values[gw] = get_surface_variance(Case.Sur.rho_hflux * alpha0LL, Case.Sur.rho_hflux * alpha0LL, Case.Sur.ustar, zLL, Case.Sur.obukhov_length)
+        elif GmvCovar.name=='qt_var':
+            GmvCovar.values[gw] = get_surface_variance(Case.Sur.rho_qtflux * alpha0LL, Case.Sur.rho_qtflux * alpha0LL, Case.Sur.ustar, zLL, Case.Sur.obukhov_length)
+        elif GmvCovar.name=='thetal_qt_covar':
+            GmvCovar.values[gw] = get_surface_variance(Case.Sur.rho_hflux * alpha0LL, Case.Sur.rho_qtflux * alpha0LL, Case.Sur.ustar, zLL, Case.Sur.obukhov_length)
+
         self.get_env_covar_from_GMV(self.UpdVar.Area, UpdVar1, UpdVar2, EnvVar1, EnvVar2,Covar, &GmvVar1.values[0], &GmvVar2.values[0], &GmvCovar.values[0])
 
-        Var_0_surf = Covar.values[gw]
+        Covar_surf = Covar.values[gw]
 
-        # BC  at the surface
-        #Hvar_0_surf = self.EnvVar.Hvar.values[gw]
-        #QTvar_0_surf = self.EnvVar.QTvar.values[gw]
-        #HQTcov_0_surf = self.EnvVar.HQTcov.values[gw]
-
-        # run tridiagonal solver for Hvar
         with nogil:
             for kk in xrange(nz):
                 k = kk+gw
@@ -1332,7 +1326,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 a[0] = 0.0
                 b[0] = 1.0
                 c[0] = 0.0
-                x[0] = Var_0_surf
+                x[0] = Covar_surf
 
                 b[nz-1] += c[nz-1]
                 c[nz-1] = 0.0
@@ -1348,7 +1342,3 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.get_GMV_CoVar(self.UpdVar.Area, UpdVar1, UpdVar2, EnvVar1, EnvVar2, Covar, &GmvVar1.values[0], &GmvVar2.values[0], &GmvCovar.values[0])
 
         return
-
-
-# compute_covariance_dissipation(self, &self.covariance_dissipation, &self.variable you eed )
-# to use the grid mean variable : VariablePrognostic var,

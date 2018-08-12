@@ -137,7 +137,7 @@ cdef class GridMeanVariables:
         self.U = VariablePrognostic(Gr.nzg, 'full', 'velocity', 'sym','u', 'm/s' )
         self.V = VariablePrognostic(Gr.nzg, 'full', 'velocity','sym', 'v', 'm/s' )
         # Just leave this zero for now!
-        self.W = VariablePrognostic(Gr.nzg, 'full', 'velocity','sym', 'v', 'm/s' )
+        self.W = VariablePrognostic(Gr.nzg, 'full', 'velocity','sym', 'w', 'm/s' )
 
         # Create thermodynamic variables
         self.QT = VariablePrognostic(Gr.nzg, 'full', 'scalar','sym', 'qt', 'kg/kg')
