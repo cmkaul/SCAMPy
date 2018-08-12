@@ -1162,14 +1162,13 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         cdef:
             Py_ssize_t k
             double ws= self.wstar, us = Case.Sur.ustar, zs = self.zi, z
-        self.reset_surface_covariance(GMV, Case)
+
 
         if ws > 0.0:
             with nogil:
                 for k in xrange(self.Gr.nzg):
                     z = self.Gr.z[k]
                     GMV.TKE.values[k] = ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
-
         with nogil:
             for k in xrange(self.Gr.nzg):
                 z = self.Gr.z[k]
@@ -1177,7 +1176,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 GMV.Hvar.values[k]   = GMV.Hvar.values[self.Gr.gw] * ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
                 GMV.QTvar.values[k]  = GMV.QTvar.values[self.Gr.gw] * ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
                 GMV.HQTcov.values[k] = GMV.HQTcov.values[self.Gr.gw] * ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
-        self.reset_surface_covariance(GMV, Case) # double check this should be here - it was not in the orignal covariance branch
+        self.reset_surface_covariance(GMV, Case)
         self.compute_mixing_length(Case.Sur.obukhov_length, GMV)
 
         return
@@ -1204,15 +1203,18 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cdef void compute_covariance_shear(self,GridMeanVariables GMV, EDMF_Environment.EnvironmentVariable_2m Covar, double *UpdVar1, double *UpdVar2, double *EnvVar1, double *EnvVar2):
         cdef:
             Py_ssize_t k
+            Py_ssize_t gw = self.Gr.gw
+            double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),self.UpdVar.Area.bulkvalues)
             double var1_high = 0.0
             double var2_high = 0.0
             double du_high = 0.0
             double dv_high = 0.0
             double var1_low, var2_low
+            double du_low, dv_low
             double tke_factor = 1.0
 
         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-            if Covar.name == 'TKE':
+            if Covar.name == 'tke':
                 du_high = (GMV.U.values[k+1] - GMV.U.values[k-1]) * self.Gr.dzi
                 dv_high = (GMV.V.values[k+1] - GMV.V.values[k-1]) * self.Gr.dzi
                 tke_factor = 0.5
@@ -1223,7 +1225,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 dv_low = dv_high
                 var1_high = (EnvVar1[k+1] - EnvVar1[k-1]) * self.Gr.dzi
                 var2_high = (EnvVar2[k+1] - EnvVar2[k-1]) * self.Gr.dzi
-                Covar.shear[k] = tke_factor*2.0*(self.Ref.rho0[k] * (1.0-self.UpdVar.Area.bulkvalues[k]) * self.KH.values[k] *
+                Covar.shear[k] = tke_factor*2.0*(self.Ref.rho0[k] * ae[k] * self.KH.values[k] *
                                     (var1_high*var2_high + pow(du_high,2.0) +  pow(dv_high,2.0)))
         return
 
@@ -1232,10 +1234,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Py_ssize_t i
             double m
             Py_ssize_t k
+            double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),self.UpdVar.Area.bulkvalues)
 
         with nogil:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                Covar.values[k] = (self.Ref.rho0[k] * (1.0-self.UpdVar.Area.bulkvalues[k]) * Covar.values[k]
+                Covar.dissipation[k] = (self.Ref.rho0[k] * ae[k] * Covar.values[k]
                                     *pow(fmax(self.EnvVar.TKE.values[k],0), 0.5)/fmax(self.mixing_length[k],1.0) * self.tke_diss_coeff)
         return
 
@@ -1244,7 +1247,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         cdef:
             Py_ssize_t i, k
             double tke_factor = 1.0
-        if Covar.name =='TKE':
+        if Covar.name =='tke':
             tke_factor = 0.5
         with nogil:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
