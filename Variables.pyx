@@ -25,9 +25,9 @@ cdef class VariablePrognostic:
         self.mf_update = np.zeros((nz_tot,),dtype=np.double, order='c')
         self.tendencies = np.zeros((nz_tot,),dtype=np.double, order='c')
         # Placement on staggered grid
-        loc = 'full'
-        if loc != 'full':
-            print('Invalid location setting for variable! Must be full')
+        loc = 'half'
+        if loc != 'half':
+            print('Invalid location setting for variable! Must be half')
         self.loc = loc
         if kind != 'scalar' and kind != 'velocity':
             print ('Invalid kind setting for variable! Must be scalar or velocity')
@@ -93,9 +93,9 @@ cdef class VariableDiagnostic:
         # Value at the current timestep
         self.values = np.zeros((nz_tot,),dtype=np.double, order='c')
         # Placement on staggered grid
-        loc = 'full'
-        if loc != 'full':
-            print('Invalid location setting for variable! Must be full')
+        loc = 'half'
+        if loc != 'half':
+            print('Invalid location setting for variable! Must be half')
         self.loc = loc
         if kind != 'scalar' and kind != 'velocity':
             print ('Invalid kind setting for variable! Must be scalar or velocity')
@@ -134,20 +134,20 @@ cdef class GridMeanVariables:
         self.Gr = Gr
         self.Ref = Ref
 
-        self.U = VariablePrognostic(Gr.nzg, 'full', 'velocity', 'sym','u', 'm/s' )
-        self.V = VariablePrognostic(Gr.nzg, 'full', 'velocity','sym', 'v', 'm/s' )
+        self.U = VariablePrognostic(Gr.nzg, 'half', 'velocity', 'sym','u', 'm/s' )
+        self.V = VariablePrognostic(Gr.nzg, 'half', 'velocity','sym', 'v', 'm/s' )
         # Just leave this zero for now!
-        self.W = VariablePrognostic(Gr.nzg, 'full', 'velocity','sym', 'w', 'm/s' )
+        self.W = VariablePrognostic(Gr.nzg, 'half', 'velocity','sym', 'w', 'm/s' )
 
         # Create thermodynamic variables
-        self.QT = VariablePrognostic(Gr.nzg, 'full', 'scalar','sym', 'qt', 'kg/kg')
+        self.QT = VariablePrognostic(Gr.nzg, 'half', 'scalar','sym', 'qt', 'kg/kg')
 
         if namelist['thermodynamics']['thermal_variable'] == 'entropy':
-            self.H = VariablePrognostic(Gr.nzg, 'full', 'scalar', 'sym','s', 'J/kg/K' )
+            self.H = VariablePrognostic(Gr.nzg, 'half', 'scalar', 'sym','s', 'J/kg/K' )
             self.t_to_prog_fp = t_to_entropy_c
             self.prog_to_t_fp = eos_first_guess_entropy
         elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
-            self.H = VariablePrognostic(Gr.nzg, 'full', 'scalar', 'sym','thetal', 'K')
+            self.H = VariablePrognostic(Gr.nzg, 'half', 'scalar', 'sym','thetal', 'K')
             self.t_to_prog_fp = t_to_thetali_c
             self.prog_to_t_fp = eos_first_guess_thetal
         else:
@@ -157,10 +157,10 @@ cdef class GridMeanVariables:
 
         # Diagnostic Variables--same class as the prognostic variables, but we append to diagnostics list
         # self.diagnostics_list  = []
-        self.QL = VariableDiagnostic(Gr.nzg,'full', 'scalar','sym', 'ql', 'kg/kg')
-        self.T = VariableDiagnostic(Gr.nzg,'full', 'scalar','sym', 'temperature', 'K')
-        self.B = VariableDiagnostic(Gr.nzg, 'full', 'scalar','sym', 'buoyancy', 'm^2/s^3')
-        self.THL = VariableDiagnostic(Gr.nzg, 'full', 'scalar', 'sym', 'thetal','K')
+        self.QL = VariableDiagnostic(Gr.nzg,'half', 'scalar','sym', 'ql', 'kg/kg')
+        self.T = VariableDiagnostic(Gr.nzg,'half', 'scalar','sym', 'temperature', 'K')
+        self.B = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym', 'buoyancy', 'm^2/s^3')
+        self.THL = VariableDiagnostic(Gr.nzg, 'half', 'scalar', 'sym', 'thetal','K')
 
         # Determine whether we need 2nd moment variables
         if  namelist['turbulence']['scheme'] == 'EDMF_PrognosticTKE':
@@ -188,25 +188,25 @@ cdef class GridMeanVariables:
 
         #Now add the 2nd moment variables
         if self.use_tke:
-            self.TKE = VariableDiagnostic(Gr.nzg, 'full', 'scalar','sym', 'tke','m^2/s^2' )
-            self.QTvar = VariableDiagnostic(Gr.nzg, 'full', 'scalar','sym', 'qt_var','kg^2/kg^2' )
+            self.TKE = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym', 'tke','m^2/s^2' )
+            self.QTvar = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym', 'qt_var','kg^2/kg^2' )
             if namelist['thermodynamics']['thermal_variable'] == 'entropy':
-                self.Hvar = VariableDiagnostic(Gr.nzg, 'full', 'scalar', 'sym', 's_var', '(J/kg/K)^2')
-                self.HQTcov = VariableDiagnostic(Gr.nzg, 'full', 'scalar', 'sym' ,'s_qt_covar', '(J/kg/K)(kg/kg)' )
+                self.Hvar = VariableDiagnostic(Gr.nzg, 'half', 'scalar', 'sym', 's_var', '(J/kg/K)^2')
+                self.HQTcov = VariableDiagnostic(Gr.nzg, 'half', 'scalar', 'sym' ,'s_qt_covar', '(J/kg/K)(kg/kg)' )
             elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
-                self.Hvar = VariableDiagnostic(Gr.nzg, 'full', 'scalar', 'sym' ,'thetal_var', 'K^2')
-                self.HQTcov = VariableDiagnostic(Gr.nzg, 'full', 'scalar','sym' ,'thetal_qt_covar', 'K(kg/kg)' )
+                self.Hvar = VariableDiagnostic(Gr.nzg, 'half', 'scalar', 'sym' ,'thetal_var', 'K^2')
+                self.HQTcov = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym' ,'thetal_qt_covar', 'K(kg/kg)' )
 
         if self.use_scalar_var:
-            self.QTvar = VariableDiagnostic(Gr.nzg, 'full', 'scalar','sym', 'qt_var','kg^2/kg^2' )
+            self.QTvar = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym', 'qt_var','kg^2/kg^2' )
             if namelist['thermodynamics']['thermal_variable'] == 'entropy':
-                self.Hvar = VariableDiagnostic(Gr.nzg, 'full', 'scalar', 'sym', 's_var', '(J/kg/K)^2')
-                self.HQTcov = VariableDiagnostic(Gr.nzg, 'full', 'scalar', 'sym' ,'s_qt_covar', '(J/kg/K)(kg/kg)' )
+                self.Hvar = VariableDiagnostic(Gr.nzg, 'half', 'scalar', 'sym', 's_var', '(J/kg/K)^2')
+                self.HQTcov = VariableDiagnostic(Gr.nzg, 'half', 'scalar', 'sym' ,'s_qt_covar', '(J/kg/K)(kg/kg)' )
             elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
-                self.Hvar = VariableDiagnostic(Gr.nzg, 'full', 'scalar', 'sym' ,'thetal_var', 'K^2')
-                self.HQTcov = VariableDiagnostic(Gr.nzg, 'full', 'scalar','sym' ,'thetal_qt_covar', 'K(kg/kg)' )
+                self.Hvar = VariableDiagnostic(Gr.nzg, 'half', 'scalar', 'sym' ,'thetal_var', 'K^2')
+                self.HQTcov = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym' ,'thetal_qt_covar', 'K(kg/kg)' )
                 if self.EnvThermo_scheme == 'sommeria_deardorff':
-                    self.THVvar = VariableDiagnostic(Gr.nzg, 'full', 'scalar','sym', 'thatav_var','K^2' )
+                    self.THVvar = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym', 'thatav_var','K^2' )
 
         return
 

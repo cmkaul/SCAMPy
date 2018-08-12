@@ -137,18 +137,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.tke_shear = np.zeros((Gr.nzg,),dtype=np.double, order='c')
         self.tke_pressure = np.zeros((Gr.nzg,),dtype=np.double, order='c')
 
-        #self.Hvar = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-        #self.QTvar = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-        #self.HQTcov = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-        #self.covariance_dissipation = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-        #self.covar_entr_gain = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-        #self.Hvar_detr_loss = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-        #self.QTvar_detr_loss = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-        #self.HQTcov_detr_loss = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-        #self.Hvar_shear = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-        #self.QTvar_shear = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-        #self.HQTcov_shear = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-
         # Near-surface BC of updraft area fraction
         self.area_surface_bc= np.zeros((self.n_updrafts,),dtype=np.double, order='c')
         self.w_surface_bc= np.zeros((self.n_updrafts,),dtype=np.double, order='c')
@@ -208,9 +196,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         Stats.add_profile('tke_pressure')
         Stats.add_profile('updraft_qt_precip')
         Stats.add_profile('updraft_thetal_precip')
-        #Stats.add_profile('Hvar')
-        #Stats.add_profile('QTvar')
-        #Stats.add_profile('HQTcov')
         Stats.add_profile('Hvar_dissipation')
         Stats.add_profile('QTvar_dissipation')
         Stats.add_profile('HQTcov_dissipation')
