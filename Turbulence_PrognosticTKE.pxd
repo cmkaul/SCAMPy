@@ -79,6 +79,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double [:] Hvar_dissipation
         double [:] QTvar_dissipation
         double [:] HQTcov_dissipation
+        double [:] Hvar_rain
+        double [:] QTvar_rain
+        double [:] HQTcov_rain
 
     cpdef initialize(self, GridMeanVariables GMV)
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
@@ -102,6 +105,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef compute_covariance(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
     cpdef initialize_tke(self, GridMeanVariables GMV, CasesBase Case)
     cpdef initialize_covariance(self, GridMeanVariables GMV, CasesBase Case)
+    cpdef cleanup_covariance(self, GridMeanVariables GMV)
     cpdef compute_tke_buoy(self, GridMeanVariables GMV)
     cpdef compute_tke_dissipation(self)
     cpdef compute_covariance_dissipation(self)
@@ -112,6 +116,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef compute_tke_shear(self, GridMeanVariables GMV)
     cpdef compute_covariance_shear(self, GridMeanVariables GMV)
     cpdef compute_tke_pressure(self)
+    cpdef compute_covariance_rain(self, TimeStepping TS, GridMeanVariables GMV)
     cpdef update_tke_ED(self, GridMeanVariables GMV, CasesBase Case,TimeStepping TS)
     cpdef update_covariance_ED(self, GridMeanVariables GMV, CasesBase Case,TimeStepping TS)
     cpdef update_GMV_diagnostics(self, GridMeanVariables GMV)
