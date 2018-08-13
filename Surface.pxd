@@ -23,8 +23,6 @@ cdef class SurfaceBase:
         double rho_vflux
         double obukhov_length
         double Ri_bulk_crit
-        double shf0 # yair - added for life_cycle case
-        double lhf0
         bint ustar_fixed
         Grid Gr
         ReferenceState Ref
