@@ -25,6 +25,7 @@ cdef class UpdraftVariables:
         UpdraftVariable Area
         UpdraftVariable QT
         UpdraftVariable QL
+        UpdraftVariable QR
         UpdraftVariable H
         UpdraftVariable THL
         UpdraftVariable T
@@ -65,7 +66,8 @@ cdef class UpdraftMicrophysics:
         double [:]  prec_source_h_tot
         double [:] prec_source_qt_tot
         double max_supersaturation
-        void compute_update_combined_local_thetal(self, double p0, double t, double *qt, double *ql, double *h,
+    
+    cdef void compute_update_combined_local_thetal(self, double p0, double t, double *qt, double *ql, double *qr, double *h,
                                                    Py_ssize_t i, Py_ssize_t k) nogil
     cpdef compute_sources(self, UpdraftVariables UpdVar)
     cpdef update_updraftvars(self, UpdraftVariables UpdVar)
