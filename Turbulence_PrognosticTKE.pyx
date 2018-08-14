@@ -44,6 +44,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             print('Turbulence--EDMF_PrognosticTKE: defaulting to local (level-by-level) microphysics')
 
         try:
+            self.use_scalar_var = str(namelist['turbulence']['EDMF_PrognosticTKE']['use_scalar_var'])
+        except:
+            self.use_scalar_var = False
+            print('Defaulting to non-calculation of scalar variances')
+
+        try:
             if str(namelist['turbulence']['EDMF_PrognosticTKE']['entrainment']) == 'inverse_z':
                 self.entr_detr_fp = entr_detr_inverse_z
             elif str(namelist['turbulence']['EDMF_PrognosticTKE']['entrainment']) == 'dry':
@@ -126,24 +132,25 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.tke_shear = np.zeros((Gr.nzg,),dtype=np.double, order='c')
         self.tke_pressure = np.zeros((Gr.nzg,),dtype=np.double, order='c')
 
-        #self.Hvar = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-        #self.QTvar = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-        #self.HQTcov = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-        self.Hvar_dissipation = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-        self.QTvar_dissipation = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-        self.HQTcov_dissipation = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-        self.Hvar_entr_gain = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-        self.QTvar_entr_gain = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-        self.HQTcov_entr_gain = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-        self.Hvar_detr_loss = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-        self.QTvar_detr_loss = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-        self.HQTcov_detr_loss = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-        self.Hvar_shear = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-        self.QTvar_shear = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-        self.HQTcov_shear = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-        self.Hvar_rain = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-        self.QTvar_rain = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-        self.HQTcov_rain = np.zeros((Gr.nzg,),dtype=np.double, order='c')
+        if self.use_scalar_var:
+            #self.Hvar = np.zeros((Gr.nzg,),dtype=np.double, order='c')
+            #self.QTvar = np.zeros((Gr.nzg,),dtype=np.double, order='c')
+            #self.HQTcov = np.zeros((Gr.nzg,),dtype=np.double, order='c')
+            self.Hvar_dissipation = np.zeros((Gr.nzg,),dtype=np.double, order='c')
+            self.QTvar_dissipation = np.zeros((Gr.nzg,),dtype=np.double, order='c')
+            self.HQTcov_dissipation = np.zeros((Gr.nzg,),dtype=np.double, order='c')
+            self.Hvar_entr_gain = np.zeros((Gr.nzg,),dtype=np.double, order='c')
+            self.QTvar_entr_gain = np.zeros((Gr.nzg,),dtype=np.double, order='c')
+            self.HQTcov_entr_gain = np.zeros((Gr.nzg,),dtype=np.double, order='c')
+            self.Hvar_detr_loss = np.zeros((Gr.nzg,),dtype=np.double, order='c')
+            self.QTvar_detr_loss = np.zeros((Gr.nzg,),dtype=np.double, order='c')
+            self.HQTcov_detr_loss = np.zeros((Gr.nzg,),dtype=np.double, order='c')
+            self.Hvar_shear = np.zeros((Gr.nzg,),dtype=np.double, order='c')
+            self.QTvar_shear = np.zeros((Gr.nzg,),dtype=np.double, order='c')
+            self.HQTcov_shear = np.zeros((Gr.nzg,),dtype=np.double, order='c')
+            self.Hvar_rain = np.zeros((Gr.nzg,),dtype=np.double, order='c')
+            self.QTvar_rain = np.zeros((Gr.nzg,),dtype=np.double, order='c')
+            self.HQTcov_rain = np.zeros((Gr.nzg,),dtype=np.double, order='c')
 
         # Near-surface BC of updraft area fraction
         self.area_surface_bc= np.zeros((self.n_updrafts,),dtype=np.double, order='c')
@@ -204,21 +211,23 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         Stats.add_profile('tke_pressure')
         Stats.add_profile('updraft_qt_precip')
         Stats.add_profile('updraft_thetal_precip')
-        Stats.add_profile('Hvar_dissipation')
-        Stats.add_profile('QTvar_dissipation')
-        Stats.add_profile('HQTcov_dissipation')
-        Stats.add_profile('Hvar_entr_gain')
-        Stats.add_profile('QTvar_entr_gain')
-        Stats.add_profile('HQTcov_entr_gain')
-        Stats.add_profile('Hvar_detr_loss')
-        Stats.add_profile('QTvar_detr_loss')
-        Stats.add_profile('HQTcov_detr_loss')
-        Stats.add_profile('Hvar_shear')
-        Stats.add_profile('QTvar_shear')
-        Stats.add_profile('HQTcov_shear')
-        Stats.add_profile('Hvar_rain')
-        Stats.add_profile('QTvar_rain')
-        Stats.add_profile('HQTcov_rain')
+
+        if self.use_scalar_var:
+            Stats.add_profile('Hvar_dissipation')
+            Stats.add_profile('QTvar_dissipation')
+            Stats.add_profile('HQTcov_dissipation')
+            Stats.add_profile('Hvar_entr_gain')
+            Stats.add_profile('QTvar_entr_gain')
+            Stats.add_profile('HQTcov_entr_gain')
+            Stats.add_profile('Hvar_detr_loss')
+            Stats.add_profile('QTvar_detr_loss')
+            Stats.add_profile('HQTcov_detr_loss')
+            Stats.add_profile('Hvar_shear')
+            Stats.add_profile('QTvar_shear')
+            Stats.add_profile('HQTcov_shear')
+            Stats.add_profile('Hvar_rain')
+            Stats.add_profile('QTvar_rain')
+            Stats.add_profile('HQTcov_rain')
 
         return
 
@@ -275,26 +284,28 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         Stats.write_profile('tke_pressure', self.tke_pressure[kmin:kmax])
         Stats.write_profile('updraft_qt_precip', self.UpdMicro.prec_source_qt_tot[kmin:kmax])
         Stats.write_profile('updraft_thetal_precip', self.UpdMicro.prec_source_h_tot[kmin:kmax])
-        #Stats.write_profile('Hvar', self.Hvar[kmin:kmax])
-        #Stats.write_profile('QTvar', self.QTvar[kmin:kmax])
-        #Stats.write_profile('HQTcov', self.HQTcov[kmin:kmax])
-        self.compute_covariance_dissipation()
-        Stats.write_profile('Hvar_dissipation', self.Hvar_dissipation[kmin:kmax])
-        Stats.write_profile('QTvar_dissipation', self.QTvar_dissipation[kmin:kmax])
-        Stats.write_profile('HQTcov_dissipation', self.HQTcov_dissipation[kmin:kmax])
-        Stats.write_profile('Hvar_entr_gain', self.Hvar_entr_gain[kmin:kmax])
-        Stats.write_profile('QTvar_entr_gain', self.QTvar_entr_gain[kmin:kmax])
-        Stats.write_profile('HQTcov_entr_gain', self.HQTcov_entr_gain[kmin:kmax])
-        self.compute_covariance_detr()
-        Stats.write_profile('Hvar_detr_loss', self.Hvar_detr_loss[kmin:kmax])
-        Stats.write_profile('QTvar_detr_loss', self.QTvar_detr_loss[kmin:kmax])
-        Stats.write_profile('HQTcov_detr_loss', self.HQTcov_detr_loss[kmin:kmax])
-        Stats.write_profile('Hvar_shear', self.Hvar_shear[kmin:kmax])
-        Stats.write_profile('QTvar_shear', self.QTvar_shear[kmin:kmax])
-        Stats.write_profile('HQTcov_shear', self.HQTcov_shear[kmin:kmax])
-        Stats.write_profile('Hvar_rain', self.Hvar_rain[kmin:kmax])
-        Stats.write_profile('QTvar_rain', self.QTvar_rain[kmin:kmax])
-        Stats.write_profile('HQTcov_rain', self.HQTcov_rain[kmin:kmax])
+
+        if self.use_scalar_var:
+            #Stats.write_profile('Hvar', self.Hvar[kmin:kmax])
+            #Stats.write_profile('QTvar', self.QTvar[kmin:kmax])
+            #Stats.write_profile('HQTcov', self.HQTcov[kmin:kmax])
+            self.compute_covariance_dissipation()
+            Stats.write_profile('Hvar_dissipation', self.Hvar_dissipation[kmin:kmax])
+            Stats.write_profile('QTvar_dissipation', self.QTvar_dissipation[kmin:kmax])
+            Stats.write_profile('HQTcov_dissipation', self.HQTcov_dissipation[kmin:kmax])
+            Stats.write_profile('Hvar_entr_gain', self.Hvar_entr_gain[kmin:kmax])
+            Stats.write_profile('QTvar_entr_gain', self.QTvar_entr_gain[kmin:kmax])
+            Stats.write_profile('HQTcov_entr_gain', self.HQTcov_entr_gain[kmin:kmax])
+            self.compute_covariance_detr()
+            Stats.write_profile('Hvar_detr_loss', self.Hvar_detr_loss[kmin:kmax])
+            Stats.write_profile('QTvar_detr_loss', self.QTvar_detr_loss[kmin:kmax])
+            Stats.write_profile('HQTcov_detr_loss', self.HQTcov_detr_loss[kmin:kmax])
+            Stats.write_profile('Hvar_shear', self.Hvar_shear[kmin:kmax])
+            Stats.write_profile('QTvar_shear', self.QTvar_shear[kmin:kmax])
+            Stats.write_profile('HQTcov_shear', self.HQTcov_shear[kmin:kmax])
+            Stats.write_profile('Hvar_rain', self.Hvar_rain[kmin:kmax])
+            Stats.write_profile('QTvar_rain', self.QTvar_rain[kmin:kmax])
+            Stats.write_profile('HQTcov_rain', self.HQTcov_rain[kmin:kmax])
 
         return
 
@@ -312,13 +323,15 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.wstar = get_wstar(Case.Sur.bflux, self.zi)
         if TS.nstep == 0:
             self.initialize_tke(GMV, Case)
-            self.initialize_covariance(GMV, Case)
+            if self.use_scalar_var:
+                self.initialize_covariance(GMV, Case)
             with nogil:
                 for k in xrange(self.Gr.nzg):
                     self.EnvVar.TKE.values[k] = GMV.TKE.values[k]
-                    self.EnvVar.Hvar.values[k] = GMV.Hvar.values[k]
-                    self.EnvVar.QTvar.values[k] = GMV.QTvar.values[k]
-                    self.EnvVar.HQTcov.values[k] = GMV.HQTcov.values[k]
+                    if self.use_scalar_var:
+                        self.EnvVar.Hvar.values[k] = GMV.Hvar.values[k]
+                        self.EnvVar.QTvar.values[k] = GMV.QTvar.values[k]
+                        self.EnvVar.HQTcov.values[k] = GMV.HQTcov.values[k]
 
         self.decompose_environment(GMV, 'values')
 
@@ -346,7 +359,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         self.update_GMV_ED(GMV, Case, TS)
         self.compute_tke(GMV, Case, TS)
-        self.compute_covariance(GMV, Case, TS)
+        if self.use_scalar_var:
+            self.compute_covariance(GMV, Case, TS)
 
         # Back out the tendencies of the grid mean variables for the whole timestep by differencing GMV.new and
         # GMV.values

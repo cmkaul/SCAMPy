@@ -189,8 +189,9 @@ cdef class GridMeanVariables:
             elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
                 self.Hvar = VariableDiagnostic(Gr.nzg, 'half', 'scalar', 'sym' ,'thetal_var', 'K^2')
                 self.HQTcov = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym' ,'thetal_qt_covar', 'K(kg/kg)' )
-                if self.EnvThermo_scheme == 'sommeria_deardorff':
-                    self.THVvar = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym', 'thatav_var','K^2' )
+
+        if self.EnvThermo_scheme == 'sommeria_deardorff':
+            self.THVvar = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym', 'thatav_var','K^2' )
 
         return
 
@@ -223,13 +224,13 @@ cdef class GridMeanVariables:
         if self.use_tke:
             self.TKE.set_bcs(self.Gr)
 
-        if (self.use_scalar_var or self.use_tke):
+        if self.use_scalar_var:
             self.QTvar.set_bcs(self.Gr)
             self.Hvar.set_bcs(self.Gr)
             self.HQTcov.set_bcs(self.Gr)
-            if self.EnvThermo_scheme == 'sommeria_deardorff':
-                self.THVvar.set_bcs(self.Gr)
 
+        if self.EnvThermo_scheme == 'sommeria_deardorff':
+            self.THVvar.set_bcs(self.Gr)
 
         self.zero_tendencies()
         return

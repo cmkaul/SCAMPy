@@ -70,7 +70,7 @@ cdef class EnvironmentVariables:
         if self.use_tke:
             self.TKE = EnvironmentVariable( nz, 'half', 'scalar', 'tke','m^2/s^2' )
 
-        if (self.use_scalar_var or self.use_tke):
+        if self.use_scalar_var:
             self.QTvar = EnvironmentVariable( nz, 'half', 'scalar', 'qt_var','kg^2/kg^2' )
             if namelist['thermodynamics']['thermal_variable'] == 'entropy':
                 self.Hvar = EnvironmentVariable(nz, 'half', 'scalar', 's_var', '(J/kg/K)^2')
@@ -78,8 +78,9 @@ cdef class EnvironmentVariables:
             elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
                 self.Hvar = EnvironmentVariable(nz, 'half', 'scalar', 'thetal_var', 'K^2')
                 self.HQTcov = EnvironmentVariable(nz, 'half', 'scalar', 'thetal_qt_covar', 'K(kg/kg)' )
-                if self.EnvThermo_scheme == 'sommeria_deardorff':
-                    self.THVvar = EnvironmentVariable(nz, 'half', 'scalar', 'thetav_var', 'K^2' )
+
+        if self.EnvThermo_scheme == 'sommeria_deardorff':
+            self.THVvar = EnvironmentVariable(nz, 'half', 'scalar', 'thetav_var', 'K^2' )
 
         #TODO  - most likely a temporary solution (unless it could be useful for testing)
         try:
@@ -109,7 +110,7 @@ cdef class EnvironmentVariables:
         Stats.add_profile('env_temperature')
         if self.use_tke:
             Stats.add_profile('env_tke')
-        if (self.use_scalar_var or self.use_tke):
+        if self.use_scalar_var:
             Stats.add_profile('env_Hvar')
             Stats.add_profile('env_QTvar')
             Stats.add_profile('env_HQTcov')
@@ -130,7 +131,7 @@ cdef class EnvironmentVariables:
         Stats.write_profile('env_temperature', self.T.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         if self.use_tke:
             Stats.write_profile('env_tke', self.TKE.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
-        if (self.use_scalar_var or self.use_tke):
+        if self.use_scalar_var:
             Stats.write_profile('env_Hvar', self.Hvar.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
             Stats.write_profile('env_QTvar', self.QTvar.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
             Stats.write_profile('env_HQTcov', self.HQTcov.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
