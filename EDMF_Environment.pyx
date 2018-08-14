@@ -56,9 +56,9 @@ cdef class EnvironmentVariables:
             self.use_tke = False
 
         try:
-            self.use_scalar_var = namelist['turbulence']['EDMF_PrognosticTKE']['use_scalar_var']
+            self.calc_scalar_var = namelist['turbulence']['EDMF_PrognosticTKE']['calc_scalar_var']
         except:
-            self.use_scalar_var = False
+            self.calc_scalar_var = False
             print('Defaulting to non-calculation of scalar variances')
 
         try:
@@ -70,7 +70,7 @@ cdef class EnvironmentVariables:
         if self.use_tke:
             self.TKE = EnvironmentVariable( nz, 'half', 'scalar', 'tke','m^2/s^2' )
 
-        if self.use_scalar_var:
+        if self.calc_scalar_var:
             self.QTvar = EnvironmentVariable( nz, 'half', 'scalar', 'qt_var','kg^2/kg^2' )
             if namelist['thermodynamics']['thermal_variable'] == 'entropy':
                 self.Hvar = EnvironmentVariable(nz, 'half', 'scalar', 's_var', '(J/kg/K)^2')
@@ -93,7 +93,7 @@ cdef class EnvironmentVariables:
             self.prescribed_HQTcov = namelist['turbulence']['sgs']['prescribed_HQTcov']
 
         if (self.EnvThermo_scheme == 'sommeria_deardorff' or self.EnvThermo_scheme == 'sa_quadrature'):
-            if (self.use_scalar_var == False and self.use_prescribed_scalar_var == False ):
+            if (self.calc_scalar_var == False and self.use_prescribed_scalar_var == False ):
                 sys.exit('EDMF_Environment.pyx 96: scalar variance has to be specified for Sommeria Deardorff or quadrature saturation')
 
         return
@@ -110,7 +110,7 @@ cdef class EnvironmentVariables:
         Stats.add_profile('env_temperature')
         if self.use_tke:
             Stats.add_profile('env_tke')
-        if self.use_scalar_var:
+        if self.calc_scalar_var:
             Stats.add_profile('env_Hvar')
             Stats.add_profile('env_QTvar')
             Stats.add_profile('env_HQTcov')
@@ -131,7 +131,7 @@ cdef class EnvironmentVariables:
         Stats.write_profile('env_temperature', self.T.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         if self.use_tke:
             Stats.write_profile('env_tke', self.TKE.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
-        if self.use_scalar_var:
+        if self.calc_scalar_var:
             Stats.write_profile('env_Hvar', self.Hvar.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
             Stats.write_profile('env_QTvar', self.QTvar.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
             Stats.write_profile('env_HQTcov', self.HQTcov.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])

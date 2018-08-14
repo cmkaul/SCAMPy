@@ -166,9 +166,9 @@ cdef class GridMeanVariables:
             self.use_tke = False
 
         try:
-            self.use_scalar_var = namelist['turbulence']['EDMF_PrognosticTKE']['use_scalar_var']
+            self.calc_scalar_var = namelist['turbulence']['EDMF_PrognosticTKE']['calc_scalar_var']
         except:
-            self.use_scalar_var = False
+            self.calc_scalar_var = False
             print('Defaulting to non-calculation of scalar variances')
 
         try:
@@ -181,7 +181,7 @@ cdef class GridMeanVariables:
         if self.use_tke:
             self.TKE = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym', 'tke','m^2/s^2' )
 
-        if self.use_scalar_var:
+        if self.calc_scalar_var:
             self.QTvar = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym', 'qt_var','kg^2/kg^2' )
             if namelist['thermodynamics']['thermal_variable'] == 'entropy':
                 self.Hvar = VariableDiagnostic(Gr.nzg, 'half', 'scalar', 'sym', 's_var', '(J/kg/K)^2')
@@ -224,7 +224,7 @@ cdef class GridMeanVariables:
         if self.use_tke:
             self.TKE.set_bcs(self.Gr)
 
-        if self.use_scalar_var:
+        if self.calc_scalar_var:
             self.QTvar.set_bcs(self.Gr)
             self.Hvar.set_bcs(self.Gr)
             self.HQTcov.set_bcs(self.Gr)
@@ -251,7 +251,7 @@ cdef class GridMeanVariables:
         Stats.add_profile('ql_mean')
         if self.use_tke:
             Stats.add_profile('tke_mean')
-        if self.use_scalar_var:
+        if self.calc_scalar_var:
             Stats.add_profile('Hvar_mean')
             Stats.add_profile('QTvar_mean')
             Stats.add_profile('HQTcov_mean')
@@ -278,7 +278,7 @@ cdef class GridMeanVariables:
             Stats.write_profile('thetal_mean',self.H.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         if self.use_tke:
             Stats.write_profile('tke_mean',self.TKE.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
-        if self.use_scalar_var:
+        if self.calc_scalar_var:
             Stats.write_profile('Hvar_mean',self.Hvar.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
             Stats.write_profile('QTvar_mean',self.QTvar.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
             Stats.write_profile('HQTcov_mean',self.HQTcov.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
