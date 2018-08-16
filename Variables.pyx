@@ -161,9 +161,9 @@ cdef class GridMeanVariables:
 
         # TKE
         if  namelist['turbulence']['scheme'] == 'EDMF_PrognosticTKE':
-            self.use_tke = True
+            self.calc_tke = True
         else:
-            self.use_tke = False
+            self.calc_tke = False
 
         try:
             self.calc_scalar_var = namelist['turbulence']['EDMF_PrognosticTKE']['calc_scalar_var']
@@ -178,7 +178,7 @@ cdef class GridMeanVariables:
             print('Defaulting to saturation adjustment with respect to environmental means')
 
         #Now add the 2nd moment variables
-        if self.use_tke:
+        if self.calc_tke:
             self.TKE = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym', 'tke','m^2/s^2' )
 
         if self.calc_scalar_var:
@@ -221,7 +221,7 @@ cdef class GridMeanVariables:
         self.QT.set_bcs(self.Gr)
         self.QR.set_bcs(self.Gr)
 
-        if self.use_tke:
+        if self.calc_tke:
             self.TKE.set_bcs(self.Gr)
 
         if self.calc_scalar_var:
@@ -249,7 +249,7 @@ cdef class GridMeanVariables:
         Stats.add_profile('temperature_mean')
         Stats.add_profile('buoyancy_mean')
         Stats.add_profile('ql_mean')
-        if self.use_tke:
+        if self.calc_tke:
             Stats.add_profile('tke_mean')
         if self.calc_scalar_var:
             Stats.add_profile('Hvar_mean')
@@ -276,7 +276,7 @@ cdef class GridMeanVariables:
             Stats.write_profile('thetal_mean',self.THL.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         elif self.H.name == 'thetal':
             Stats.write_profile('thetal_mean',self.H.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
-        if self.use_tke:
+        if self.calc_tke:
             Stats.write_profile('tke_mean',self.TKE.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         if self.calc_scalar_var:
             Stats.write_profile('Hvar_mean',self.Hvar.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])

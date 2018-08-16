@@ -51,9 +51,9 @@ cdef class EnvironmentVariables:
         # TKE
         # TODO - kind of repeated from Variables.pyx logic
         if  namelist['turbulence']['scheme'] == 'EDMF_PrognosticTKE':
-            self.use_tke = True
+            self.calc_tke = True
         else:
-            self.use_tke = False
+            self.calc_tke = False
 
         try:
             self.calc_scalar_var = namelist['turbulence']['EDMF_PrognosticTKE']['calc_scalar_var']
@@ -67,7 +67,7 @@ cdef class EnvironmentVariables:
             self.EnvThermo_scheme = 'sa_mean'
             print('Defaulting to saturation adjustment with respect to environmental means')
 
-        if self.use_tke:
+        if self.calc_tke:
             self.TKE = EnvironmentVariable( nz, 'half', 'scalar', 'tke','m^2/s^2' )
 
         if self.calc_scalar_var:
@@ -108,7 +108,7 @@ cdef class EnvironmentVariables:
         else:
             Stats.add_profile('env_thetal')
         Stats.add_profile('env_temperature')
-        if self.use_tke:
+        if self.calc_tke:
             Stats.add_profile('env_tke')
         if self.calc_scalar_var:
             Stats.add_profile('env_Hvar')
@@ -129,7 +129,7 @@ cdef class EnvironmentVariables:
             Stats.write_profile('env_thetal', self.H.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
 
         Stats.write_profile('env_temperature', self.T.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
-        if self.use_tke:
+        if self.calc_tke:
             Stats.write_profile('env_tke', self.TKE.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         if self.calc_scalar_var:
             Stats.write_profile('env_Hvar', self.Hvar.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
