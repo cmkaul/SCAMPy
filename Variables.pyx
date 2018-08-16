@@ -159,23 +159,25 @@ cdef class GridMeanVariables:
         self.B = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym', 'buoyancy', 'm^2/s^3')
         self.THL = VariableDiagnostic(Gr.nzg, 'half', 'scalar', 'sym', 'thetal','K')
 
-        # TKE
+        # TKE   TODO   repeated from EDMF_Environment.pyx logic
         if  namelist['turbulence']['scheme'] == 'EDMF_PrognosticTKE':
             self.calc_tke = True
         else:
             self.calc_tke = False
+        try:
+            self.calc_tke = namelist['turbulence']['EDMF_PrognosticTKE']['calculate_tke']
+        except:
+            pass
 
         try:
             self.calc_scalar_var = namelist['turbulence']['EDMF_PrognosticTKE']['calc_scalar_var']
         except:
             self.calc_scalar_var = False
-            print('Defaulting to non-calculation of scalar variances')
 
         try:
             self.EnvThermo_scheme = str(namelist['thermodynamics']['saturation'])
         except:
             self.EnvThermo_scheme = 'sa_mean'
-            print('Defaulting to saturation adjustment with respect to environmental means')
 
         #Now add the 2nd moment variables
         if self.calc_tke:

@@ -28,6 +28,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     def __init__(self, namelist, paramlist, Grid Gr, ReferenceState Ref):
         # Initialize the base parameterization class
         ParameterizationBase.__init__(self, paramlist,  Gr, Ref)
+
         # Set the number of updrafts (1)
         try:
             self.n_updrafts = namelist['turbulence']['EDMF_PrognosticTKE']['updraft_number']
@@ -44,18 +45,17 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.use_local_micro = True
             print('Turbulence--EDMF_PrognosticTKE: defaulting to local (level-by-level) microphysics')
 
-        if  namelist['turbulence']['scheme'] == str('EDMF_PrognosticTKE'):
+        try:
+            self.calc_tke = namelist['turbulence']['EDMF_PrognosticTKE']['calculate_tke']
+        except:
             self.calc_tke = True
-        else:
-            self.calc_tke = False
 
         try:
             self.calc_scalar_var = namelist['turbulence']['EDMF_PrognosticTKE']['calc_scalar_var']
         except:
             self.calc_scalar_var = False
-            print('Defaulting to non-calculation of scalar variances')
         if (self.calc_scalar_var==True and self.calc_tke==False):
-            sys.exit('Turbulence--EDMF_PrognosticTKE: >>calc_tke<< must be set to True when >>calc_scalar_var<< is True\
+            sys.exit('Turbulence--EDMF_PrognosticTKE: >>calculate_tke<< must be set to True when >>calc_scalar_var<< is True\
                       (to calculate the mixing length for the variance and covariance calculations')
 
         try:
@@ -89,6 +89,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         if(self.similarity_diffusivity == False and self.calc_tke ==False):
             sys.exit('Turbulence--EDMF_PrognosticTKE: either >>use_similarity_diffusivity<< or >>calc_tke<< flag\
                       is needed to get the eddy diffusivities')
+
+        if(self.similarity_diffusivity == True and self.calc_tke == True):
+           print("TKE will be calculated but not used for eddy diffusivity calculation")
 
         try:
             self.extrapolate_buoyancy = namelist['turbulence']['EDMF_PrognosticTKE']['extrapolate_buoyancy']
