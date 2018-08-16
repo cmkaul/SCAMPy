@@ -55,8 +55,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         except:
             self.calc_scalar_var = False
         if (self.calc_scalar_var==True and self.calc_tke==False):
-            sys.exit('Turbulence--EDMF_PrognosticTKE: >>calculate_tke<< must be set to True when >>calc_scalar_var<< is True\
-                      (to calculate the mixing length for the variance and covariance calculations')
+            sys.exit('Turbulence--EDMF_PrognosticTKE: >>calculate_tke<< must be set to True when >>calc_scalar_var<< is True (to calculate the mixing length for the variance and covariance calculations')
 
         try:
             if str(namelist['turbulence']['EDMF_PrognosticTKE']['entrainment']) == 'inverse_z':
@@ -87,8 +86,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.similarity_diffusivity = False
             print('Turbulence--EDMF_PrognosticTKE: defaulting to TKE-based eddy diffusivity')
         if(self.similarity_diffusivity == False and self.calc_tke ==False):
-            sys.exit('Turbulence--EDMF_PrognosticTKE: either >>use_similarity_diffusivity<< or >>calc_tke<< flag\
-                      is needed to get the eddy diffusivities')
+            sys.exit('Turbulence--EDMF_PrognosticTKE: either >>use_similarity_diffusivity<< or >>calc_tke<< flag is needed to get the eddy diffusivities')
 
         if(self.similarity_diffusivity == True and self.calc_tke == True):
            print("TKE will be calculated but not used for eddy diffusivity calculation")
