@@ -29,8 +29,8 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
         entr_struct _ret
 
     w_mix = (entr_in.w+entr_in.w_env)/2
-    #eps_w = 1.0/(fmax(w_mix,1.0)* 500)
-    eps_w = 0.15*fabs(entr_in.b) / fmax(entr_in.w * entr_in.w, 1e-2)
+    eps_w = 1.0/(fmax(entr_in.w,1.0)* 500)
+    #eps_w = 0.15*fabs(entr_in.b) / fmax(entr_in.w * entr_in.w, 1e-2)
 
     if entr_in.af>0.0:
 
