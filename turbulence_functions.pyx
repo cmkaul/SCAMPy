@@ -137,12 +137,12 @@ cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
     brel_mix = bmix# + wdw_mix
     brel_env = b_env# + wdw_env
     brel_up = b_up# + wdw_up
-    x0 = brel_mix/fabs(brel_env)
+    x0 = brel_mix/fmax(fabs(brel_env),1e-6)
     #sigma = entr_in.Poisson_rand*fmax(fabs((brel_mix-brel_up)/fabs(brel_env)),fabs((brel_mix-brel_env)/fabs(brel_env)))
-    sigma = entr_in.Poisson_rand*(brel_up-brel_env)/fabs(brel_env)
-    partiation_func = (1-erf((brel_env/fabs(brel_env)-x0)/(1.4142135623*sigma)))/2
-    #with gil:
-    #        print  partiation_func, brel_env/fabs(brel_env), sigma, fabs((brel_mix-brel_up)/fabs(brel_env)), fabs((brel_mix-brel_env)/fabs(brel_env))
+    sigma = entr_in.Poisson_rand*(brel_up-brel_env)/fmax(fabs(brel_env),1e-6)
+    partiation_func = (1-erf((brel_env/fmax(fabs(brel_env),1e-6)-x0)/(1.4142135623*sigma)))/2
+    # with gil:
+    #         print  alpha_env, entr_in.p0, entr_in.T_env, entr_in.qt_env, entr_in.qt_env-entr_in.ql_env
 
     return partiation_func
 

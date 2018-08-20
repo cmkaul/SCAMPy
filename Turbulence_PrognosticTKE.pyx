@@ -806,8 +806,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
                     self.UpdVar.H.new[i,k] = GMV.H.values[k]
                     self.UpdVar.QT.new[i,k] = GMV.QT.values[k]
+
+                if self.UpdVar.H.new[i,k] < 280 or self.UpdVar.H.new[i,k] > 450:
+                    print 'yair,', k, self.UpdVar.H.new[i,k], self.UpdVar.H.values[i,k], self.UpdVar.W.values[i,k], self.UpdVar.H.values[i,k-1], self.UpdVar.H.values[i,k], self.UpdVar.H.values[i,k+1], self.EnvVar.H.values[k+1], GMV.H.values[k+1]
+
                 sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0[k],
                              self.UpdVar.QT.new[i,k], self.UpdVar.H.new[i,k])
+                if np.isnan(sa.T):
+                    print 'sa_mean,', k, self.UpdVar.H.new[i,k], self.UpdVar.H.values[i,k], self.UpdVar.W.values[i,k], self.UpdVar.H.values[i,k-1], self.UpdVar.H.values[i,k], self.UpdVar.H.values[i,k+1], self.EnvVar.H.values[k+1], GMV.H.values[k+1]
 
                 self.UpdVar.QL.new[i,k] = sa.ql
                 self.UpdVar.T.new[i,k] = sa.T
