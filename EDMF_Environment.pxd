@@ -31,8 +31,8 @@ cdef class EnvironmentVariables:
         EnvironmentVariable CF
         EnvironmentVariable THVvar
         Grid Gr
-        bint use_tke
-        bint use_scalar_var
+        bint calc_tke
+        bint calc_scalar_var
         bint use_prescribed_scalar_var
         double prescribed_QTvar
         double prescribed_Hvar

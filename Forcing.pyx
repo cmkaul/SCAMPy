@@ -129,6 +129,11 @@ cdef class ForcingDYCOMS_RF01(ForcingBase):
 
     def __init__(self):
         ForcingBase.__init__(self)
+        return
+
+    cpdef initialize(self, GridMeanVariables GMV):
+        ForcingBase.initialize(self, GMV)
+
         self.alpha_z    = 1.
         self.kappa      = 85.
         self.F0         = 70.
@@ -137,10 +142,6 @@ cdef class ForcingDYCOMS_RF01(ForcingBase):
                                    # where it is used to initialize large scale subsidence
 
         self.f_rad = np.zeros((self.Gr.nzg + 1,), dtype=np.double, order='c') # radiative flux at cell edges
-        return
-
-    cpdef initialize(self, GridMeanVariables GMV):
-        ForcingBase.initialize(self, GMV)
         return
 
     cpdef calculate_radiation(self, GridMeanVariables GMV):

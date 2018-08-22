@@ -23,6 +23,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         bint use_local_micro
         bint similarity_diffusivity
         bint use_steady_updrafts
+        bint calc_scalar_var
+        bint calc_tke
         double surface_area
         double minimum_area
         double entrainment_factor
