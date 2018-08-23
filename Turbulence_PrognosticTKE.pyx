@@ -322,6 +322,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         if TS.nstep == 0:
             self.initialize_covariance(GMV, Case)
+            self.decompose_environment(GMV, 'values')
+            self.EnvThermo.satadjust(self.EnvVar, GMV)
+            self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar,GMV, self.extrapolate_buoyancy)
+            print 'update', self.Gr.gw, self.UpdVar.B.values[0,self.Gr.gw], self.EnvVar.B.values[self.Gr.gw], self.Ref.alpha0[self.Gr.gw], self.Ref.p0[self.Gr.gw], self.UpdVar.T.values[0,self.Gr.gw], self.UpdVar.QT.values[0,self.Gr.gw]
+            plt.figure()
+            plt.show()
             with nogil:
                 for k in xrange(self.Gr.nzg):
                     if self.calc_tke:
@@ -806,15 +812,17 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.UpdVar.H.new[i,gw] = self.h_surface_bc[i]
             self.UpdVar.QT.new[i,gw]  = self.qt_surface_bc[i]
 
-            sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp,
-                     self.Ref.p0[gw], self.UpdVar.QT.values[i,gw], self.UpdVar.H.values[i,gw])
-            self.UpdVar.QL.new[i,gw] = sa.ql
-            self.UpdVar.T.new[i,gw] = sa.T
-            self.UpdMicro.compute_update_combined_local_thetal(self.Ref.p0[gw], self.UpdVar.T.values[i,gw],
-                                                                   &self.UpdVar.QT.values[i,gw], &self.UpdVar.QL.values[i,gw],
-                                                                   &self.UpdVar.QR.values[i,gw], &self.UpdVar.H.values[i,gw],
-                                                                   i, gw)
-
+            # sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp,
+            #          self.Ref.p0[gw], self.UpdVar.QT.values[i,gw], self.UpdVar.H.values[i,gw])
+            # self.UpdVar.QL.new[i,gw] = sa.ql
+            # self.UpdVar.T.new[i,gw] = sa.T
+            # self.UpdMicro.compute_update_combined_local_thetal(self.Ref.p0[gw], self.UpdVar.T.values[i,gw],
+            #                                                        &self.UpdVar.QT.values[i,gw], &self.UpdVar.QL.values[i,gw],
+            #                                                        &self.UpdVar.QR.values[i,gw], &self.UpdVar.H.values[i,gw],
+            #                                                        i, gw)
+            print self.UpdVar.W.new[i,gw], self.UpdVar.B.values[i,gw], self.EnvVar.B.values[gw], GMV.B.values[gw]
+            plt.figure()
+            plt.show()
             for k in range(gw+1, self.Gr.nzg-gw):
                 self.upwind_integration(self.UpdVar.Area, self.UpdVar.Area, k, i, 1.0)
                 if self.UpdVar.Area.new[i,k] > au_lim:

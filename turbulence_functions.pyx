@@ -29,7 +29,7 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
         entr_struct _ret
 
     w_mix = (entr_in.w+entr_in.w_env)/2
-    eps_w = 1.0/(fmax(entr_in.w,1.0)* 500)
+    eps_w = 1.0/(fmax(fabs(entr_in.w),1.0)* 500)
     #eps_w = 0.15*fabs(entr_in.b) / fmax(entr_in.w * entr_in.w, 1e-2)
 
     if entr_in.af>0.0:
@@ -137,7 +137,10 @@ cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
     brel_mix = bmix# + wdw_mix
     brel_env = b_env# + wdw_env
     brel_up = b_up# + wdw_up
+
     x0 = brel_mix/fmax(fabs(brel_env),1e-6)
+    with gil:
+        print 'after x0-', brel_env
     #sigma = entr_in.Poisson_rand*fmax(fabs((brel_mix-brel_up)/fabs(brel_env)),fabs((brel_mix-brel_env)/fabs(brel_env)))
     sigma = entr_in.Poisson_rand*(brel_up-brel_env)/fmax(fabs(brel_env),1e-6)
     partiation_func = (1-erf((brel_env/fmax(fabs(brel_env),1e-6)-x0)/(1.4142135623*sigma)))/2
