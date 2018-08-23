@@ -35,6 +35,7 @@ cdef class UpdraftVariables:
         double updraft_fraction
         double [:] cloud_base
         double [:] cloud_top
+        double [:] cloud_cover
     cpdef initialize(self, GridMeanVariables GMV)
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)
@@ -42,7 +43,7 @@ cdef class UpdraftVariables:
     cpdef set_new_with_values(self)
     cpdef set_old_with_values(self)
     cpdef set_values_with_new(self)
-    cpdef get_cloud_base_top(self)
+    cpdef get_cloud_base_top_cover(self)
 
 cdef class UpdraftThermodynamics:
     cdef:

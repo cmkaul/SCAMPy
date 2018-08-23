@@ -24,6 +24,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         bint similarity_diffusivity
         bint use_steady_updrafts
         str mixing_length_fp
+        bint calc_scalar_var
+        bint calc_tke
         double surface_area
         double minimum_area
         double entrainment_factor
@@ -62,8 +64,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double tke_ed_coeff
         double tke_diss_coeff
 
-        #double [:] Hvar
-        #double [:] QTvar
+
         double [:] Hvar_shear
         double [:] QTvar_shear
         double [:] Hvar_entr_gain
@@ -80,6 +81,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double [:] Hvar_dissipation
         double [:] QTvar_dissipation
         double [:] HQTcov_dissipation
+        double [:] Hvar_rain
+        double [:] QTvar_rain
+        double [:] HQTcov_rain
 
     cpdef initialize(self, GridMeanVariables GMV)
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
@@ -101,6 +105,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef update_GMV_ED(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
     cpdef compute_covariance(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
     cpdef initialize_covariance(self, GridMeanVariables GMV, CasesBase Case)
+    cpdef cleanup_covariance(self, GridMeanVariables GMV)
     cpdef compute_tke_buoy(self, GridMeanVariables GMV)
     cpdef compute_tke_pressure(self)
     cdef void compute_covariance_detr(self, EDMF_Environment.EnvironmentVariable_2m Covar)
@@ -111,6 +116,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cdef void update_covariance_ED(self, GridMeanVariables GMV, CasesBase Case,TimeStepping TS, VariablePrognostic GmvVar1, VariablePrognostic GmvVar2,
             VariableDiagnostic GmvCovar, EDMF_Environment.EnvironmentVariable_2m Covar, EDMF_Environment.EnvironmentVariable  EnvVar1, EDMF_Environment.EnvironmentVariable  EnvVar2,
                                    EDMF_Updrafts.UpdraftVariable  UpdVar1, EDMF_Updrafts.UpdraftVariable  UpdVar2)
+    cpdef compute_covariance_rain(self, TimeStepping TS, GridMeanVariables GMV)
     cpdef update_GMV_diagnostics(self, GridMeanVariables GMV)
     # cdef get_env_tke_from_GMV(self, EDMF_Updrafts.UpdraftVariable au, EDMF_Updrafts.UpdraftVariable wu,
     #                   EDMF_Environment.EnvironmentVariable we, EDMF_Environment.EnvironmentVariable tke_e,
