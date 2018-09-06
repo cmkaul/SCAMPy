@@ -695,7 +695,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     psi_diff = psi_u.values[i,k]-gmv_psi[k]
                     gmv_covar[k] += au.values[i,k] * phi_diff * psi_diff
         return
-#   self.get_env_covar_from_GMV(self.UpdVar.Area, UpdVar1, UpdVar2, EnvVar1, EnvVar2,Covar, &GmvVar1.values[0], &GmvVar2.values[0], &GmvCovar.values[0]
+
     cdef get_env_covar_from_GMV(self, EDMF_Updrafts.UpdraftVariable au,
                                 EDMF_Updrafts.UpdraftVariable phi_u, EDMF_Updrafts.UpdraftVariable psi_u,
                                 EDMF_Environment.EnvironmentVariable phi_e, EDMF_Environment.EnvironmentVariable psi_e,
@@ -730,7 +730,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             #double [:] Poisson_rand
             double [:] Poisson_rand
             double logfn
-            long quadrature_order = 3
+            long quadrature_order = 2
 
 
         self.UpdVar.get_cloud_base_top_cover()
