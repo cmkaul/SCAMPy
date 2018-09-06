@@ -28,15 +28,9 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
 
-    w_mix = (entr_in.w+entr_in.w_env)/2
     eps_w = 1.0/(fmax(fabs(entr_in.w),1.0)* 500)
-    #eps_w = 0.15*fabs(entr_in.b) / fmax(entr_in.w * entr_in.w, 1e-2)
-
     if entr_in.af>0.0:
-
         partiation_func  = entr_detr_buoyancy_sorting(entr_in)
-        #with gil:
-        #    print partiation_func
         _ret.entr_sc = partiation_func*eps_w/2.0
         _ret.detr_sc = (1.0-partiation_func/2.0)*eps_w
     else:
@@ -105,9 +99,68 @@ cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil:
     #     _ret.entr_sc = 0.0
     #     _ret.detr_sc = 0.0
     # return  _ret
-
-
 cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
+
+        cdef:
+            Py_ssize_t m_q, m_h
+            #double[:] inner
+            int i_b
+
+            double h_hat, qt_hat, sd_h, sd_q, corr, mu_h_star, sigma_h_star, qt_var
+            double sqpi_inv = 1.0/sqrt(pi)
+            double sqrt2 = sqrt(2.0)
+            double sd_q_lim, bmix, qv_
+            double partiation_func = 0.0
+            double inner_partiation_func = 0.0
+            eos_struct sa
+            double [:] weights
+            double [:] abscissas
+        with gil:
+            abscissas, weights = np.polynomial.hermite.hermgauss(entr_in.quadrature_order)
+            #print np.multiply(weights[0],1.0), np.multiply(weights[1],1.0), np.multiply(weights[2],1.0)
+
+        if entr_in.env_QTvar != 0.0 and entr_in.env_Hvar != 0.0:
+            sd_q = sqrt(entr_in.env_QTvar)
+            sd_h = sqrt(entr_in.env_Hvar)
+            corr = fmax(fmin(entr_in.env_HQTcov/fmax(sd_h*sd_q, 1e-13),1.0),-1.0)
+
+            # limit sd_q to prevent negative qt_hat
+            sd_q_lim = (1e-10 - entr_in.qt_env)/(sqrt2 * abscissas[0])
+            sd_q = fmin(sd_q, sd_q_lim)
+            qt_var = sd_q * sd_q
+            sigma_h_star = sqrt(fmax(1.0-corr*corr,0.0)) * sd_h
+
+            for m_q in xrange(entr_in.quadrature_order):
+                qt_hat    = (entr_in.qt_env + sqrt2 * sd_q * abscissas[m_q] + entr_in.qt_up)/2.0
+                mu_h_star = entr_in.H_env + sqrt2 * corr * sd_h * abscissas[m_q]
+                inner_partiation_func = 0.0
+                for m_h in xrange(entr_in.quadrature_order):
+                    h_hat = (sqrt2 * sigma_h_star * abscissas[m_h] + mu_h_star + entr_in.H_up)/2.0
+                    # condensation
+                    sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, qt_hat, h_hat)
+                    # calcualte buoyancy
+                    qv_ = qt_hat - sa.ql
+                    alpha_mix = alpha_c(entr_in.p0, sa.T, qt_hat, qv_)
+                    bmix = buoyancy_c(entr_in.alpha0, alpha_mix) - entr_in.b_mean
+
+                    # sum only the points with positive buoyancy to get the buoyant fraction
+                    if bmix >0.0:
+                        inner_partiation_func  += weights[m_h] * sqpi_inv
+                partiation_func  += inner_partiation_func * weights[m_q] * sqpi_inv
+
+        else:
+            h_hat = ( entr_in.H_env + entr_in.H_up)/2.0
+            qt_hat = ( entr_in.qt_env + entr_in.qt_up)/2.0
+
+            # condensation
+            sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, qt_hat, h_hat)
+            # calcualte buoyancy
+            alpha_mix = alpha_c(entr_in.p0, sa.T, qt_hat, qt_hat - sa.ql)
+            bmix = buoyancy_c(entr_in.alpha0, alpha_mix) - entr_in.b_mean
+
+        return partiation_func
+
+cdef double entr_detr_buoyancy_sorting_old(entr_in_struct entr_in) nogil:
     cdef:
 
         double wdw_mix, wdw_env, sigma, brel_mix, brel_env, w_env, dw_env
@@ -139,13 +192,11 @@ cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
     brel_up = b_up# + wdw_up
 
     x0 = brel_mix/fmax(fabs(brel_env),1e-6)
-    with gil:
-        print 'after x0-', brel_env
-    #sigma = entr_in.Poisson_rand*fmax(fabs((brel_mix-brel_up)/fabs(brel_env)),fabs((brel_mix-brel_env)/fabs(brel_env)))
     sigma = entr_in.Poisson_rand*(brel_up-brel_env)/fmax(fabs(brel_env),1e-6)
-    partiation_func = (1-erf((brel_env/fmax(fabs(brel_env),1e-6)-x0)/(1.4142135623*sigma)))/2
-    # with gil:
-    #         print  alpha_env, entr_in.p0, entr_in.T_env, entr_in.qt_env, entr_in.qt_env-entr_in.ql_env
+    if sigma == 0.0:
+        partiation_func = 0.5
+    else:
+        partiation_func = (1-erf((brel_env/fmax(fabs(brel_env),1e-6)-x0)/(1.4142135623*sigma)))/2
 
     return partiation_func
 

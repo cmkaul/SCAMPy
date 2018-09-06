@@ -325,9 +325,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.decompose_environment(GMV, 'values')
             self.EnvThermo.satadjust(self.EnvVar, GMV)
             self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar,GMV, self.extrapolate_buoyancy)
-            print 'update', self.Gr.gw, self.UpdVar.B.values[0,self.Gr.gw], self.EnvVar.B.values[self.Gr.gw], self.Ref.alpha0[self.Gr.gw], self.Ref.p0[self.Gr.gw], self.UpdVar.T.values[0,self.Gr.gw], self.UpdVar.QT.values[0,self.Gr.gw]
-            plt.figure()
-            plt.show()
             with nogil:
                 for k in xrange(self.Gr.nzg):
                     if self.calc_tke:
@@ -730,51 +727,53 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             entr_struct ret
             entr_in_struct input
             eos_struct sa
+            #double [:] Poisson_rand
             double [:] Poisson_rand
+            double logfn
+            long quadrature_order = 3
 
 
         self.UpdVar.get_cloud_base_top_cover()
 
         input.wstar = self.wstar
-
-
         for i in xrange(self.n_updrafts):
             input.zi = self.UpdVar.cloud_base[i]
             Poisson_rand = np.random.poisson(10.0,self.Gr.nzg).astype(np.float)
             Poisson_rand= np.clip(Poisson_rand,0.01,100.0)
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                with nogil:
-                    input.b = self.UpdVar.B.values[i,k]
-                    input.b_mean = GMV.B.values[k]
-                    input.w = self.UpdVar.W.values[i,k]
-                    input.dw = (self.UpdVar.W.values[i,k+1]-self.UpdVar.W.values[i,k-1])/self.Gr.dz/2.0
-                    input.z = self.Gr.z[k]
-                    input.af = self.UpdVar.Area.values[i,k]
-                    input.ml = self.mixing_length[k]
-                    input.qt_env = self.EnvVar.QT.values[k]
-                    input.ql_env = self.EnvVar.QL.values[k]
-                    input.T_env = self.EnvVar.T.values[k]
-                    input.H_env = self.EnvVar.H.values[k]
-                    input.w_env = self.EnvVar.W.values[k]
-                    input.dw_env = (self.EnvVar.W.values[k+1]-self.EnvVar.W.values[k-1])/self.Gr.dz/2.0
-                    input.H_up = self.UpdVar.H.values[i,k]
-                    input.qt_up = self.UpdVar.QT.values[i,k]
-                    input.ql_up = self.UpdVar.QL.values[i,k]
-                    input.T_up = self.UpdVar.T.values[i,k]
-                    input.p0 = self.Ref.p0[k]
-                    input.alpha0 = self.Ref.alpha0[k]
-                    input.tke_ed_coeff  = self.tke_ed_coeff
-                    input.Poisson_rand = Poisson_rand[k]/10.0
-                    input.L = 20000.0 # need to define the scale of the GCM grid resolution
-                    if self.calc_tke:
-                        input.tke = self.EnvVar.TKE.values[k]
-                        input.tke_ed_coeff  = self.tke_ed_coeff
-
-                    ret = self.entr_detr_fp(input)
-                    self.entr_sc[i,k] = ret.entr_sc * self.entrainment_factor
-                    self.detr_sc[i,k] = ret.detr_sc * self.detrainment_factor
+                input.quadrature_order = quadrature_order
+                input.b = self.UpdVar.B.values[i,k]
+                input.b_mean = GMV.B.values[k]
+                input.w = interp2pt(self.UpdVar.W.values[i,k],self.UpdVar.W.values[i,k-1])
+                input.dw = (self.UpdVar.W.values[i,k]-self.UpdVar.W.values[i,k-1])/self.Gr.dz
+                input.z = self.Gr.z[k]
+                input.af = self.UpdVar.Area.values[i,k]
+                input.tke = self.EnvVar.TKE.values[k]
+                input.ml = self.mixing_length[k]
+                input.qt_env = self.EnvVar.QT.values[k]
+                input.ql_env = self.EnvVar.QL.values[k]
+                input.T_env = self.EnvVar.T.values[k]
+                input.H_env = self.EnvVar.H.values[k]
+                input.env_Hvar = self.EnvVar.Hvar.values[k]
+                input.env_QTvar = self.EnvVar.QTvar.values[k]
+                input.env_HQTcov = self.EnvVar.HQTcov.values[k]
+                input.w_env = interp2pt(self.EnvVar.W.values[k],self.EnvVar.W.values[k-1])
+                input.dw_env = (self.EnvVar.W.values[k]-self.EnvVar.W.values[k-1])/self.Gr.dz
+                input.H_up = self.UpdVar.H.values[i,k]
+                input.qt_up = self.UpdVar.QT.values[i,k]
+                input.ql_up = self.UpdVar.QL.values[i,k]
+                input.T_up = self.UpdVar.T.values[i,k]
+                input.p0 = self.Ref.p0[k]
+                input.alpha0 = self.Ref.alpha0[k]
+                input.tke_ed_coeff  = self.tke_ed_coeff
+                input.Poisson_rand = Poisson_rand[k]/10.0
+                input.L = 20000.0 # need to define the scale of the GCM grid resolution
+                ret = self.entr_detr_fp(input)
+                self.entr_sc[i,k] = ret.entr_sc * self.entrainment_factor
+                self.detr_sc[i,k] = ret.detr_sc * self.detrainment_factor
 
         return
+
 
     cpdef solve_updraft(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
         cdef:
@@ -804,25 +803,23 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             press_drag = -1.0 * self.Ref.rho0[gw]*sqrt(self.UpdVar.Area.values[i,gw])*self.pressure_drag_coeff/self.pressure_plume_spacing \
                          * (self.UpdVar.W.values[i,gw] -self.EnvVar.W.values[gw])*fabs(self.UpdVar.W.values[i,gw] -self.EnvVar.W.values[gw])
             press = press_buoy + press_drag
-            self.UpdVar.W.values[i,gw] = (self.Ref.rho0[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.W.values[i,gw] * dti_
+            self.UpdVar.W.new[i,gw] = (self.Ref.rho0[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.W.values[i,gw] * dti_
                                                   -adv + exch + buoy + press)/(self.Ref.rho0[gw] * self.UpdVar.Area.new[i,gw] * dti_)
-            self.UpdVar.W.new[i,gw] = self.UpdVar.W.values[i,gw]
+
 
 
             self.UpdVar.H.new[i,gw] = self.h_surface_bc[i]
             self.UpdVar.QT.new[i,gw]  = self.qt_surface_bc[i]
 
-            # sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp,
-            #          self.Ref.p0[gw], self.UpdVar.QT.values[i,gw], self.UpdVar.H.values[i,gw])
-            # self.UpdVar.QL.new[i,gw] = sa.ql
-            # self.UpdVar.T.new[i,gw] = sa.T
-            # self.UpdMicro.compute_update_combined_local_thetal(self.Ref.p0[gw], self.UpdVar.T.values[i,gw],
-            #                                                        &self.UpdVar.QT.values[i,gw], &self.UpdVar.QL.values[i,gw],
-            #                                                        &self.UpdVar.QR.values[i,gw], &self.UpdVar.H.values[i,gw],
-            #                                                        i, gw)
-            print self.UpdVar.W.new[i,gw], self.UpdVar.B.values[i,gw], self.EnvVar.B.values[gw], GMV.B.values[gw]
-            plt.figure()
-            plt.show()
+            sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp,
+                     self.Ref.p0[gw], self.UpdVar.QT.new[i,gw], self.UpdVar.H.new[i,gw])
+            self.UpdVar.QL.new[i,gw] = sa.ql
+            self.UpdVar.T.new[i,gw] = sa.T
+            self.UpdMicro.compute_update_combined_local_thetal(self.Ref.p0[gw], self.UpdVar.T.new[i,gw],
+                                                                   &self.UpdVar.QT.new[i,gw], &self.UpdVar.QL.new[i,gw],
+                                                                   &self.UpdVar.QR.new[i,gw], &self.UpdVar.H.new[i,gw],
+                                                                   i, gw)
+
             for k in range(gw+1, self.Gr.nzg-gw):
                 self.upwind_integration(self.UpdVar.Area, self.UpdVar.Area, k, i, 1.0)
                 if self.UpdVar.Area.new[i,k] > au_lim:
@@ -846,7 +843,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     self.UpdVar.QT.new[i,k] = GMV.QT.values[k]
 
                 if self.UpdVar.H.new[i,k] < 280 or self.UpdVar.H.new[i,k] > 450:
-                    print 'yair,', k, self.UpdVar.H.new[i,k], self.UpdVar.H.values[i,k], self.UpdVar.W.values[i,k], self.UpdVar.H.values[i,k-1], self.UpdVar.H.values[i,k], self.UpdVar.H.values[i,k+1], self.EnvVar.H.values[k+1], GMV.H.values[k+1]
+                    print 'before sa mean,', k, self.UpdVar.H.new[i,k], self.UpdVar.H.values[i,k], self.UpdVar.W.values[i,k], self.UpdVar.H.values[i,k-1], self.UpdVar.H.values[i,k], self.UpdVar.H.values[i,k+1], self.EnvVar.H.values[k+1], GMV.H.values[k+1]
 
                 sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0[k],
                              self.UpdVar.QT.new[i,k], self.UpdVar.H.new[i,k])

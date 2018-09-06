@@ -204,9 +204,6 @@ cdef class EnvironmentThermodynamics:
         EnvVar.QL.values[k]  = ql
         EnvVar.QR.values[k] += qr
         EnvVar.B.values[k]   = buoyancy_c(self.Ref.alpha0[k], alpha)
-        if k==2:
-            with gil:
-                print 'cal envvar Buoy', k, EnvVar.B.values[k]
         return
 
     cdef void update_cloud_dry(self, long k, EnvironmentVariables EnvVar, double T, double th, double qt, double ql, double qv) nogil :
