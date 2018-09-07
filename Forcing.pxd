@@ -60,4 +60,3 @@ cdef class ForcingDYCOMS_RF01(ForcingBase):
     cpdef coriolis_force(self, VariablePrognostic U, VariablePrognostic V)
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)
-

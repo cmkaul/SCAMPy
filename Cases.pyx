@@ -1441,6 +1441,7 @@ cdef class DYCOMS_RF01(CasesBase):
     cpdef update_forcing(self, GridMeanVariables GMV, TimeStepping TS):
         self.Fo.update(GMV)
         return
+
     cpdef update_radiation(self, GridMeanVariables GMV, TimeStepping TS):
         self.Ra.update(GMV, TS)
         return

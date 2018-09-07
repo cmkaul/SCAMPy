@@ -126,6 +126,8 @@ cdef class GATE_III(CasesBase):
     cpdef update_forcing(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef update_radiation(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef update(self, GridMeanVariables GMV, TimeStepping TS)
+
+
 # Evaluation of Large-Eddy Simulations via Observations of Nocturnal Marine Stratocumulus
 # Stevens et al
 # Monthly Weather Review 2005
