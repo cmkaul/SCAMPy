@@ -904,7 +904,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     # thereby updating to GMV.SomeVar.mf_update
     # mass flux tendency is computed as 1st order upwind
 
-cpdef update_GMV_MF(self, GridMeanVariables GMV, TimeStepping TS):
+    cpdef update_GMV_MF(self, GridMeanVariables GMV, TimeStepping TS):
         cdef:
             Py_ssize_t k, i
             Py_ssize_t gw = self.Gr.gw
