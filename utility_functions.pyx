@@ -27,3 +27,12 @@ cdef double interp2pt(double val1, double val2) nogil:
 cdef double logistic(double x, double slope, double mid) nogil:
     return 1.0/(1.0 + exp( -slope * (x-mid)))
 
+# cdef double smooth_minimum(double x1, double x2,double x3, double x4,double x5,  double a) nogil:
+#     smin = (x1*exp(-a*x1)+x2*exp(-a*x2)+x3*exp(-a*x3)+x4*exp(-a*x4)+x5*exp(-a*x5))\
+#            / (exp(-a*x1)+exp(-a*x2)+exp(-a*x3)+exp(-a*x4)+exp(-a*x5))
+#     return smin
+cdef double smooth_minimum(double x1, double x2,double x3,double a) nogil:
+    smin = (x1*exp(-a*x1)+x2*exp(-a*x2)+x3*exp(-a*x3))/ (exp(-a*x1)+exp(-a*x2)+exp(-a*x3))
+    return smin
+
+

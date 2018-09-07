@@ -4,11 +4,8 @@ from NetCDFIO cimport NetCDFIO_Stats
 cdef class ReferenceState:
     cdef:
         double [:] p0
-        double [:] p0_half
         double [:] alpha0
-        double [:] alpha0_half
         double [:] rho0
-        double [:] rho0_half
 
 
         double sg

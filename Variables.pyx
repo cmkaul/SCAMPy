@@ -25,8 +25,9 @@ cdef class VariablePrognostic:
         self.mf_update = np.zeros((nz_tot,),dtype=np.double, order='c')
         self.tendencies = np.zeros((nz_tot,),dtype=np.double, order='c')
         # Placement on staggered grid
-        if loc != 'half' and loc != 'full':
-            print('Invalid location setting for variable! Must be half or full')
+        loc = 'half'
+        if loc != 'half':
+            print('Invalid location setting for variable! Must be half')
         self.loc = loc
         if kind != 'scalar' and kind != 'velocity':
             print ('Invalid kind setting for variable! Must be scalar or velocity')
@@ -92,8 +93,9 @@ cdef class VariableDiagnostic:
         # Value at the current timestep
         self.values = np.zeros((nz_tot,),dtype=np.double, order='c')
         # Placement on staggered grid
-        if loc != 'half' and loc != 'full':
-            print('Invalid location setting for variable! Must be half or full')
+        loc = 'half'
+        if loc != 'half':
+            print('Invalid location setting for variable! Must be half')
         self.loc = loc
         if kind != 'scalar' and kind != 'velocity':
             print ('Invalid kind setting for variable! Must be scalar or velocity')
@@ -135,7 +137,7 @@ cdef class GridMeanVariables:
         self.U = VariablePrognostic(Gr.nzg, 'half', 'velocity', 'sym','u', 'm/s' )
         self.V = VariablePrognostic(Gr.nzg, 'half', 'velocity','sym', 'v', 'm/s' )
         # Just leave this zero for now!
-        self.W = VariablePrognostic(Gr.nzg, 'full', 'velocity','sym', 'v', 'm/s' )
+        self.W = VariablePrognostic(Gr.nzg, 'half', 'velocity','sym', 'v', 'm/s' )
 
         # Create thermodynamic variables
         self.QT = VariablePrognostic(Gr.nzg, 'half', 'scalar','sym', 'qt', 'kg/kg')
@@ -286,7 +288,7 @@ cdef class GridMeanVariables:
             Stats.write_profile('HQTcov_mean',self.HQTcov.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
 
         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-            lwp += self.Ref.rho0_half[k]*self.QL.values[k]*self.Gr.dz
+            lwp += self.Ref.rho0[k]*self.QL.values[k]*self.Gr.dz
         Stats.write_ts('lwp', lwp)
 
         return
@@ -301,13 +303,13 @@ cdef class GridMeanVariables:
             for k in xrange(self.Gr.nzg):
                 h = self.H.values[k]
                 qt = self.QT.values[k]
-                p0 = self.Ref.p0_half[k]
+                p0 = self.Ref.p0[k]
                 sa = eos(self.t_to_prog_fp,self.prog_to_t_fp, p0, qt, h )
                 self.QL.values[k] = sa.ql
                 self.T.values[k] = sa.T
                 qv = qt - sa.ql
                 self.THL.values[k] = t_to_thetali_c(p0, sa.T, qt, sa.ql,0.0)
                 alpha = alpha_c(p0, sa.T, qt, qv)
-                self.B.values[k] = buoyancy_c(self.Ref.alpha0_half[k], alpha)
+                self.B.values[k] = buoyancy_c(self.Ref.alpha0[k], alpha)
 
         return

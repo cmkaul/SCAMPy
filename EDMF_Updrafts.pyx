@@ -26,8 +26,8 @@ cdef class UpdraftVariable:
         self.tendencies = np.zeros((nu,nz),dtype=np.double, order='c')
         self.flux = np.zeros((nu,nz),dtype=np.double, order='c')
         self.bulkvalues = np.zeros((nz,), dtype=np.double, order = 'c')
-        if loc != 'half' and loc != 'full':
-            print('Invalid location setting for variable! Must be half or full')
+        if loc != 'half':
+            print('Invalid location setting for variable! Must be half')
         self.loc = loc
         if kind != 'scalar' and kind != 'velocity':
             print ('Invalid kind setting for variable! Must be scalar or velocity')
@@ -43,18 +43,18 @@ cdef class UpdraftVariable:
 
         n_updrafts = np.shape(self.values)[0]
 
-        if self.name == 'w':
+        # if self.name == 'w':
+        #     for i in xrange(n_updrafts):
+        #         self.values[i,start_high] = 0.0
+        #         self.values[i,start_low] = 0.0
+        #         for k in xrange(1,Gr.gw):
+        #             self.values[i,start_high+ k] = -self.values[i,start_high - k ]
+        #             self.values[i,start_low- k] = -self.values[i,start_low + k  ]
+        # else:
+        for k in xrange(Gr.gw):
             for i in xrange(n_updrafts):
-                self.values[i,start_high] = 0.0
-                self.values[i,start_low] = 0.0
-                for k in xrange(1,Gr.gw):
-                    self.values[i,start_high+ k] = -self.values[i,start_high - k ]
-                    self.values[i,start_low- k] = -self.values[i,start_low + k  ]
-        else:
-            for k in xrange(Gr.gw):
-                for i in xrange(n_updrafts):
-                    self.values[i,start_high + k +1] = self.values[i,start_high  - k]
-                    self.values[i,start_low - k] = self.values[i,start_low + 1 + k]
+                self.values[i,start_high + k +1] = self.values[i,start_high  - k]
+                self.values[i,start_low - k] = self.values[i,start_low + 1 + k]
 
         return
 
@@ -67,8 +67,8 @@ cdef class UpdraftVariables:
             Py_ssize_t nzg = Gr.nzg
             Py_ssize_t i, k
 
-        self.W = UpdraftVariable(nu, nzg, 'full', 'velocity', 'w','m/s' )
-        self.Area = UpdraftVariable(nu, nzg, 'full', 'scalar', 'area_fraction','[-]' )
+        self.W = UpdraftVariable(nu, nzg, 'half', 'velocity', 'w','m/s' )
+        self.Area = UpdraftVariable(nu, nzg, 'half', 'scalar', 'area_fraction','[-]' )
         self.QT = UpdraftVariable(nu, nzg, 'half', 'scalar', 'qt','kg/kg' )
         self.QL = UpdraftVariable(nu, nzg, 'half', 'scalar', 'ql','kg/kg' )
         self.QR = UpdraftVariable(nu, nzg, 'half', 'scalar', 'qr','kg/kg' )
@@ -268,14 +268,15 @@ cdef class UpdraftVariables:
 
         for i in xrange(self.n_updrafts):
             # Todo check the setting of ghost point z_half
-            self.cloud_base[i] = self.Gr.z_half[self.Gr.nzg-self.Gr.gw-1]
+            self.cloud_base[i] = self.Gr.z[self.Gr.nzg-self.Gr.gw-1]
             self.cloud_top[i] = 0.0
             self.cloud_cover[i] = 0.0
             for k in xrange(self.Gr.gw,self.Gr.nzg-self.Gr.gw):
                 if self.QL.values[i,k] > 1e-8 and self.Area.values[i,k] > 1e-3:
-                    self.cloud_base[i] = fmin(self.cloud_base[i], self.Gr.z_half[k])
-                    self.cloud_top[i] = fmax(self.cloud_top[i], self.Gr.z_half[k])
+                    self.cloud_base[i] = fmin(self.cloud_base[i], self.Gr.z[k])
+                    self.cloud_top[i] = fmax(self.cloud_top[i], self.Gr.z[k])
                     self.cloud_cover[i] = fmax(self.cloud_cover[i], self.Area.values[i,k])
+
 
 
         return
@@ -302,7 +303,7 @@ cdef class UpdraftThermodynamics:
         with nogil:
             for i in xrange(self.n_updraft):
                 for k in xrange(self.Gr.nzg):
-                    sa = eos(self.t_to_prog_fp,self.prog_to_t_fp, self.Ref.p0_half[k],
+                    sa = eos(self.t_to_prog_fp,self.prog_to_t_fp, self.Ref.p0[k],
                              UpdVar.QT.values[i,k], UpdVar.H.values[i,k])
                     UpdVar.QL.values[i,k] = sa.ql
                     UpdVar.T.values[i,k] = sa.T
@@ -322,8 +323,9 @@ cdef class UpdraftThermodynamics:
                 for i in xrange(self.n_updraft):
                     for k in xrange(self.Gr.nzg):
                         qv = UpdVar.QT.values[i,k] - UpdVar.QL.values[i,k]
-                        alpha = alpha_c(self.Ref.p0_half[k], UpdVar.T.values[i,k], UpdVar.QT.values[i,k], qv)
-                        UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_half[k], alpha) #- GMV.B.values[k]
+                        alpha = alpha_c(self.Ref.p0[k], UpdVar.T.values[i,k], UpdVar.QT.values[i,k], qv)
+                        UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0[k], alpha) #- GMV.B.values[k]
+
         else:
             with nogil:
                 for i in xrange(self.n_updraft):
@@ -333,17 +335,19 @@ cdef class UpdraftThermodynamics:
                             qv = UpdVar.QT.values[i,k] - UpdVar.QL.values[i,k]
                             h = UpdVar.H.values[i,k]
                             t = UpdVar.T.values[i,k]
-                            alpha = alpha_c(self.Ref.p0_half[k], t, qt, qv)
-                            UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_half[k], alpha)
+                            alpha = alpha_c(self.Ref.p0[k], t, qt, qv)
+                            UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0[k], alpha)
+
 
                         else:
-                            sa = eos(self.t_to_prog_fp, self.prog_to_t_fp, self.Ref.p0_half[k],
+                            sa = eos(self.t_to_prog_fp, self.prog_to_t_fp, self.Ref.p0[k],
                                      qt, h)
                             qt -= sa.ql
                             qv = qt
                             t = sa.T
-                            alpha = alpha_c(self.Ref.p0_half[k], t, qt, qv)
-                            UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_half[k], alpha)
+                            alpha = alpha_c(self.Ref.p0[k], t, qt, qv)
+                            UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0[k], alpha)
+
         with nogil:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                 GMV.B.values[k] = (1.0 - UpdVar.Area.bulkvalues[k]) * EnvVar.B.values[k]
@@ -381,10 +385,10 @@ cdef class UpdraftMicrophysics:
             for i in xrange(self.n_updraft):
                 for k in xrange(self.Gr.nzg):
                     tmp_qr = acnv_instant(UpdVar.QL.values[i,k], UpdVar.QT.values[i,k], self.max_supersaturation,\
-                                          UpdVar.T.values[i,k], self.Ref.p0_half[k])
+                                          UpdVar.T.values[i,k], self.Ref.p0[k])
                     self.prec_source_qt[i,k] = -tmp_qr
-                    self.prec_source_h[i,k]  = rain_source_to_thetal(self.Ref.p0_half[k], UpdVar.T.values[i,k],\
-                                                 UpdVar.QT.values[i,k], UpdVar.QL.values[i,k], 0.0, tmp_qr)
+                    self.prec_source_h[i,k]  = rain_source_to_thetal(self.Ref.p0[k], UpdVar.T.values[i,k],\
+                                                    UpdVar.QT.values[i,k], UpdVar.QL.values[i,k], 0.0, tmp_qr)
                                                                                               #TODO assumes no ice
         self.prec_source_h_tot  = np.sum(np.multiply(self.prec_source_h,  UpdVar.Area.values), axis=0)
         self.prec_source_qt_tot = np.sum(np.multiply(self.prec_source_qt, UpdVar.Area.values), axis=0)

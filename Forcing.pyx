@@ -75,7 +75,7 @@ cdef class ForcingStandard(ForcingBase):
         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
             # Apply large-scale horizontal advection tendencies
             qv = GMV.QT.values[k] - GMV.QL.values[k]
-            GMV.H.tendencies[k] += self.convert_forcing_prog_fp(self.Ref.p0_half[k],GMV.QT.values[k],
+            GMV.H.tendencies[k] += self.convert_forcing_prog_fp(self.Ref.p0[k],GMV.QT.values[k],
                                                                 qv, GMV.T.values[k], self.dqtdt[k], self.dTdt[k])
             GMV.QT.tendencies[k] += self.dqtdt[k]
         if self.apply_subsidence:
@@ -109,7 +109,7 @@ cdef class ForcingStandard(ForcingBase):
 #         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
 #             # Apply large-scale horizontal advection tendencies
 #             qv = GMV.QT.values[k] - GMV.QL.values[k]
-#             GMV.H.tendencies[k] += self.convert_forcing_prog_fp(self.Ref.p0_half[k],GMV.QT.values[k], qv,
+#             GMV.H.tendencies[k] += self.convert_forcing_prog_fp(self.Ref.p0[k],GMV.QT.values[k], qv,
 #                                                                 GMV.T.values[k], self.dqtdt[k], self.dTdt[k])
 #             GMV.QT.tendencies[k] += self.dqtdt[k]
 #
@@ -167,14 +167,14 @@ cdef class ForcingDYCOMS_RF01(ForcingBase):
         q_0 = 0.0
         self.f_rad[self.Gr.nzg] = self.F0 * np.exp(-q_0)
         for k in xrange(self.Gr.nzg - 1, -1, -1):
-            q_0           += self.kappa * self.Ref.rho0_half[k] * GMV.QL.values[k] * self.Gr.dz
+            q_0           += self.kappa * self.Ref.rho0[k] * GMV.QL.values[k] * self.Gr.dz
             self.f_rad[k]  = self.F0 * np.exp(-q_0)
 
         # cloud-base warming
         q_1 = 0.0
         self.f_rad[0] += self.F1 * np.exp(-q_1)
         for k in xrange(1, self.Gr.nzg + 1):
-            q_1           += self.kappa * self.Ref.rho0_half[k - 1] * GMV.QL.values[k - 1] * self.Gr.dz
+            q_1           += self.kappa * self.Ref.rho0[k - 1] * GMV.QL.values[k - 1] * self.Gr.dz
             self.f_rad[k] += self.F1 * np.exp(-q_1)
 
         # cooling in free troposphere
@@ -187,7 +187,7 @@ cdef class ForcingDYCOMS_RF01(ForcingBase):
         self.f_rad[self.Gr.nzg] += rhoi * dycoms_cp * self.divergence * self.alpha_z * (np.power(cbrt_z, 4) / 4.0 + zi * cbrt_z)
 
         for k in xrange(self.Gr.gw, self.Gr.nzg - self.Gr.gw):
-            self.dTdt[k] = - (self.f_rad[k + 1] - self.f_rad[k]) / self.Gr.dz / self.Ref.rho0_half[k] / dycoms_cp
+            self.dTdt[k] = - (self.f_rad[k + 1] - self.f_rad[k]) / self.Gr.dz / self.Ref.rho0[k] / dycoms_cp
 
         return
 
@@ -205,7 +205,7 @@ cdef class ForcingDYCOMS_RF01(ForcingBase):
         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
             # Apply large-scale horizontal advection tendencies
             qv = GMV.QT.values[k] - GMV.QL.values[k]
-            GMV.H.tendencies[k]  += self.convert_forcing_prog_fp(self.Ref.p0_half[k],GMV.QT.values[k], qv, GMV.T.values[k], self.dqtdt[k], self.dTdt[k])
+            GMV.H.tendencies[k]  += self.convert_forcing_prog_fp(self.Ref.p0[k],GMV.QT.values[k], qv, GMV.T.values[k], self.dqtdt[k], self.dTdt[k])
             GMV.QT.tendencies[k] += self.dqtdt[k]
             # Apply large-scale subsidence tendencies
             GMV.H.tendencies[k]  -= (GMV.H.values[k+1]-GMV.H.values[k]) * self.Gr.dzi * self.subsidence[k]
