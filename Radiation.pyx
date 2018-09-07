@@ -10,6 +10,7 @@ from TimeStepping cimport TimeStepping
 include 'parameters.pxi'
 import numpy as np
 cimport numpy as np
+import netCDF4 as nc
 
 cdef class RadiationBase:
     def __init__(self):
@@ -134,7 +135,7 @@ cdef class RadiationRRTM(RadiationBase):
         # From rad_driver.f90, lines 585 to 620
         cdef:
             Py_ssize_t nz = self.Gr.nz
-            double [:] trpath = np.zeros((nz + 1, 9),dtype=np.double,order='F')
+            double [:,:] trpath = np.zeros((nz + 1, 9),dtype=np.double,order='F')
 
         self.pi_full[0:nz] = self.Ref.p0[self.Gr.gw:self.Gr.nzg-self.Gr.gw]
 
@@ -159,32 +160,8 @@ cdef class RadiationRRTM(RadiationBase):
             for k in xrange(nz + self.n_ext):
                 tmpTrace[k,i] = g*100.0/(self.pi_full[k]-self.pi_full[k+1])*(trpath[k+1,i]-trpath[k,i])
 
-        if use_o3in == False:
-            self.o3vmr  = np.array(tmpTrace[:,0],dtype=np.double, order='F')
-        else:
-            # o3_trace, o3_pressure
-            trpath_o3 = np.zeros(nz + self.n_ext+1, dtype=np.double, order='F')
-            # plev = self.pi_full/100.0
-            o3_np = o3_trace.shape[0]
-            for i in xrange(1, nz + self.n_ext+1):
-                trpath_o3[i] = trpath_o3[i-1]
-                if (self.pi_full[i-1]/100.0 > o3_pressure[0]):
-                    trpath_o3[i] = trpath_o3[i] + (self.pi_full[i-1]/100.0 - np.max((self.pi_full[i]/100.0,o3_pressure[0])))/g*o3_trace[0]
-                for m in xrange(1,o3_np):
-                    plow = np.min((self.pi_full[i-1]/100.0,np.max((self.pi_full[i]/100.0, o3_pressure[m-1]))))
-                    pupp = np.min((self.pi_full[i-1]/100.0,np.max((self.pi_full[i]/100.0, o3_pressure[m]))))
-                    if (plow > pupp):
-                        pmid = 0.5*(plow+pupp)
-                        wgtlow = (pmid-o3_pressure[m])/(o3_pressure[m-1]-o3_pressure[m])
-                        wgtupp = (o3_pressure[m-1]-pmid)/(o3_pressure[m-1]-o3_pressure[m])
-                        trpath_o3[i] = trpath_o3[i] + (plow-pupp)/g*(wgtlow*o3_trace[m-1]  + wgtupp*o3_trace[m])
-                if (self.pi_full[i]/100.0 < o3_pressure[o3_np-1]):
-                    trpath_o3[i] = trpath_o3[i] + (np.min((self.pi_full[i-1]/100.0,o3_pressure[o3_np-1]))-self.pi_full[i]/100.0)/g*o3_trace[o3_np-1]
-            tmpTrace_o3 = np.zeros( nz + self.n_ext, dtype=np.double, order='F')
-            for k in xrange(nz + self.n_ext):
-                tmpTrace_o3[k] = g *100.0/(self.pi_full[k]-self.pi_full[k+1])*(trpath_o3[k+1]-trpath_o3[k])
-            self.o3vmr = np.array(tmpTrace_o3[:],dtype=np.double, order='F')
 
+        self.o3vmr  = np.array(tmpTrace[:,0],dtype=np.double, order='F')
         self.co2vmr = np.array(tmpTrace[:,1],dtype=np.double, order='F')
         self.ch4vmr =  np.array(tmpTrace[:,2],dtype=np.double, order='F')
         self.n2ovmr =  np.array(tmpTrace[:,3],dtype=np.double, order='F')
@@ -198,6 +175,6 @@ cdef class RadiationRRTM(RadiationBase):
 
         return
     cpdef update(self, GridMeanVariables GMV, TimeStepping TS):
-        cdef:
+
 
         return

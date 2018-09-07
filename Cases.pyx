@@ -92,7 +92,7 @@ cdef class Soares(CasesBase):
         self.casename = 'Soares2004'
         self.Sur = Surface.SurfaceFixedFlux(paramlist)
         self.Fo = Forcing.ForcingNone()
-        self.Ra = Radiation.RadiatioNone()
+        self.Ra = Radiation.RadiationNone()
         self.inversion_option = 'critical_Ri'
         self.Fo.apply_coriolis = False
         self.Fo.apply_subsidence = False

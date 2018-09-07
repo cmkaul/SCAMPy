@@ -29,7 +29,6 @@ cdef class RadiationRRTM(RadiationBase):
         double coszen
         double adif
         double adir
-        double [:]
         double [:] o3vmr
         double [:] co2vmr
         double [:] ch4vmr
