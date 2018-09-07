@@ -533,36 +533,17 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double dv = 0.0
             double dw = 2.0 * self.EnvVar.W.values[gw]  * self.Gr.dzi
             double H_lapse_rate ,QT_lapse_rate
-
-        if self.mixing_length_fp=='Ellison_scale':
-            with nogil:
-                for k in xrange(gw, self.Gr.nzg-gw):
-                    du = (GMV.U.values[k+1] - GMV.U.values[k]) * self.Gr.dzi
-                    dv = (GMV.V.values[k+1] - GMV.V.values[k]) * self.Gr.dzi
-                    dw = (self.EnvVar.W.values[k+1] - self.EnvVar.W.values[k]) * self.Gr.dzi
-                    shear = fmax(fabs( pow(du,2.0) +  pow(dv,2.0)+pow(dw,2.0)),1e-10)
-                    H_lapse_rate = fmax(fabs((self.EnvVar.H.values[k+1]-self.EnvVar.H.values[k-1])*0.5*self.Gr.dzi),1e-30)
-                    QT_lapse_rate = fmax(fabs((self.EnvVar.QT.values[k+1]-self.EnvVar.QT.values[k-1])*0.5*self.Gr.dzi),1e-30)
-                    l1 = vkb * self.Gr.z[k]
-                    #l2 = fmin(sqrt(self.tke_diss_coeff/self.tke_ed_coeff*0.5*self.EnvVar.Hvar.values[k]/H_lapse_rate**2),1000.0)
-                    #l2 = fmin(sqrt(self.tke_diss_coeff/self.tke_ed_coeff*0.5*self.EnvVar.QTvar.values[k]/QT_lapse_rate**2),1000.0)
-                    l2 = fmin(sqrt(self.tke_diss_coeff/self.tke_ed_coeff*self.EnvVar.TKE.values[k]/shear),1000.0)
-                    l3 = 10000.0 # GCM grid box
-                    self.mixing_length[k] = smooth_minimum(fabs(l1/self.zi),fabs(l2/self.zi),fabs(l3/self.zi),1.0) #
-                    #self.mixing_length[k] = smooth_minimum(fabs(l1/self.zi),fabs(l2/self.zi),fabs(l3/self.zi),fabs(l4/self.zi),fabs(l5/self.zi),10.0)
-                    self.mixing_length[k] = self.zi*self.mixing_length[k]
-        else:
-            with nogil:
-                for k in xrange(gw, self.Gr.nzg-gw):
-                    l1 = tau * sqrt(fmax(self.EnvVar.TKE.values[k],0.0))
-                    z_ = self.Gr.z[k]
-                    if obukhov_length < 0.0: #unstable
-                        l2 = vkb * z_ * ( (1.0 - 100.0 * z_/obukhov_length)**0.2 )
-                    elif obukhov_length > 0.0: #stable
-                        l2 = vkb * z_ /  (1. + 2.7 *z_/obukhov_length)
-                    else:
-                        l2 = vkb * z_
-                    self.mixing_length[k] = fmax( 1.0/(1.0/fmax(l1,1e-10) + 1.0/l2), 1e-3)
+        with nogil:
+            for k in xrange(gw, self.Gr.nzg-gw):
+                l1 = tau * sqrt(fmax(self.EnvVar.TKE.values[k],0.0))
+                z_ = self.Gr.z[k]
+                if obukhov_length < 0.0: #unstable
+                    l2 = vkb * z_ * ( (1.0 - 100.0 * z_/obukhov_length)**0.2 )
+                elif obukhov_length > 0.0: #stable
+                    l2 = vkb * z_ /  (1. + 2.7 *z_/obukhov_length)
+                else:
+                    l2 = vkb * z_
+                self.mixing_length[k] = fmax( 1.0/(1.0/fmax(l1,1e-10) + 1.0/l2), 1e-3)
         return
 
     cpdef compute_eddy_diffusivities_tke(self, GridMeanVariables GMV, CasesBase Case):

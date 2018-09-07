@@ -107,13 +107,12 @@ def Bomex():
     namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] = 'b_w2'
     namelist['turbulence']['EDMF_PrognosticTKE']['extrapolate_buoyancy'] = True
     namelist['turbulence']['EDMF_PrognosticTKE']['use_steady_updrafts'] = False
-    #namelist['turbulence']['EDMF_PrognosticTKE']['use_scalar_var'] = True
-    namelist['turbulence']['EDMF_PrognosticTKE']['mixing length'] = 'Ellison_scale'
+    namelist['turbulence']['EDMF_PrognosticTKE']['calc_scalar_var'] = True
     namelist['turbulence']['EDMF_PrognosticTKE']['use_local_micro'] = True
     namelist['turbulence']['EDMF_PrognosticTKE']['use_similarity_diffusivity'] = False
     namelist['turbulence']['EDMF_PrognosticTKE']['constant_area'] = False
     namelist['turbulence']['EDMF_PrognosticTKE']['calculate_tke'] = True
-    namelist['turbulence']['EDMF_PrognosticTKE']['calc_scalar_var'] = True
+
 
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
