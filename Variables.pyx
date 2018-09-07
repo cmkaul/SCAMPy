@@ -115,16 +115,12 @@ cdef class VariableDiagnostic:
             for k in xrange(Gr.gw):
                 self.values[start_high + k] = self.values[start_high  - 1]
                 self.values[start_low - k] = self.values[start_low + 1]
-
-
         else:
             self.values[start_high] = 0.0
             self.values[start_low] = 0.0
             for k in xrange(1,Gr.gw):
                 self.values[start_high+ k] = 0.0  #-self.values[start_high - k ]
                 self.values[start_low- k] = 0.0 #-self.values[start_low + k ]
-
-
         return
 
 
