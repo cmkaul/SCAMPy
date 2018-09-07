@@ -179,6 +179,9 @@ cdef class RadiationRRTM(RadiationBase):
 
         # Define input arrays for RRTM
         cdef:
+            Py_ssize_t i, k, krad
+            Py_ssize_t nz_full = self.Gr.nz
+            Py_ssize_t n_pencils = 3
             double [:,:] play_in = np.zeros((n_pencils,nz_full), dtype=np.double, order='F')
             double [:,:] plev_in = np.zeros((n_pencils,nz_full + 1), dtype=np.double, order='F')
             double [:,:] tlay_in = np.zeros((n_pencils,nz_full), dtype=np.double, order='F')
@@ -233,5 +236,9 @@ cdef class RadiationRRTM(RadiationBase):
             double[:,:] hrc_sw_out = np.zeros((n_pencils,nz_full),dtype=np.double,order='F')
 
             double rv_to_reff = np.exp(np.log(1.2)**2.0)*10.0*1000.0
+
+        for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+            krad = k - self.Gr.gw
+            tlay_in[0,krad] = GMV.
 
         return

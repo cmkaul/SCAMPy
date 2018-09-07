@@ -21,6 +21,10 @@ cdef class ParameterizationBase:
         double prandtl_number
         double Ri_bulk_crit
         bint extrapolate_buoyancy
+        Py_ssize_t n_updrafts
+        EDMF_Updrafts.UpdraftVariables UpdVar
+        EDMF_Environment.EnvironmentVariables EnvVar
+
     cpdef initialize(self, GridMeanVariables GMV)
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)
