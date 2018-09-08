@@ -867,7 +867,6 @@ cdef class ARM_SGP(CasesBase):
         Theta_in = np.array([299.0, 301.5, 302.5, 303.53, 303.7, 307.13, 314.0, 343.2]) # K
         r_in = np.array([15.2,15.17,14.98,14.8,14.7,13.5,3.0,3.0])/1000 # qt should be in kg/kg
         qt_in = np.divide(r_in,(1+r_in))
-        print qt_in
 
         # interpolate to the model grid-points
         Theta = np.interp(Gr.z,z_in,Theta_in)

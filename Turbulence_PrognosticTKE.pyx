@@ -273,40 +273,38 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         Stats.write_profile('updraft_thetal_precip', self.UpdMicro.prec_source_h_tot[kmin:kmax])
 
         # can these pointer function called inside the write command , or should they be called before it?
-        self.compute_covariance_dissipation(self.EnvVar.TKE)
-        Stats.write_profile('tke_dissipation', self.EnvVar.TKE.dissipation[kmin:kmax])
-        self.compute_covariance_dissipation(self.EnvVar.Hvar)
-        Stats.write_profile('Hvar_dissipation', self.EnvVar.Hvar.dissipation[kmin:kmax])
-        self.compute_covariance_dissipation(self.EnvVar.QTvar)
-        Stats.write_profile('QTvar_dissipation', self.EnvVar.QTvar.dissipation[kmin:kmax])
-        self.compute_covariance_dissipation(self.EnvVar.HQTcov)
-        Stats.write_profile('HQTcov_dissipation', self.EnvVar.HQTcov.dissipation[kmin:kmax])
+        if self.calc_tke:
+            self.compute_covariance_dissipation(self.EnvVar.TKE)
+            Stats.write_profile('tke_dissipation', self.EnvVar.TKE.dissipation[kmin:kmax])
+            Stats.write_profile('tke_entr_gain', self.EnvVar.TKE.entr_gain[kmin:kmax])
+            self.compute_covariance_detr(self.EnvVar.TKE)
+            Stats.write_profile('tke_detr_loss', self.EnvVar.TKE.detr_loss[kmin:kmax])
+            Stats.write_profile('tke_shear', self.EnvVar.TKE.shear[kmin:kmax])
+            Stats.write_profile('tke_buoy', self.EnvVar.TKE.buoy[kmin:kmax])
+            Stats.write_profile('tke_pressure', self.EnvVar.TKE.press[kmin:kmax])
 
-        Stats.write_profile('tke_entr_gain', self.EnvVar.TKE.entr_gain[kmin:kmax])
-        Stats.write_profile('Hvar_entr_gain', self.EnvVar.Hvar.entr_gain[kmin:kmax])
-        Stats.write_profile('QTvar_entr_gain', self.EnvVar.QTvar.entr_gain[kmin:kmax])
-        Stats.write_profile('HQTcov_entr_gain', self.EnvVar.HQTcov.entr_gain[kmin:kmax])
-        self.compute_covariance_detr(self.EnvVar.TKE)
-        self.compute_covariance_detr(self.EnvVar.Hvar)
-        self.compute_covariance_detr(self.EnvVar.QTvar)
-        self.compute_covariance_detr(self.EnvVar.HQTcov)
-        Stats.write_profile('tke_detr_loss', self.EnvVar.TKE.detr_loss[kmin:kmax])
-        Stats.write_profile('Hvar_detr_loss', self.EnvVar.Hvar.detr_loss[kmin:kmax])
-        Stats.write_profile('QTvar_detr_loss', self.EnvVar.QTvar.detr_loss[kmin:kmax])
-        Stats.write_profile('HQTcov_detr_loss', self.EnvVar.HQTcov.detr_loss[kmin:kmax])
-        Stats.write_profile('tke_shear', self.EnvVar.TKE.shear[kmin:kmax])
-        Stats.write_profile('Hvar_shear', self.EnvVar.Hvar.shear[kmin:kmax])
-        Stats.write_profile('QTvar_shear', self.EnvVar.QTvar.shear[kmin:kmax])
-        Stats.write_profile('HQTcov_shear', self.EnvVar.HQTcov.shear[kmin:kmax])
-        Stats.write_profile('Hvar_rain', self.EnvVar.Hvar.rain_src[kmin:kmax])
-        Stats.write_profile('QTvar_rain', self.EnvVar.QTvar.rain_src[kmin:kmax])
-        Stats.write_profile('HQTcov_rain', self.EnvVar.HQTcov.rain_src[kmin:kmax])
-
-        Stats.write_profile('tke_buoy', self.EnvVar.TKE.buoy[kmin:kmax])
-        Stats.write_profile('tke_pressure', self.EnvVar.TKE.press[kmin:kmax])
-
-
-
+        if self.calc_scalar_var:
+            self.compute_covariance_dissipation(self.EnvVar.Hvar)
+            Stats.write_profile('Hvar_dissipation', self.EnvVar.Hvar.dissipation[kmin:kmax])
+            self.compute_covariance_dissipation(self.EnvVar.QTvar)
+            Stats.write_profile('QTvar_dissipation', self.EnvVar.QTvar.dissipation[kmin:kmax])
+            self.compute_covariance_dissipation(self.EnvVar.HQTcov)
+            Stats.write_profile('HQTcov_dissipation', self.EnvVar.HQTcov.dissipation[kmin:kmax])
+            Stats.write_profile('Hvar_entr_gain', self.EnvVar.Hvar.entr_gain[kmin:kmax])
+            Stats.write_profile('QTvar_entr_gain', self.EnvVar.QTvar.entr_gain[kmin:kmax])
+            Stats.write_profile('HQTcov_entr_gain', self.EnvVar.HQTcov.entr_gain[kmin:kmax])
+            self.compute_covariance_detr(self.EnvVar.Hvar)
+            self.compute_covariance_detr(self.EnvVar.QTvar)
+            self.compute_covariance_detr(self.EnvVar.HQTcov)
+            Stats.write_profile('Hvar_detr_loss', self.EnvVar.Hvar.detr_loss[kmin:kmax])
+            Stats.write_profile('QTvar_detr_loss', self.EnvVar.QTvar.detr_loss[kmin:kmax])
+            Stats.write_profile('HQTcov_detr_loss', self.EnvVar.HQTcov.detr_loss[kmin:kmax])
+            Stats.write_profile('Hvar_shear', self.EnvVar.Hvar.shear[kmin:kmax])
+            Stats.write_profile('QTvar_shear', self.EnvVar.QTvar.shear[kmin:kmax])
+            Stats.write_profile('HQTcov_shear', self.EnvVar.HQTcov.shear[kmin:kmax])
+            Stats.write_profile('Hvar_rain', self.EnvVar.Hvar.rain_src[kmin:kmax])
+            Stats.write_profile('QTvar_rain', self.EnvVar.QTvar.rain_src[kmin:kmax])
+            Stats.write_profile('HQTcov_rain', self.EnvVar.HQTcov.rain_src[kmin:kmax])
 
     # Perform the update of the scheme
 
@@ -315,11 +313,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Py_ssize_t k
             Py_ssize_t kmin = self.Gr.gw
             Py_ssize_t kmax = self.Gr.nzg - self.Gr.gw
-
         self.update_inversion(GMV, Case.inversion_option)
-
         self.wstar = get_wstar(Case.Sur.bflux, self.zi)
-
         if TS.nstep == 0:
             self.initialize_covariance(GMV, Case)
             self.decompose_environment(GMV, 'values')
