@@ -838,9 +838,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             # Update updraft variables with microphysical source tendencies
             self.UpdMicro.update_updraftvars(self.UpdVar)
 
-        self.UpdVar.H.set_bcs(self.Gr) # do we need to set BC for a ad w as well ?
+        self.UpdVar.H.set_bcs(self.Gr)
         self.UpdVar.QT.set_bcs(self.Gr)
         self.UpdVar.QR.set_bcs(self.Gr)
+        self.UpdVar.W.set_bcs(self.Gr)
+        self.UpdVar.Area.set_bcs(self.Gr)
+
         return
 
     cpdef upwind_integration(self, EDMF_Updrafts.UpdraftVariable area, EDMF_Updrafts.UpdraftVariable var, int k, int i, double env_var):
