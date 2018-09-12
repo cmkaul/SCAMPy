@@ -88,16 +88,22 @@ cdef class NetCDFIO_Stats:
         profile_grp = root_grp.createGroup('profiles')
         profile_grp.createDimension('z', self.Gr.nz)
         profile_grp.createDimension('t', None)
-        z = profile_grp.createVariable('z', 'f8', ('z'))
-        z[:] = np.array(self.Gr.z[kmin:kmax])
+        z_f = profile_grp.createVariable('z', 'f8', ('z'))
+        z_f[:] = np.array(self.Gr.z_f[kmin:kmax])
+        z_c = profile_grp.createVariable('z_half', 'f8', ('z'))
+        z_c[:] = np.array(self.Gr.z_c[kmin:kmax])
         profile_grp.createVariable('t', 'f8', ('t'))
-        del z
+        del z_f
+        del z_c
 
         reference_grp = root_grp.createGroup('reference')
         reference_grp.createDimension('z', self.Gr.nz)
-        z = reference_grp.createVariable('z', 'f8', ('z'))
-        z[:] = np.array(self.Gr.z[kmin:kmax])
-        del z
+        z_f = reference_grp.createVariable('z', 'f8', ('z'))
+        z_f[:] = np.array(self.Gr.z_f[kmin:kmax])
+        z_c = reference_grp.createVariable('z_half', 'f8', ('z'))
+        z_c[:] = np.array(self.Gr.z_c[kmin:kmax])
+        del z_f
+        del z_c
 
         ts_grp = root_grp.createGroup('timeseries')
         ts_grp.createDimension('t', None)

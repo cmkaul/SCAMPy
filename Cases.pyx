@@ -87,13 +87,13 @@ cdef class Soares(CasesBase):
             Py_ssize_t k
 
         for k in xrange(Gr.gw, Gr.nzg-Gr.gw):
-            if Gr.z[k] <= 1350.0:
-                GMV.QT.values[k] = 5.0e-3 - 3.7e-4* Gr.z[k]/1000.0
+            if Gr.z_c[k] <= 1350.0:
+                GMV.QT.values[k] = 5.0e-3 - 3.7e-4* Gr.z_c[k]/1000.0
                 theta[k] = 300.0
 
             else:
-                GMV.QT.values[k] = 5.0e-3 - 3.7e-4 * 1.35 - 9.4e-4 * (Gr.z[k]-1350.0)/1000.0
-                theta[k] = 300.0 + 2.0 * (Gr.z[k]-1350.0)/1000.0
+                GMV.QT.values[k] = 5.0e-3 - 3.7e-4 * 1.35 - 9.4e-4 * (Gr.z_c[k]-1350.0)/1000.0
+                theta[k] = 300.0 + 2.0 * (Gr.z_c[k]-1350.0)/1000.0
             GMV.U.values[k] = 0.01
 
         GMV.U.set_bcs(Gr)
@@ -102,14 +102,14 @@ cdef class Soares(CasesBase):
         if GMV.H.name == 'thetal':
             for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
                 GMV.H.values[k] = theta[k]
-                GMV.T.values[k] =  theta[k] * exner_c(Ref.p0[k])
+                GMV.T.values[k] =  theta[k] * exner_c(Ref.p0_c[k])
                 GMV.THL.values[k] = theta[k]
         elif GMV.H.name == 's':
             for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
-                GMV.T.values[k] = theta[k] * exner_c(Ref.p0[k])
-                GMV.H.values[k] = t_to_entropy_c(Ref.p0[k],GMV.T.values[k],
+                GMV.T.values[k] = theta[k] * exner_c(Ref.p0_c[k])
+                GMV.H.values[k] = t_to_entropy_c(Ref.p0_c[k],GMV.T.values[k],
                                                  GMV.QT.values[k], ql, qi)
-                GMV.THL.values[k] = thetali_c(Ref.p0[k],GMV.T.values[k],
+                GMV.THL.values[k] = thetali_c(Ref.p0_c[k],GMV.T.values[k],
                                                  GMV.QT.values[k], ql, qi, latent_heat(GMV.T.values[k]))
 
         GMV.H.set_bcs(Gr)
@@ -122,8 +122,8 @@ cdef class Soares(CasesBase):
         self.Sur.zrough = 1.0e-4
         self.Sur.Tsurface = 300.0
         self.Sur.qsurface = 5e-3
-        self.Sur.lhf = 2.5e-5 * Ref.rho0[Gr.gw -1] * latent_heat(self.Sur.Tsurface)
-        self.Sur.shf = 6.0e-2 * cpm_c(self.Sur.qsurface) * Ref.rho0[Gr.gw-1]
+        self.Sur.lhf = 2.5e-5 * Ref.rho0_f[Gr.gw -1] * latent_heat(self.Sur.Tsurface)
+        self.Sur.shf = 6.0e-2 * cpm_c(self.Sur.qsurface) * Ref.rho0_f[Gr.gw-1]
         self.Sur.ustar_fixed = False
         self.Sur.Gr = Gr
         self.Sur.Ref = Ref
@@ -175,43 +175,43 @@ cdef class Bomex(CasesBase):
 
         for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
             #Set Thetal profile
-            if Gr.z[k] <= 520.:
+            if Gr.z_c[k] <= 520.:
                 thetal[k] = 298.7
-            if Gr.z[k] > 520.0 and Gr.z[k] <= 1480.0:
-                thetal[k] = 298.7 + (Gr.z[k] - 520)  * (302.4 - 298.7)/(1480.0 - 520.0)
-            if Gr.z[k] > 1480.0 and Gr.z[k] <= 2000:
-                thetal[k] = 302.4 + (Gr.z[k] - 1480.0) * (308.2 - 302.4)/(2000.0 - 1480.0)
-            if Gr.z[k] > 2000.0:
-                thetal[k] = 308.2 + (Gr.z[k] - 2000.0) * (311.85 - 308.2)/(3000.0 - 2000.0)
+            if Gr.z_c[k] > 520.0 and Gr.z_c[k] <= 1480.0:
+                thetal[k] = 298.7 + (Gr.z_c[k] - 520)  * (302.4 - 298.7)/(1480.0 - 520.0)
+            if Gr.z_c[k] > 1480.0 and Gr.z_c[k] <= 2000:
+                thetal[k] = 302.4 + (Gr.z_c[k] - 1480.0) * (308.2 - 302.4)/(2000.0 - 1480.0)
+            if Gr.z_c[k] > 2000.0:
+                thetal[k] = 308.2 + (Gr.z_c[k] - 2000.0) * (311.85 - 308.2)/(3000.0 - 2000.0)
 
             #Set qt profile
-            if Gr.z[k] <= 520:
-                GMV.QT.values[k] = (17.0 + (Gr.z[k]) * (16.3-17.0)/520.0)/1000.0
-            if Gr.z[k] > 520.0 and Gr.z[k] <= 1480.0:
-                GMV.QT.values[k] = (16.3 + (Gr.z[k] - 520.0)*(10.7 - 16.3)/(1480.0 - 520.0))/1000.0
-            if Gr.z[k] > 1480.0 and Gr.z[k] <= 2000.0:
-                GMV.QT.values[k] = (10.7 + (Gr.z[k] - 1480.0) * (4.2 - 10.7)/(2000.0 - 1480.0))/1000.0
-            if Gr.z[k] > 2000.0:
-                GMV.QT.values[k] = (4.2 + (Gr.z[k] - 2000.0) * (3.0 - 4.2)/(3000.0  - 2000.0))/1000.0
+            if Gr.z_c[k] <= 520:
+                GMV.QT.values[k] = (17.0 + (Gr.z_c[k]) * (16.3-17.0)/520.0)/1000.0
+            if Gr.z_c[k] > 520.0 and Gr.z_c[k] <= 1480.0:
+                GMV.QT.values[k] = (16.3 + (Gr.z_c[k] - 520.0)*(10.7 - 16.3)/(1480.0 - 520.0))/1000.0
+            if Gr.z_c[k] > 1480.0 and Gr.z_c[k] <= 2000.0:
+                GMV.QT.values[k] = (10.7 + (Gr.z_c[k] - 1480.0) * (4.2 - 10.7)/(2000.0 - 1480.0))/1000.0
+            if Gr.z_c[k] > 2000.0:
+                GMV.QT.values[k] = (4.2 + (Gr.z_c[k] - 2000.0) * (3.0 - 4.2)/(3000.0  - 2000.0))/1000.0
 
 
             #Set u profile
-            if Gr.z[k] <= 700.0:
+            if Gr.z_c[k] <= 700.0:
                 GMV.U.values[k] = -8.75
-            if Gr.z[k] > 700.0:
-                GMV.U.values[k] = -8.75 + (Gr.z[k] - 700.0) * (-4.61 - -8.75)/(3000.0 - 700.0)
+            if Gr.z_c[k] > 700.0:
+                GMV.U.values[k] = -8.75 + (Gr.z_c[k] - 700.0) * (-4.61 - -8.75)/(3000.0 - 700.0)
 
         if GMV.H.name == 'thetal':
             for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
                 GMV.H.values[k] = thetal[k]
-                GMV.T.values[k] =  thetal[k] * exner_c(Ref.p0[k])
+                GMV.T.values[k] =  thetal[k] * exner_c(Ref.p0_c[k])
                 GMV.THL.values[k] = thetal[k]
         elif GMV.H.name == 's':
             for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
-                GMV.T.values[k] = thetal[k] * exner_c(Ref.p0[k])
-                GMV.H.values[k] = t_to_entropy_c(Ref.p0[k],GMV.T.values[k],
+                GMV.T.values[k] = thetal[k] * exner_c(Ref.p0_c[k])
+                GMV.H.values[k] = t_to_entropy_c(Ref.p0_c[k],GMV.T.values[k],
                                                  GMV.QT.values[k], ql, qi)
-                GMV.THL.values[k] = thetali_c(Ref.p0[k],GMV.T.values[k],
+                GMV.THL.values[k] = thetali_c(Ref.p0_c[k],GMV.T.values[k],
                                                  GMV.QT.values[k], ql, qi, latent_heat(GMV.T.values[k]))
 
         GMV.U.set_bcs(Gr)
@@ -225,8 +225,8 @@ cdef class Bomex(CasesBase):
         self.Sur.zrough = 1.0e-4 # not actually used, but initialized to reasonable value
         self.Sur.Tsurface = 299.1 * exner_c(Ref.Pg)
         self.Sur.qsurface = 22.45e-3 # kg/kg
-        self.Sur.lhf = 5.2e-5 * Ref.rho0[Gr.gw -1] * latent_heat(self.Sur.Tsurface)
-        self.Sur.shf = 8.0e-3 * cpm_c(self.Sur.qsurface) * Ref.rho0[Gr.gw-1]
+        self.Sur.lhf = 5.2e-5 * Ref.rho0_f[Gr.gw -1] * latent_heat(self.Sur.Tsurface)
+        self.Sur.shf = 8.0e-3 * cpm_c(self.Sur.qsurface) * Ref.rho0_f[Gr.gw-1]
         self.Sur.ustar_fixed = True
         self.Sur.ustar = 0.28 # m/s
         self.Sur.Gr = Gr
@@ -240,24 +240,24 @@ cdef class Bomex(CasesBase):
         cdef Py_ssize_t k
         for k in xrange(Gr.gw, Gr.nzg-Gr.gw):
             # Geostrophic velocity profiles. vg = 0
-            self.Fo.ug[k] = -10.0 + (1.8e-3)*Gr.z[k]
+            self.Fo.ug[k] = -10.0 + (1.8e-3)*Gr.z_c[k]
             # Set large-scale cooling
-            if Gr.z[k] <= 1500.0:
-                self.Fo.dTdt[k] =  (-2.0/(3600 * 24.0))  * exner_c(Ref.p0[k])
+            if Gr.z_c[k] <= 1500.0:
+                self.Fo.dTdt[k] =  (-2.0/(3600 * 24.0))  * exner_c(Ref.p0_c[k])
             else:
-                self.Fo.dTdt[k] = (-2.0/(3600 * 24.0) + (Gr.z[k] - 1500.0)
-                                    * (0.0 - -2.0/(3600 * 24.0)) / (3000.0 - 1500.0)) * exner_c(Ref.p0[k])
+                self.Fo.dTdt[k] = (-2.0/(3600 * 24.0) + (Gr.z_c[k] - 1500.0)
+                                    * (0.0 - -2.0/(3600 * 24.0)) / (3000.0 - 1500.0)) * exner_c(Ref.p0_c[k])
             # Set large-scale drying
-            if Gr.z[k] <= 300.0:
+            if Gr.z_c[k] <= 300.0:
                 self.Fo.dqtdt[k] = -1.2e-8   #kg/(kg * s)
-            if Gr.z[k] > 300.0 and Gr.z[k] <= 500.0:
-                self.Fo.dqtdt[k] = -1.2e-8 + (Gr.z[k] - 300.0)*(0.0 - -1.2e-8)/(500.0 - 300.0) #kg/(kg * s)
+            if Gr.z_c[k] > 300.0 and Gr.z_c[k] <= 500.0:
+                self.Fo.dqtdt[k] = -1.2e-8 + (Gr.z_c[k] - 300.0)*(0.0 - -1.2e-8)/(500.0 - 300.0) #kg/(kg * s)
 
             #Set large scale subsidence
-            if Gr.z[k] <= 1500.0:
-                self.Fo.subsidence[k] = 0.0 + Gr.z[k]*(-0.65/100.0 - 0.0)/(1500.0 - 0.0)
-            if Gr.z[k] > 1500.0 and Gr.z[k] <= 2100.0:
-                self.Fo.subsidence[k] = -0.65/100 + (Gr.z[k] - 1500.0)* (0.0 - -0.65/100.0)/(2100.0 - 1500.0)
+            if Gr.z_c[k] <= 1500.0:
+                self.Fo.subsidence[k] = 0.0 + Gr.z_c[k]*(-0.65/100.0 - 0.0)/(1500.0 - 0.0)
+            if Gr.z_c[k] > 1500.0 and Gr.z_c[k] <= 2100.0:
+                self.Fo.subsidence[k] = -0.65/100 + (Gr.z_c[k] - 1500.0)* (0.0 - -0.65/100.0)/(2100.0 - 1500.0)
         return
 
     cpdef initialize_io(self, NetCDFIO_Stats Stats):
@@ -299,44 +299,44 @@ cdef class life_cycle_Tan2018(CasesBase):
             double ql=0.0, qi =0.0 # IC of Bomex is cloud-free
         for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
             #Set Thetal profile
-            if Gr.z[k] <= 520.:
+            if Gr.z_c[k] <= 520.:
                 thetal[k] = 298.7
-            if Gr.z[k] > 520.0 and Gr.z[k] <= 1480.0:
-                thetal[k] = 298.7 + (Gr.z[k] - 520)  * (302.4 - 298.7)/(1480.0 - 520.0)
-            if Gr.z[k] > 1480.0 and Gr.z[k] <= 2000:
-                thetal[k] = 302.4 + (Gr.z[k] - 1480.0) * (308.2 - 302.4)/(2000.0 - 1480.0)
-            if Gr.z[k] > 2000.0:
-                thetal[k] = 308.2 + (Gr.z[k] - 2000.0) * (311.85 - 308.2)/(3000.0 - 2000.0)
+            if Gr.z_c[k] > 520.0 and Gr.z_c[k] <= 1480.0:
+                thetal[k] = 298.7 + (Gr.z_c[k] - 520)  * (302.4 - 298.7)/(1480.0 - 520.0)
+            if Gr.z_c[k] > 1480.0 and Gr.z_c[k] <= 2000:
+                thetal[k] = 302.4 + (Gr.z_c[k] - 1480.0) * (308.2 - 302.4)/(2000.0 - 1480.0)
+            if Gr.z_c[k] > 2000.0:
+                thetal[k] = 308.2 + (Gr.z_c[k] - 2000.0) * (311.85 - 308.2)/(3000.0 - 2000.0)
 
             #Set qt profile
-            if Gr.z[k] <= 520:
-                GMV.QT.values[k] = (17.0 + (Gr.z[k]) * (16.3-17.0)/520.0)/1000.0
-            if Gr.z[k] > 520.0 and Gr.z[k] <= 1480.0:
-                GMV.QT.values[k] = (16.3 + (Gr.z[k] - 520.0)*(10.7 - 16.3)/(1480.0 - 520.0))/1000.0
-            if Gr.z[k] > 1480.0 and Gr.z[k] <= 2000.0:
-                GMV.QT.values[k] = (10.7 + (Gr.z[k] - 1480.0) * (4.2 - 10.7)/(2000.0 - 1480.0))/1000.0
-            if Gr.z[k] > 2000.0:
-                GMV.QT.values[k] = (4.2 + (Gr.z[k] - 2000.0) * (3.0 - 4.2)/(3000.0  - 2000.0))/1000.0
+            if Gr.z_c[k] <= 520:
+                GMV.QT.values[k] = (17.0 + (Gr.z_c[k]) * (16.3-17.0)/520.0)/1000.0
+            if Gr.z_c[k] > 520.0 and Gr.z_c[k] <= 1480.0:
+                GMV.QT.values[k] = (16.3 + (Gr.z_c[k] - 520.0)*(10.7 - 16.3)/(1480.0 - 520.0))/1000.0
+            if Gr.z_c[k] > 1480.0 and Gr.z_c[k] <= 2000.0:
+                GMV.QT.values[k] = (10.7 + (Gr.z_c[k] - 1480.0) * (4.2 - 10.7)/(2000.0 - 1480.0))/1000.0
+            if Gr.z_c[k] > 2000.0:
+                GMV.QT.values[k] = (4.2 + (Gr.z_c[k] - 2000.0) * (3.0 - 4.2)/(3000.0  - 2000.0))/1000.0
 
 
             #Set u profile
-            if Gr.z[k] <= 700.0:
+            if Gr.z_c[k] <= 700.0:
                 GMV.U.values[k] = -8.75
-            if Gr.z[k] > 700.0:
-                GMV.U.values[k] = -8.75 + (Gr.z[k] - 700.0) * (-4.61 - -8.75)/(3000.0 - 700.0)
+            if Gr.z_c[k] > 700.0:
+                GMV.U.values[k] = -8.75 + (Gr.z_c[k] - 700.0) * (-4.61 - -8.75)/(3000.0 - 700.0)
 
 
         if GMV.H.name == 'thetal':
             for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
                 GMV.H.values[k] = thetal[k]
-                GMV.T.values[k] =  thetal[k] * exner_c(Ref.p0[k])
+                GMV.T.values[k] =  thetal[k] * exner_c(Ref.p0_c[k])
                 GMV.THL.values[k] = thetal[k]
         elif GMV.H.name == 's':
             for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
-                GMV.T.values[k] = thetal[k] * exner_c(Ref.p0[k])
-                GMV.H.values[k] = t_to_entropy_c(Ref.p0[k],GMV.T.values[k],
+                GMV.T.values[k] = thetal[k] * exner_c(Ref.p0_c[k])
+                GMV.H.values[k] = t_to_entropy_c(Ref.p0_c[k],GMV.T.values[k],
                                                  GMV.QT.values[k], ql, qi)
-                GMV.THL.values[k] = thetali_c(Ref.p0[k],GMV.T.values[k],
+                GMV.THL.values[k] = thetali_c(Ref.p0_c[k],GMV.T.values[k],
                                                  GMV.QT.values[k], ql, qi, latent_heat(GMV.T.values[k]))
 
         GMV.U.set_bcs(Gr)
@@ -350,8 +350,8 @@ cdef class life_cycle_Tan2018(CasesBase):
         self.Sur.zrough = 1.0e-4 # not actually used, but initialized to reasonable value
         self.Sur.Tsurface = 299.1 * exner_c(Ref.Pg)
         self.Sur.qsurface = 22.45e-3 # kg/kg
-        self.Sur.lhf = 5.2e-5 * Ref.rho0[Gr.gw -1] * latent_heat(self.Sur.Tsurface)
-        self.Sur.shf = 8.0e-3 * cpm_c(self.Sur.qsurface) * Ref.rho0[Gr.gw-1]
+        self.Sur.lhf = 5.2e-5 * Ref.rho0_f[Gr.gw -1] * latent_heat(self.Sur.Tsurface)
+        self.Sur.shf = 8.0e-3 * cpm_c(self.Sur.qsurface) * Ref.rho0_f[Gr.gw-1]
         self.lhf0 = self.Sur.lhf
         self.shf0 = self.Sur.shf
         self.Sur.ustar_fixed = True
@@ -367,24 +367,24 @@ cdef class life_cycle_Tan2018(CasesBase):
         self.Fo.initialize(GMV)
         for k in xrange(Gr.gw, Gr.nzg-Gr.gw):
             # Geostrophic velocity profiles. vg = 0
-            self.Fo.ug[k] = -10.0 + (1.8e-3)*Gr.z[k]
+            self.Fo.ug[k] = -10.0 + (1.8e-3)*Gr.z_c[k]
             # Set large-scale cooling
-            if Gr.z[k] <= 1500.0:
-                self.Fo.dTdt[k] =  (-2.0/(3600 * 24.0))  * exner_c(Ref.p0[k])
+            if Gr.z_c[k] <= 1500.0:
+                self.Fo.dTdt[k] =  (-2.0/(3600 * 24.0))  * exner_c(Ref.p0_c[k])
             else:
-                self.Fo.dTdt[k] = (-2.0/(3600 * 24.0) + (Gr.z[k] - 1500.0)
-                                    * (0.0 - -2.0/(3600 * 24.0)) / (3000.0 - 1500.0)) * exner_c(Ref.p0[k])
+                self.Fo.dTdt[k] = (-2.0/(3600 * 24.0) + (Gr.z_c[k] - 1500.0)
+                                    * (0.0 - -2.0/(3600 * 24.0)) / (3000.0 - 1500.0)) * exner_c(Ref.p0_c[k])
             # Set large-scale drying
-            if Gr.z[k] <= 300.0:
+            if Gr.z_c[k] <= 300.0:
                 self.Fo.dqtdt[k] = -1.2e-8   #kg/(kg * s)
-            if Gr.z[k] > 300.0 and Gr.z[k] <= 500.0:
-                self.Fo.dqtdt[k] = -1.2e-8 + (Gr.z[k] - 300.0)*(0.0 - -1.2e-8)/(500.0 - 300.0) #kg/(kg * s)
+            if Gr.z_c[k] > 300.0 and Gr.z_c[k] <= 500.0:
+                self.Fo.dqtdt[k] = -1.2e-8 + (Gr.z_c[k] - 300.0)*(0.0 - -1.2e-8)/(500.0 - 300.0) #kg/(kg * s)
 
             #Set large scale subsidence
-            if Gr.z[k] <= 1500.0:
-                self.Fo.subsidence[k] = 0.0 + Gr.z[k]*(-0.65/100.0 - 0.0)/(1500.0 - 0.0)
-            if Gr.z[k] > 1500.0 and Gr.z[k] <= 2100.0:
-                self.Fo.subsidence[k] = -0.65/100 + (Gr.z[k] - 1500.0)* (0.0 - -0.65/100.0)/(2100.0 - 1500.0)
+            if Gr.z_c[k] <= 1500.0:
+                self.Fo.subsidence[k] = 0.0 + Gr.z_c[k]*(-0.65/100.0 - 0.0)/(1500.0 - 0.0)
+            if Gr.z_c[k] > 1500.0 and Gr.z_c[k] <= 2100.0:
+                self.Fo.subsidence[k] = -0.65/100 + (Gr.z_c[k] - 1500.0)* (0.0 - -0.65/100.0)/(2100.0 - 1500.0)
         return
 
     cpdef initialize_io(self, NetCDFIO_Stats Stats):
@@ -432,33 +432,33 @@ cdef class Rico(CasesBase):
             Py_ssize_t k
 
         for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
-            GMV.U.values[k] =  -9.9 + 2.0e-3 * Gr.z[k]
+            GMV.U.values[k] =  -9.9 + 2.0e-3 * Gr.z_c[k]
             GMV.V.values[k] = -3.8
             #Set Thetal profile
-            if Gr.z[k] <= 740.0:
+            if Gr.z_c[k] <= 740.0:
                 thetal[k] = 297.9
             else:
-                thetal[k] = 297.9 + (317.0-297.9)/(4000.0-740.0)*(Gr.z[k] - 740.0)
+                thetal[k] = 297.9 + (317.0-297.9)/(4000.0-740.0)*(Gr.z_c[k] - 740.0)
 
             #Set qt profile
-            if Gr.z[k] <= 740.0:
-                GMV.QT.values[k] =  (16.0 + (13.8 - 16.0)/740.0 * Gr.z[k])/1000.0
-            elif Gr.z[k] > 740.0 and Gr.z[k] <= 3260.0:
-                GMV.QT.values[k] = (13.8 + (2.4 - 13.8)/(3260.0-740.0) * (Gr.z[k] - 740.0))/1000.0
+            if Gr.z_c[k] <= 740.0:
+                GMV.QT.values[k] =  (16.0 + (13.8 - 16.0)/740.0 * Gr.z_c[k])/1000.0
+            elif Gr.z_c[k] > 740.0 and Gr.z_c[k] <= 3260.0:
+                GMV.QT.values[k] = (13.8 + (2.4 - 13.8)/(3260.0-740.0) * (Gr.z_c[k] - 740.0))/1000.0
             else:
-                GMV.QT.values[k] = (2.4 + (1.8-2.4)/(4000.0-3260.0)*(Gr.z[k] - 3260.0))/1000.0
+                GMV.QT.values[k] = (2.4 + (1.8-2.4)/(4000.0-3260.0)*(Gr.z_c[k] - 3260.0))/1000.0
 
         if GMV.H.name == 'thetal':
             for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
                 GMV.H.values[k] = thetal[k]
-                GMV.T.values[k] =  thetal[k] * exner_c(Ref.p0[k])
+                GMV.T.values[k] =  thetal[k] * exner_c(Ref.p0_c[k])
                 GMV.THL.values[k] = thetal[k]
         elif GMV.H.name == 's':
             for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
-                GMV.T.values[k] = thetal[k] * exner_c(Ref.p0[k])
-                GMV.H.values[k] = t_to_entropy_c(Ref.p0[k],GMV.T.values[k],
+                GMV.T.values[k] = thetal[k] * exner_c(Ref.p0_c[k])
+                GMV.H.values[k] = t_to_entropy_c(Ref.p0_c[k],GMV.T.values[k],
                                                  GMV.QT.values[k], ql, qi)
-                GMV.THL.values[k] = thetali_c(Ref.p0[k],GMV.T.values[k],
+                GMV.THL.values[k] = thetali_c(Ref.p0_c[k],GMV.T.values[k],
                                                  GMV.QT.values[k], ql, qi, latent_heat(GMV.T.values[k]))
 
         GMV.U.set_bcs(Gr)
@@ -477,7 +477,7 @@ cdef class Rico(CasesBase):
         self.Sur.ch = 0.001094
         self.Sur.cq = 0.001133
         # Adjust for non-IC grid spacing
-        grid_adjust = (np.log(20.0/self.Sur.zrough)/np.log(Gr.z[Gr.gw]/self.Sur.zrough))**2
+        grid_adjust = (np.log(20.0/self.Sur.zrough)/np.log(Gr.z_c[Gr.gw]/self.Sur.zrough))**2
         self.Sur.cm = self.Sur.cm * grid_adjust
         self.Sur.ch = self.Sur.ch * grid_adjust
         self.Sur.cq = self.Sur.cq * grid_adjust
@@ -491,20 +491,20 @@ cdef class Rico(CasesBase):
         self.Fo.initialize(GMV)
         for k in xrange(Gr.nzg):
             # Geostrophic velocity profiles
-            self.Fo.ug[k] = -9.9 + 2.0e-3 * Gr.z[k]
+            self.Fo.ug[k] = -9.9 + 2.0e-3 * Gr.z_c[k]
             self.Fo.vg[k] = -3.8
             # Set large-scale cooling
-            self.Fo.dTdt[k] =  (-2.5/(3600.0 * 24.0))  * exner_c(Ref.p0[k])
+            self.Fo.dTdt[k] =  (-2.5/(3600.0 * 24.0))  * exner_c(Ref.p0_c[k])
 
             # Set large-scale moistening
-            if Gr.z[k] <= 2980.0:
-                self.Fo.dqtdt[k] =  (-1.0 + 1.3456/2980.0 * Gr.z[k])/86400.0/1000.0   #kg/(kg * s)
+            if Gr.z_c[k] <= 2980.0:
+                self.Fo.dqtdt[k] =  (-1.0 + 1.3456/2980.0 * Gr.z_c[k])/86400.0/1000.0   #kg/(kg * s)
             else:
                 self.Fo.dqtdt[k] = 0.3456/86400.0/1000.0
 
             #Set large scale subsidence
-            if Gr.z[k] <= 2260.0:
-                self.Fo.subsidence[k] = -(0.005/2260.0) * Gr.z[k]
+            if Gr.z_c[k] <= 2260.0:
+                self.Fo.subsidence[k] = -(0.005/2260.0) * Gr.z_c[k]
             else:
                 self.Fo.subsidence[k] = -0.005
         return
@@ -597,19 +597,19 @@ cdef class TRMM_LBA(CasesBase):
                           5.32,   1.14,  -0.65,   5.27,   5.27])
         # interpolate to the model grid-points
 
-        p1 = np.interp(Gr.z,z_in,p_in)
-        GMV.U.values = np.interp(Gr.z,z_in,u_in)
-        GMV.V.values = np.interp(Gr.z,z_in,v_in)
+        p1 = np.interp(Gr.z_c,z_in,p_in)
+        GMV.U.values = np.interp(Gr.z_c,z_in,u_in)
+        GMV.V.values = np.interp(Gr.z_c,z_in,v_in)
 
         # get the entropy from RH, p, T
         RH = np.zeros(Gr.nzg)
-        RH[Gr.gw:Gr.nzg-Gr.gw] = np.interp(Gr.z[Gr.gw:Gr.nzg-Gr.gw],z_in,RH_in)
+        RH[Gr.gw:Gr.nzg-Gr.gw] = np.interp(Gr.z_c[Gr.gw:Gr.nzg-Gr.gw],z_in,RH_in)
         RH[0] = RH[3]
         RH[1] = RH[2]
         RH[Gr.nzg-Gr.gw+1] = RH[Gr.nzg-Gr.gw-1]
 
         T = np.zeros(Gr.nzg)
-        T[Gr.gw:Gr.nzg-Gr.gw] = np.interp(Gr.z[Gr.gw:Gr.nzg-Gr.gw],z_in,T_in)
+        T[Gr.gw:Gr.nzg-Gr.gw] = np.interp(Gr.z_c[Gr.gw:Gr.nzg-Gr.gw],z_in,T_in)
         GMV.T.values = T
         theta_rho = RH*0.0
         epsi = 287.1/461.5
@@ -626,15 +626,15 @@ cdef class TRMM_LBA(CasesBase):
             qv = GMV.QT.values[k] - GMV.QL.values[k]
             GMV.QT.values[k] = qv_star*RH[k]/100.0
             if GMV.H.name == 's':
-                GMV.H.values[k] = t_to_entropy_c(Ref.p0[k],GMV.T.values[k],
+                GMV.H.values[k] = t_to_entropy_c(Ref.p0_c[k],GMV.T.values[k],
                                                 GMV.QT.values[k], 0.0, 0.0)
             elif GMV.H.name == 'thetal':
-                 GMV.H.values[k] = thetali_c(Ref.p0[k],GMV.T.values[k],
+                 GMV.H.values[k] = thetali_c(Ref.p0_c[k],GMV.T.values[k],
                                                 GMV.QT.values[k], 0.0, 0.0, latent_heat(GMV.T.values[k]))
 
-            GMV.THL.values[k] = thetali_c(Ref.p0[k],GMV.T.values[k],
+            GMV.THL.values[k] = thetali_c(Ref.p0_c[k],GMV.T.values[k],
                                                 GMV.QT.values[k], 0.0, 0.0, latent_heat(GMV.T.values[k]))
-            theta_rho[k] = theta_rho_c(Ref.p0[k], GMV.T.values[k], GMV.QT.values[k], qv)
+            theta_rho[k] = theta_rho_c(Ref.p0_c[k], GMV.T.values[k], GMV.QT.values[k], qv)
 
         GMV.QT.set_bcs(Gr)
         GMV.H.set_bcs(Gr)
@@ -645,8 +645,8 @@ cdef class TRMM_LBA(CasesBase):
         #self.Sur.zrough = 1.0e-4 # not actually used, but initialized to reasonable value
         self.Sur.Tsurface = (273.15+23) * exner_c(Ref.Pg)
         self.Sur.qsurface = 22.45e-3 # kg/kg
-        self.Sur.lhf = 5.2e-5 * Ref.rho0[Gr.gw -1] * latent_heat(self.Sur.Tsurface)
-        self.Sur.shf = 8.0e-3 * cpm_c(self.Sur.qsurface) * Ref.rho0[Gr.gw-1]
+        self.Sur.lhf = 5.2e-5 * Ref.rho0_f[Gr.gw -1] * latent_heat(self.Sur.Tsurface)
+        self.Sur.shf = 8.0e-3 * cpm_c(self.Sur.qsurface) * Ref.rho0_f[Gr.gw-1]
         self.Sur.ustar_fixed = True
         self.Sur.ustar = 0.28 # this is taken from Bomex -- better option is to approximate from LES tke above the surface
         self.Sur.Gr = Gr
@@ -775,9 +775,9 @@ cdef class TRMM_LBA(CasesBase):
 
         cdef:
             Py_ssize_t tt, k, ind1, ind2
-        A = np.interp(Gr.z,z_in,rad_in[0,:])
+        A = np.interp(Gr.z_c,z_in,rad_in[0,:])
         for tt in xrange(1,36):
-            A = np.vstack((A, np.interp(Gr.z,z_in,rad_in[tt,:])))
+            A = np.vstack((A, np.interp(Gr.z_c,z_in,rad_in[tt,:])))
         self.rad = np.multiply(A,1.0) # store matrix in self
 
         ind1 = int(mt.trunc(10.0/600.0))
@@ -828,7 +828,7 @@ cdef class TRMM_LBA(CasesBase):
                     self.Fo.dTdt[k] = self.rad[ind1,k]
             else: # in all other cases - interpolate
                 for k in xrange(self.Fo.Gr.nzg):
-                    if self.Fo.Gr.z[k] < 22699.48:
+                    if self.Fo.Gr.z_c[k] < 22699.48:
                         self.Fo.dTdt[k]    = (self.rad[ind2,k]-self.rad[ind1,k])\
                                                  /(self.rad_time[ind2]-self.rad_time[ind1])\
                                                  *(TS.t/60.0-self.rad_time[ind1])+self.rad[ind1,k]
@@ -869,22 +869,22 @@ cdef class ARM_SGP(CasesBase):
         qt_in = np.divide(r_in,(1+r_in))
 
         # interpolate to the model grid-points
-        Theta = np.interp(Gr.z,z_in,Theta_in)
-        qt = np.interp(Gr.z,z_in,qt_in)
+        Theta = np.interp(Gr.z_c,z_in,Theta_in)
+        qt = np.interp(Gr.z_c,z_in,qt_in)
 
 
         for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
             GMV.U.values[k] = 10.0
             GMV.QT.values[k] = qt[k]
-            GMV.T.values[k] = Theta[k]*exner_c(Ref.p0[k])
+            GMV.T.values[k] = Theta[k]*exner_c(Ref.p0_c[k])
             if GMV.H.name == 's':
-                GMV.H.values[k] = t_to_entropy_c(Ref.p0[k],GMV.T.values[k],
+                GMV.H.values[k] = t_to_entropy_c(Ref.p0_c[k],GMV.T.values[k],
                                                 GMV.QT.values[k], 0.0, 0.0)
             elif GMV.H.name == 'thetal':
-                 GMV.H.values[k] = thetali_c(Ref.p0[k],GMV.T.values[k],
+                 GMV.H.values[k] = thetali_c(Ref.p0_c[k],GMV.T.values[k],
                                                 GMV.QT.values[k], 0.0, 0.0, latent_heat(GMV.T.values[k]))
 
-            GMV.THL.values[k] = thetali_c(Ref.p0[k],GMV.T.values[k],
+            GMV.THL.values[k] = thetali_c(Ref.p0_c[k],GMV.T.values[k],
                                                 GMV.QT.values[k], 0.0, 0.0, latent_heat(GMV.T.values[k]))
 
 
@@ -957,13 +957,13 @@ cdef class ARM_SGP(CasesBase):
             double dTdt = np.interp(TS.t,t_in,AT_in) + np.interp(TS.t,t_in,RT_in)
             double dqtdt =  np.interp(TS.t,t_in,Rqt_in)
         for k in xrange(self.Fo.Gr.nzg): # correct dims
-                if self.Fo.Gr.z[k] <=1000.0:
+                if self.Fo.Gr.z_c[k] <=1000.0:
                     self.Fo.dTdt[k] = dTdt
-                    self.Fo.dqtdt[k]  = dqtdt * exner_c(self.Fo.Ref.p0[k])
-                elif self.Fo.Gr.z[k] > 1000.0  and self.Fo.Gr.z[k] <= 2000.0:
-                    self.Fo.dTdt[k] = dTdt*(1-(self.Fo.Gr.z[k]-1000.0)/1000.0)
-                    self.Fo.dqtdt[k]  = dqtdt * exner_c(self.Fo.Ref.p0[k])\
-                                        *(1-(self.Fo.Gr.z[k]-1000.0)/1000.0)
+                    self.Fo.dqtdt[k]  = dqtdt * exner_c(self.Fo.Ref.p0_c[k])
+                elif self.Fo.Gr.z_c[k] > 1000.0  and self.Fo.Gr.z_c[k] <= 2000.0:
+                    self.Fo.dTdt[k] = dTdt*(1-(self.Fo.Gr.z_c[k]-1000.0)/1000.0)
+                    self.Fo.dqtdt[k]  = dqtdt * exner_c(self.Fo.Ref.p0_c[k])\
+                                        *(1-(self.Fo.Gr.z_c[k]-1000.0)/1000.0)
         self.Fo.update(GMV)
 
         return
@@ -1012,9 +1012,9 @@ cdef class GATE_III(CasesBase):
         z_T_in = np.array([0.0, 0.492, 0.700, 1.698, 3.928, 6.039, 7.795, 9.137, 11.055, 12.645, 13.521, 14.486, 15.448, 16.436, 17.293, 22.0])*1000.0 # for km
 
         # interpolate to the model grid-points
-        T = np.interp(Gr.z,z_T_in,T_in) # interpolate to ref pressure level
-        qt = np.interp(Gr.z,z_in,qt_in)
-        U = np.interp(Gr.z,z_in,U_in)
+        T = np.interp(Gr.z_c,z_T_in,T_in) # interpolate to ref pressure level
+        qt = np.interp(Gr.z_c,z_in,qt_in)
+        U = np.interp(Gr.z_c,z_in,U_in)
 
 
         for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
@@ -1023,13 +1023,13 @@ cdef class GATE_III(CasesBase):
             GMV.U.values[k] = U[k]
 
             if GMV.H.name == 's':
-                GMV.H.values[k] = t_to_entropy_c(Ref.p0[k],GMV.T.values[k],
+                GMV.H.values[k] = t_to_entropy_c(Ref.p0_c[k],GMV.T.values[k],
                                                 GMV.QT.values[k], 0.0, 0.0)
             elif GMV.H.name == 'thetal':
-                 GMV.H.values[k] = thetali_c(Ref.p0[k],GMV.T.values[k],
+                 GMV.H.values[k] = thetali_c(Ref.p0_c[k],GMV.T.values[k],
                                                 GMV.QT.values[k], 0.0, 0.0, latent_heat(GMV.T.values[k]))
 
-            GMV.THL.values[k] = thetali_c(Ref.p0[k],GMV.T.values[k],
+            GMV.THL.values[k] = thetali_c(Ref.p0_c[k],GMV.T.values[k],
                                                 GMV.QT.values[k], 0.0, 0.0, latent_heat(GMV.T.values[k]))
         GMV.U.set_bcs(Gr)
         GMV.QT.set_bcs(Gr)
@@ -1077,8 +1077,8 @@ cdef class GATE_III(CasesBase):
 
         Qtend_in = np.divide(r_tend_in,(1+r_tend_in)) # convert mixing ratio to specific humidity
 
-        self.Fo.dqtdt = np.interp(Gr.z,z_in,Qtend_in)
-        self.Fo.dTdt = np.interp(Gr.z,z_in,Ttend_in) + np.interp(Gr.z,z_in,RAD_in)
+        self.Fo.dqtdt = np.interp(Gr.z_c,z_in,Qtend_in)
+        self.Fo.dTdt = np.interp(Gr.z_c,z_in,Ttend_in) + np.interp(Gr.z_c,z_in,RAD_in)
         return
 
 
@@ -1179,35 +1179,35 @@ cdef class DYCOMS_RF01(CasesBase):
 
         for k in xrange(Gr.gw, Gr.nzg-Gr.gw):
             # thetal profile as defined in DYCOMS
-            if Gr.z[k] <= 840.0:
+            if Gr.z_c[k] <= 840.0:
                thetal[k] = 289.0
-            if Gr.z[k] > 840.0:
-               thetal[k] = (297.5 + (Gr.z[k] - 840.0)**(1.0/3.0))
+            if Gr.z_c[k] > 840.0:
+               thetal[k] = (297.5 + (Gr.z_c[k] - 840.0)**(1.0/3.0))
 
             # qt profile as defined in DYCOMS
-            if Gr.z[k] <= 840.0:
+            if Gr.z_c[k] <= 840.0:
                GMV.QT.values[k] = 9. / 1000.0
-            if Gr.z[k] > 840.0:
+            if Gr.z_c[k] > 840.0:
                GMV.QT.values[k] = 1.5 / 1000.0
 
             # ql and T profile
             # (calculated by saturation adjustment using thetal and qt values provided in DYCOMS
             # and using Rd, cp and L constants as defined in DYCOMS)
-            GMV.T.values[k], GMV.QL.values[k] = self.dycoms_sat_adjst(Ref.p0[k], thetal[k], GMV.QT.values[k])
+            GMV.T.values[k], GMV.QL.values[k] = self.dycoms_sat_adjst(Ref.p0_c[k], thetal[k], GMV.QT.values[k])
 
             # thermodynamic variable profile (either entropy or thetal)
             # (calculated based on T and ql profiles.
             # Here we use Rd, cp and L constants as defined in scampy)
-            GMV.THL.values[k] = t_to_thetali_c(Ref.p0[k], GMV.T.values[k], GMV.QT.values[k], GMV.QL.values[k], qi)
+            GMV.THL.values[k] = t_to_thetali_c(Ref.p0_c[k], GMV.T.values[k], GMV.QT.values[k], GMV.QL.values[k], qi)
             if GMV.H.name == 'thetal':
-                GMV.H.values[k] = t_to_thetali_c(Ref.p0[k], GMV.T.values[k], GMV.QT.values[k], GMV.QL.values[k], qi)
+                GMV.H.values[k] = t_to_thetali_c(Ref.p0_c[k], GMV.T.values[k], GMV.QT.values[k], GMV.QL.values[k], qi)
             elif GMV.H.name == 's':
-                GMV.H.values[k] = t_to_entropy_c(Ref.p0[k], GMV.T.values[k], GMV.QT.values[k], GMV.QL.values[k], qi)
+                GMV.H.values[k] = t_to_entropy_c(Ref.p0_c[k], GMV.T.values[k], GMV.QT.values[k], GMV.QL.values[k], qi)
 
             # buoyancy profile
             qv = GMV.QT.values[k] - qi - GMV.QL.values[k]
-            alpha = alpha_c(Ref.p0[k], GMV.T.values[k], GMV.QT.values[k], qv)
-            GMV.B.values[k] = buoyancy_c(Ref.alpha0[k], alpha)
+            alpha = alpha_c(Ref.p0_c[k], GMV.T.values[k], GMV.QT.values[k], qv)
+            GMV.B.values[k] = buoyancy_c(Ref.alpha0_c[k], alpha)
 
             # velocity profile (geostrophic)
             GMV.U.values[k] = 7.0
@@ -1240,8 +1240,8 @@ cdef class DYCOMS_RF01(CasesBase):
         #density_surface  = 1.22     # kg/m^3
 
         # buoyancy flux
-        theta_flux       = self.Sur.shf / cpm_c(self.Sur.qsurface)        / Ref.rho0[Gr.gw-1]
-        qt_flux          = self.Sur.lhf / latent_heat(self.Sur.Tsurface)  / Ref.rho0[Gr.gw-1]
+        theta_flux       = self.Sur.shf / cpm_c(self.Sur.qsurface)        / Ref.rho0_f[Gr.gw-1]
+        qt_flux          = self.Sur.lhf / latent_heat(self.Sur.Tsurface)  / Ref.rho0_f[Gr.gw-1]
         theta_surface    = self.Sur.Tsurface / exner_c(Ref.Pg)
         self.Sur.bflux   =  g * ((theta_flux + (eps_vi - 1.0) * (theta_surface * qt_flux + self.Sur.qsurface * theta_flux))
                                  / (theta_surface * (1.0 + (eps_vi-1) * self.Sur.qsurface)))
@@ -1265,7 +1265,7 @@ cdef class DYCOMS_RF01(CasesBase):
                                 # To be able to have self.Fo.divergence available here,
                                 # we would have to change the signature of ForcingBase class
         for k in xrange(Gr.gw, Gr.nzg-Gr.gw):
-            self.Fo.subsidence[k] = - Gr.z[k] * divergence
+            self.Fo.subsidence[k] = - Gr.z_c[k] * divergence
 
         # no large-scale drying
         self.Fo.dqtdt[:] = 0. #kg/(kg * s)
