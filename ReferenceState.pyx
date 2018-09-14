@@ -19,9 +19,12 @@ include 'parameters.pxi'
 cdef class ReferenceState:
     def __init__(self, Grid Gr ):
 
-        self.p0 = np.zeros(Gr.nzg, dtype=np.double, order='c')
-        self.alpha0 = np.zeros(Gr.nzg, dtype=np.double, order='c')
-        self.rho0 = np.zeros(Gr.nzg, dtype=np.double, order='c')
+        self.p0_f = np.zeros(Gr.nzg, dtype=np.double, order='c')
+        self.p0_c = np.zeros(Gr.nzg, dtype=np.double, order='c')
+        self.alpha0_f = np.zeros(Gr.nzg, dtype=np.double, order='c')
+        self.alpha0_c = np.zeros(Gr.nzg, dtype=np.double, order='c')
+        self.rho0_f = np.zeros(Gr.nzg, dtype=np.double, order='c')
+        self.rho0_c = np.zeros(Gr.nzg, dtype=np.double, order='c')
 
         return
 
@@ -56,71 +59,93 @@ cdef class ReferenceState:
         ##_____________TO COMPILE______________
 
         # Construct arrays for integration points
-        #z = np.array(Gr.z[Gr.gw-1:-Gr.gw+1])
-        z = np.append([0.0], np.array(Gr.z[Gr.gw:-Gr.gw]))
-
-        #z = np.append([0.0], np.array(Gr.z[Gr.gw:-Gr.gw]))
+        z_f = np.array(Gr.z_f[Gr.gw - 1:-Gr.gw + 1])
+        z_c = np.append([0.0], np.array(Gr.z_c[Gr.gw:-Gr.gw]))
 
         # We are integrating the log pressure so need to take the log of the
         # surface pressure
         p0 = np.log(self.Pg)
 
-        p = np.zeros(Gr.nzg, dtype=np.double, order='c')
+        p_f = np.zeros(Gr.nzg, dtype=np.double, order='c')
+        p_c = np.zeros(Gr.nzg, dtype=np.double, order='c')
+
         # Perform the integration
-        p[Gr.gw:-Gr.gw] = odeint(rhs, p0, z, hmax=1.0)[1:, 0]
+        p_f[Gr.gw - 1:-Gr.gw +1] = odeint(rhs, p0, z_f, hmax=1.0)[:, 0]
+        p_c[Gr.gw:-Gr.gw] = odeint(rhs, p0, z_c, hmax=1.0)[1:, 0]
 
         # Set boundary conditions
-        p[:Gr.gw] = p[2 * Gr.gw - 1:Gr.gw - 1:-1]
-        p[-Gr.gw:] = p[-Gr.gw - 1:-2 * Gr.gw - 1:-1]
+        p_f[:Gr.gw - 1] = p_f[2 * Gr.gw - 2:Gr.gw - 1:-1]
+        p_f[-Gr.gw + 1:] = p_f[-Gr.gw - 1:-2 * Gr.gw:-1]
 
-        p = np.exp(p)
+        p_c[:Gr.gw] = p_c[2 * Gr.gw - 1:Gr.gw - 1:-1]
+        p_c[-Gr.gw:] = p_c[-Gr.gw - 1:-2 * Gr.gw - 1:-1]
+
+        p_f = np.exp(p_f)
+        p_c = np.exp(p_c)
 
 
-        cdef double[:] p_ = p
-        cdef double[:] temperature = np.zeros(Gr.nzg, dtype=np.double, order='c')
-        cdef double[:] alpha = np.zeros(Gr.nzg, dtype=np.double, order='c')
+        cdef double[:] p_f_ = p_f
+        cdef double[:] p_c_ = p_c
+        cdef double[:] temperature_f = np.zeros(Gr.nzg, dtype=np.double, order='c')
+        cdef double[:] temperature_c = np.zeros(Gr.nzg, dtype=np.double, order='c')
+        cdef double[:] alpha0_f = np.zeros(Gr.nzg, dtype=np.double, order='c')
+        cdef double[:] alpha0_c = np.zeros(Gr.nzg, dtype=np.double, order='c')
 
-        cdef double[:] ql = np.zeros(Gr.nzg, dtype=np.double, order='c')
-        cdef double[:] qi = np.zeros(Gr.nzg, dtype=np.double, order='c')
-        cdef double[:] qv = np.zeros(Gr.nzg, dtype=np.double, order='c')
+        cdef double[:] ql_f = np.zeros(Gr.nzg, dtype=np.double, order='c')
+        cdef double[:] qi_f = np.zeros(Gr.nzg, dtype=np.double, order='c')
+        cdef double[:] qv_f = np.zeros(Gr.nzg, dtype=np.double, order='c')
+
+        cdef double[:] ql_c = np.zeros(Gr.nzg, dtype=np.double, order='c')
+        cdef double[:] qi_c = np.zeros(Gr.nzg, dtype=np.double, order='c')
+        cdef double[:] qv_c = np.zeros(Gr.nzg, dtype=np.double, order='c')
 
         # Compute reference state thermodynamic profiles
         #_____COMMENTED TO TEST COMPILATION_____________________
         for k in xrange(Gr.nzg):
-            ret = eos(t_to_entropy_c, eos_first_guess_entropy, p_[k], self.qtg, self.sg)
-            temperature[k] = ret.T
-            ql[k] = ret.ql
-            qv[k] = self.qtg - (ql[k] + qi[k])
-            alpha[k] = alpha_c(p_[k], temperature[k], self.qtg, qv[k])
-            ret = eos(t_to_entropy_c, eos_first_guess_entropy, p_[k], self.qtg, self.sg)
-            temperature[k] = ret.T
-            ql[k] = ret.ql
-            qv[k] = self.qtg - (ql[k] + qi[k])
-            alpha[k] = alpha_c(p_[k], temperature[k], self.qtg, qv[k])
+            ret = eos(t_to_entropy_c, eos_first_guess_entropy, p_f_[k], self.qtg, self.sg)
+            temperature_f[k] = ret.T
+            ql_f[k] = ret.ql
+            qv_f[k] = self.qtg - (ql_f[k] + qi_f[k])
+            alpha0_f[k] = alpha_c(p_f_[k], temperature_f[k], self.qtg, qv_f[k])
+            ret = eos(t_to_entropy_c, eos_first_guess_entropy, p_c_[k], self.qtg, self.sg)
+            temperature_c[k] = ret.T
+            ql_c[k] = ret.ql
+            qv_c[k] = self.qtg - (ql_c[k] + qi_c[k])
+            alpha0_c[k] = alpha_c(p_c_[k], temperature_c[k], self.qtg, qv_c[k])
+
 
 
         # Now do a sanity check to make sure that the Reference State entropy profile is uniform following
         # saturation adjustment
         cdef double s
         for k in xrange(Gr.nzg):
-            s = t_to_entropy_c(p[k],temperature[k],self.qtg,ql[k],qi[k])
+            s = t_to_entropy_c(p_c[k],temperature_c[k],self.qtg,ql_c[k],qi_c[k])
             if np.abs(s - self.sg)/self.sg > 0.01:
                 print('Error in reference profiles entropy not constant !')
                 print('Likely error in saturation adjustment')
 
-        self.alpha0 = alpha
-        self.p0 = p_
-        self.rho0 = 1.0 / np.array(self.alpha0)
+        self.alpha0_c = alpha0_c
+        self.alpha0_f = alpha0_f
+        self.p0_f = p_f_
+        self.p0_c = p_c_
+        self.rho0_c = 1.0 / np.array(self.alpha0_c)
+        self.rho0_f = 1.0 / np.array(self.alpha0_f)
 
-        Stats.add_reference_profile('alpha0')
-        Stats.write_reference_profile('alpha0', alpha[Gr.gw:-Gr.gw])
+        Stats.add_reference_profile('alpha0_f')
+        Stats.write_reference_profile('alpha0_f', alpha0_f[Gr.gw:-Gr.gw])
+        Stats.add_reference_profile('alpha0_c')
+        Stats.write_reference_profile('alpha0_c', alpha0_c[Gr.gw:-Gr.gw])
 
 
-        Stats.add_reference_profile('p0')
-        Stats.write_reference_profile('p0', p_[Gr.gw:-Gr.gw])
+        Stats.add_reference_profile('p0_f')
+        Stats.write_reference_profile('p0_f', p_f[Gr.gw:-Gr.gw])
+        Stats.add_reference_profile('p0_c')
+        Stats.write_reference_profile('p0_c', p_c[Gr.gw:-Gr.gw])
 
-        Stats.add_reference_profile('rho0')
-        Stats.write_reference_profile('rho0', 1.0 / np.array(alpha[Gr.gw:-Gr.gw]))
+        Stats.add_reference_profile('rho0_f')
+        Stats.write_reference_profile('rho0_f', 1.0 / np.array(alpha0_f[Gr.gw:-Gr.gw]))
+        Stats.add_reference_profile('rho0_c')
+        Stats.write_reference_profile('rho0_c', 1.0 / np.array(alpha0_c[Gr.gw:-Gr.gw]))
 
         # Stats.add_reference_profile('temperature0', Gr, Pa)
         # Stats.add_reference_profile('ql0', Gr, Pa)
