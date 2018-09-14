@@ -235,7 +235,7 @@ def ARM_SGP():
 def GATE_III():
     paramlist = {}
     paramlist['meta'] = {}
-    paramlist['meta']['casename'] = 'TRMM_LBA'
+    paramlist['meta']['casename'] = 'GATE_III'
 
     paramlist['turbulence'] = {}
     paramlist['turbulence']['prandtl_number'] = 1.0
