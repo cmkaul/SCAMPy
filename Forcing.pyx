@@ -160,7 +160,7 @@ cdef class ForcingDYCOMS_RF01(ForcingBase):
                 idx_zi = k
                 # will be used at cell edges
                 zi     = self.Gr.z[idx_zi]
-                rhoi   = self.Ref.rho0_c[idx_zi]
+                rhoi   = self.Ref.rho0_f[idx_zi]
                 break
 
         # cloud-top cooling
