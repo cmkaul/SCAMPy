@@ -12,6 +12,8 @@ cimport Nudging
 cimport ForcingReference
 cimport SurfaceBudget
 cimport Radiation
+from EDMF_Updrafts cimport UpdraftVariables
+from EDMF_Environment cimport EnvironmentVariables
 from NetCDFIO cimport NetCDFIO_Stats
 from thermodynamic_functions cimport *
 import math as mt
@@ -78,12 +80,14 @@ cdef class CasesBase:
         return
     cpdef update_forcing(self, GridMeanVariables GMV,  TimeStepping TS):
         return
-    cpdef update_radiation(self, GridMeanVariables GMV, TimeStepping TS):
+    cpdef update_radiation(self, GridMeanVariables GMV, UpdraftVariables UpdVar,
+                           EnvironmentVariables EnvVar, TimeStepping TS):
         return
-    cpdef update(self, GridMeanVariables GMV, TimeStepping TS):
+    cpdef update(self, GridMeanVariables GMV, UpdraftVariables UpdVar,
+                 EnvironmentVariables EnvVar, TimeStepping TS):
         self.update_surface(GMV, TS)
         self.update_forcing(GMV, TS)
-        self.update_radiation(GMV, TS)
+        self.update_radiation(GMV, UpdVar, EnvVar, TS)
         return
 
 
@@ -182,13 +186,15 @@ cdef class Soares(CasesBase):
     cpdef update_forcing(self, GridMeanVariables GMV, TimeStepping TS):
         self.Fo.update(GMV)
         return
-    cpdef update_radiation(self, GridMeanVariables GMV, TimeStepping TS):
-        self.Ra.update(GMV,TS)
+    cpdef update_radiation(self, GridMeanVariables GMV,  UpdraftVariables UpdVar,
+                 EnvironmentVariables EnvVar, TimeStepping TS):
+        self.Ra.update(GMV, UpdVar, EnvVar,TS, self.Sur.Tsurface)
         return
-    cpdef update(self, GridMeanVariables GMV, TimeStepping TS):
+    cpdef update(self, GridMeanVariables GMV,  UpdraftVariables UpdVar,
+                 EnvironmentVariables EnvVar, TimeStepping TS):
         self.update_surface(GMV, TS)
         self.update_forcing(GMV, TS)
-        self.update_radiation(GMV, TS)
+        self.update_radiation(GMV, UpdVar, EnvVar, TS)
         return
 cdef class Bomex(CasesBase):
     def __init__(self, paramlist):
@@ -321,13 +327,15 @@ cdef class Bomex(CasesBase):
     cpdef update_forcing(self, GridMeanVariables GMV, TimeStepping TS):
         self.Fo.update(GMV)
         return
-    cpdef update_radiation(self, GridMeanVariables GMV, TimeStepping TS):
-        self.Ra.update(GMV,TS)
+    cpdef update_radiation(self, GridMeanVariables GMV,  UpdraftVariables UpdVar,
+                 EnvironmentVariables EnvVar, TimeStepping TS):
+        self.Ra.update(GMV, UpdVar, EnvVar, TS, self.Sur.Tsurface)
         return
-    cpdef update(self, GridMeanVariables GMV, TimeStepping TS):
+    cpdef update(self, GridMeanVariables GMV,   UpdraftVariables UpdVar,
+                 EnvironmentVariables EnvVar,TimeStepping TS):
         self.update_surface(GMV, TS)
         self.update_forcing(GMV, TS)
-        self.update_radiation(GMV, TS)
+        self.update_radiation(GMV, UpdVar, EnvVar, TS)
         return
 cdef class life_cycle_Tan2018(CasesBase):
     # Taken from: "An extended eddy- diffusivity mass-flux scheme for unified representation of subgrid-scale turbulence and convection"
@@ -471,13 +479,15 @@ cdef class life_cycle_Tan2018(CasesBase):
     cpdef update_forcing(self, GridMeanVariables GMV,  TimeStepping TS):
         self.Fo.update(GMV)
         return
-    cpdef update_radiation(self, GridMeanVariables GMV, TimeStepping TS):
-        self.Ra.update(GMV,TS)
+    cpdef update_radiation(self, GridMeanVariables GMV, UpdraftVariables UpdVar,
+                 EnvironmentVariables EnvVar, TimeStepping TS):
+        self.Ra.update(GMV, UpdVar, EnvVar, TS, self.Sur.Tsurface)
         return
-    cpdef update(self, GridMeanVariables GMV, TimeStepping TS):
+    cpdef update(self, GridMeanVariables GMV,  UpdraftVariables UpdVar,
+                 EnvironmentVariables EnvVar, TimeStepping TS):
         self.update_surface(GMV, TS)
         self.update_forcing(GMV, TS)
-        self.update_radiation(GMV, TS)
+        self.update_radiation(GMV, UpdVar, EnvVar, TS)
         return
 cdef class Rico(CasesBase):
     def __init__(self, paramlist):
@@ -606,13 +616,15 @@ cdef class Rico(CasesBase):
     cpdef update_forcing(self, GridMeanVariables GMV, TimeStepping TS):
         self.Fo.update(GMV)
         return
-    cpdef update_radiation(self, GridMeanVariables GMV, TimeStepping TS):
-        self.Ra.update(GMV,TS)
+    cpdef update_radiation(self, GridMeanVariables GMV,  UpdraftVariables UpdVar,
+                 EnvironmentVariables EnvVar, TimeStepping TS):
+        self.Ra.update(GMV, UpdVar, EnvVar, TS, self.Sur.Tsurface)
         return
-    cpdef update(self, GridMeanVariables GMV, TimeStepping TS):
+    cpdef update(self, GridMeanVariables GMV,  UpdraftVariables UpdVar,
+                 EnvironmentVariables EnvVar, TimeStepping TS):
         self.update_surface(GMV, TS)
         self.update_forcing(GMV, TS)
-        self.update_radiation(GMV, TS)
+        self.update_radiation(GMV, UpdVar, EnvVar, TS)
         return
 cdef class TRMM_LBA(CasesBase):
     # adopted from: "Daytime convective development over land- A model intercomparison based on LBA observations",
@@ -936,13 +948,15 @@ cdef class TRMM_LBA(CasesBase):
         self.Fo.update(GMV)
 
         return
-    cpdef update_radiation(self, GridMeanVariables GMV, TimeStepping TS):
-        self.Ra.update(GMV,TS)
+    cpdef update_radiation(self, GridMeanVariables GMV,  UpdraftVariables UpdVar,
+                 EnvironmentVariables EnvVar, TimeStepping TS):
+        self.Ra.update(GMV,UpdVar, EnvVar, TS, self.Sur.Tsurface)
         return
-    cpdef update(self, GridMeanVariables GMV, TimeStepping TS):
+    cpdef update(self, GridMeanVariables GMV,  UpdraftVariables UpdVar,
+                 EnvironmentVariables EnvVar, TimeStepping TS):
         self.update_surface(GMV, TS)
         self.update_forcing(GMV, TS)
-        self.update_radiation(GMV, TS)
+        self.update_radiation(GMV, UpdVar, EnvVar, TS)
         return
 cdef class ARM_SGP(CasesBase):
     # adopted from: "Large-eddy simulation of the diurnal cycle of shallow cumulus convection over land",
@@ -1083,14 +1097,16 @@ cdef class ARM_SGP(CasesBase):
         self.Fo.update(GMV)
 
         return
-    cpdef update_radiation(self, GridMeanVariables GMV, TimeStepping TS):
-        self.Ra.update(GMV, TS)
+    cpdef update_radiation(self, GridMeanVariables GMV,  UpdraftVariables UpdVar,
+                 EnvironmentVariables EnvVar, TimeStepping TS):
+        self.Ra.update(GMV, UpdVar, EnvVar, TS, self.Sur.Tsurface)
         return
 
-    cpdef update(self, GridMeanVariables GMV, TimeStepping TS):
+    cpdef update(self, GridMeanVariables GMV,  UpdraftVariables UpdVar,
+                 EnvironmentVariables EnvVar, TimeStepping TS):
         self.update_surface(GMV, TS)
         self.update_forcing(GMV, TS)
-        self.update_radiation(GMV, TS)
+        self.update_radiation(GMV, UpdVar, EnvVar, TS)
         return
 cdef class GATE_III(CasesBase):
     # adopted from: "Large eddy simulation of Maritime Deep Tropical Convection",
@@ -1228,13 +1244,15 @@ cdef class GATE_III(CasesBase):
     cpdef update_forcing(self, GridMeanVariables GMV,  TimeStepping TS):
         self.Fo.update(GMV)
         return
-    cpdef update_radiation(self, GridMeanVariables GMV, TimeStepping TS):
-        self.Ra.update(GMV,TS)
+    cpdef update_radiation(self, GridMeanVariables GMV,  UpdraftVariables UpdVar,
+                 EnvironmentVariables EnvVar, TimeStepping TS):
+        self.Ra.update(GMV, UpdVar, EnvVar, TS, self.Sur.Tsurface)
         return
-    cpdef update(self, GridMeanVariables GMV, TimeStepping TS):
+    cpdef update(self, GridMeanVariables GMV,  UpdraftVariables UpdVar,
+                 EnvironmentVariables EnvVar, TimeStepping TS):
         self.update_surface(GMV, TS)
         self.update_forcing(GMV, TS)
-        self.update_radiation(GMV, TS)
+        self.update_radiation(GMV, UpdVar, EnvVar, TS)
         return
 
 cdef class DYCOMS_RF01(CasesBase):
@@ -1442,13 +1460,15 @@ cdef class DYCOMS_RF01(CasesBase):
         self.Fo.update(GMV)
         return
 
-    cpdef update_radiation(self, GridMeanVariables GMV, TimeStepping TS):
-        self.Ra.update(GMV, TS)
+    cpdef update_radiation(self, GridMeanVariables GMV,  UpdraftVariables UpdVar,
+                 EnvironmentVariables EnvVar, TimeStepping TS):
+        self.Ra.update(GMV, UpdVar, EnvVar, TS, self.Sur.Tsurface)
         return
-    cpdef update(self, GridMeanVariables GMV, TimeStepping TS):
+    cpdef update(self, GridMeanVariables GMV,  UpdraftVariables UpdVar,
+                 EnvironmentVariables EnvVar, TimeStepping TS):
         self.update_surface(GMV, TS)
         self.update_forcing(GMV, TS)
-        self.update_radiation(GMV, TS)
+        self.update_radiation(GMV, UpdVar, EnvVar, TS)
         return
 
 cdef class ZGILS(CasesBase):
@@ -1656,13 +1676,15 @@ cdef class ZGILS(CasesBase):
 
 
         return
-    cpdef update_radiation(self, GridMeanVariables GMV, TimeStepping TS):
-        self.Ra.update(GMV,TS)
+    cpdef update_radiation(self, GridMeanVariables GMV,  UpdraftVariables UpdVar,
+                 EnvironmentVariables EnvVar, TimeStepping TS):
+        self.Ra.update(GMV, UpdVar, EnvVar, TS, self.Sur.Tsurface)
         return
 
-    cpdef update(self, GridMeanVariables GMV, TimeStepping TS):
+    cpdef update(self, GridMeanVariables GMV,  UpdraftVariables UpdVar,
+                 EnvironmentVariables EnvVar, TimeStepping TS):
         self.update_surface(GMV, TS)
         self.update_forcing(GMV, TS)
-        self.update_radiation(GMV, TS)
+        self.update_radiation(GMV, UpdVar, EnvVar, TS)
         self.SurBud.update(self.Ra, self.Sur, TS)
         return

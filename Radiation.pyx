@@ -7,17 +7,22 @@ from Grid cimport Grid
 from ReferenceState cimport ReferenceState
 from Variables cimport GridMeanVariables
 from TimeStepping cimport TimeStepping
+from EDMF_Updrafts cimport UpdraftVariables
+from EDMF_Environment cimport EnvironmentVariables
 include 'parameters.pxi'
 import numpy as np
 cimport numpy as np
 import netCDF4 as nc
+from libc.math cimport fmax, fmin
+from utility_functions cimport interp2pt
 
 cdef class RadiationBase:
     def __init__(self):
         return
     cpdef initialize(self, Grid Gr, ReferenceState Ref):
         return
-    cpdef update(self, GridMeanVariables GMV, TimeStepping TS):
+    cpdef update(self, GridMeanVariables GMV, UpdraftVariables UpdVar,
+                 EnvironmentVariables EnvVar, TimeStepping TS, double Tsurface):
         return
 cdef class RadiationNone(RadiationBase):
     def __init__(self):
@@ -27,7 +32,8 @@ cdef class RadiationNone(RadiationBase):
         self.Gr = Gr
         self.Ref = Ref
         return
-    cpdef update(self, GridMeanVariables GMV, TimeStepping TS):
+    cpdef update(self, GridMeanVariables GMV, UpdraftVariables UpdVar,
+                 EnvironmentVariables EnvVar, TimeStepping TS, double Tsurface):
         return
 # Note: the RRTM modules are compiled in the 'RRTMG' directory:
 cdef extern:
@@ -88,6 +94,11 @@ cdef class RadiationRRTM(RadiationBase):
             self.adir =  (.026/(self.coszen**1.7 + .065)+(.15*(self.coszen-0.10)*(self.coszen-0.50)*(self.coszen- 1.00)))
             # for defaults  this gives adir = 0.11
 
+        try:
+            self.compute_on_subdomains = namelist['radiation']['compute_on_subdomains']
+        except:
+            self.compute_on_subdomains = False
+
         # Initialize rrtmg_lw and rrtmg_sw
         cdef:
             double cpdair =np.float64(cpd)
@@ -137,7 +148,8 @@ cdef class RadiationRRTM(RadiationBase):
             Py_ssize_t nz = self.Gr.nz
             double [:,:] trpath = np.zeros((nz + 1, 9),dtype=np.double,order='F')
 
-        self.pi_full[0:nz] = self.Ref.p0[self.Gr.gw:self.Gr.nzg-self.Gr.gw]
+        self.pi_full[0:nz+1] = self.Ref.p0[self.Gr.gw:self.Gr.nzg-self.Gr.gw+1]
+        self.p_full[0:nz] = self.Ref.p0_half[self.Gr.gw:self.Gr.nzg-self.Gr.gw]
 
         # plev = self.pi_full[:]/100.0
         for i in xrange(1, nz + self.n_ext + 1):
@@ -174,19 +186,20 @@ cdef class RadiationRRTM(RadiationBase):
 
 
         return
-    cpdef update(self, GridMeanVariables GMV, TimeStepping TS):
+    cpdef update(self, GridMeanVariables GMV, UpdraftVariables UpdVar,
+                 EnvironmentVariables EnvVar, TimeStepping TS, double Tsurface):
 
 
         # Define input arrays for RRTM
         cdef:
             Py_ssize_t i, k, krad
             Py_ssize_t nz_full = self.Gr.nz
-            Py_ssize_t n_pencils = 3
+            Py_ssize_t n_pencils = 2 + UpdVar.n_updrafts
             double [:,:] play_in = np.zeros((n_pencils,nz_full), dtype=np.double, order='F')
             double [:,:] plev_in = np.zeros((n_pencils,nz_full + 1), dtype=np.double, order='F')
             double [:,:] tlay_in = np.zeros((n_pencils,nz_full), dtype=np.double, order='F')
             double [:,:] tlev_in = np.zeros((n_pencils,nz_full + 1), dtype=np.double, order='F')
-            double [:] tsfc_in = np.ones((n_pencils),dtype=np.double,order='F') * Sur.T_surface
+            double [:] tsfc_in = np.ones((n_pencils),dtype=np.double,order='F') * Tsurface
             double [:,:] h2ovmr_in = np.zeros((n_pencils,nz_full),dtype=np.double,order='F')
             double [:,:] o3vmr_in  = np.zeros((n_pencils,nz_full),dtype=np.double,order='F')
             double [:,:] co2vmr_in = np.zeros((n_pencils,nz_full),dtype=np.double,order='F')
@@ -236,9 +249,205 @@ cdef class RadiationRRTM(RadiationBase):
             double[:,:] hrc_sw_out = np.zeros((n_pencils,nz_full),dtype=np.double,order='F')
 
             double rv_to_reff = np.exp(np.log(1.2)**2.0)*10.0*1000.0
+            double gmv_qv, env_qv, upd_qv, gmv_rl, env_rl, upd_rl
+
+            double [:,:] qv = np.zeros((n_pencils, nz_full),dtype=np.double)
+
+
 
         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
             krad = k - self.Gr.gw
-            tlay_in[0,krad] = GMV.
 
+            play_in[0,krad] = self.p_full[krad]/100.0
+            play_in[1,krad] = self.p_full[krad]/100.0
+
+            tlay_in[0,krad] = GMV.T.values[k]
+            tlay_in[1,krad] = EnvVar.T.values[k]
+
+            gmv_qv = GMV.QT.values[k] - GMV.QL.values[k]
+            qv[0,k] = gmv_qv
+            gmv_rl = GMV.QL.values[k]/ (1.0 - gmv_qv)
+            h2ovmr_in[0,krad] = gmv_qv/ (1.0 - gmv_qv)* Rv/Rd
+            env_qv = EnvVar.QT.values[k] - EnvVar.QL.values[k]
+            qv[1,k] = env_qv
+            env_rl = EnvVar.QL.values[k]/ (1.0 - env_qv)
+            h2ovmr_in[1,krad] = env_qv/ (1.0 - env_qv)* Rv/Rd
+            cliqwp_in[0,krad] = (GMV.QL.values[k]/ (1.0 - gmv_qv)*1.0e3*(self.pi_full[krad] - self.pi_full[krad+1])/g)
+            cliqwp_in[1,krad] = (EnvVar.QL.values[k]/ (1.0 - env_qv)*1.0e3*(self.pi_full[krad] - self.pi_full[krad+1])/g)
+            # cicewp_in[0,krad] = (GMV.QI.values[k]/ (1.0 - gmv_qv)*1.0e3*(self.pi_full[krad] - self.pi_full[krad+1])/g)
+            # cicewp_in[1,krad] = (EnvVar.QI.values[k]/ (1.0 - env_qv)*1.0e3*(self.pi_full[krad] - self.pi_full[krad+1])/g)
+            cldfr_in[0,krad] = (1.0-UpdVar.Area.bulkvalues[k]) * EnvVar.CF.values[k]
+            cldfr_in[1,krad] = EnvVar.CF.values[k]
+
+            reliq_in[0, krad] = ((3.0*self.p_full[k]/Rd/tlay_in[0,krad]*gmv_rl/fmax(cldfr_in[0,krad],1.0e-6))/(4.0*pi*1.0e3*100.0))**(1.0/3.0)
+            reliq_in[0, krad] = fmin(fmax(reliq_in[0, krad] * rv_to_reff, 2.5), 60.0)
+            reliq_in[1, krad] = ((3.0*self.p_full[k]/Rd/tlay_in[1,krad]*env_rl/fmax(cldfr_in[1,krad],1.0e-6))/(4.0*pi*1.0e3*100.0))**(1.0/3.0)
+            reliq_in[1, krad] = fmin(fmax(reliq_in[1, krad] * rv_to_reff, 2.5), 60.0)
+ 
+            o3vmr_in[0, krad] = self.o3vmr[krad]
+            co2vmr_in[0, krad] = self.co2vmr[krad]
+            ch4vmr_in[0, krad] = self.ch4vmr[krad]
+            n2ovmr_in[0, krad] = self.n2ovmr[krad]
+            o2vmr_in [0, krad] = self.o2vmr[krad]
+            cfc11vmr_in[0, krad] = self.cfc11vmr[krad]
+            cfc12vmr_in[0, krad] = self.cfc12vmr[krad]
+            cfc22vmr_in[0, krad] = self.cfc22vmr[krad]
+            ccl4vmr_in[0, krad] = self.ccl4vmr[krad]
+
+            o3vmr_in[1, krad] = self.o3vmr[krad]
+            co2vmr_in[1, krad] = self.co2vmr[krad]
+            ch4vmr_in[1, krad] = self.ch4vmr[krad]
+            n2ovmr_in[1, krad] = self.n2ovmr[krad]
+            o2vmr_in [1, krad] = self.o2vmr[krad]
+            cfc11vmr_in[1, krad] = self.cfc11vmr[krad]
+            cfc12vmr_in[1, krad] = self.cfc12vmr[krad]
+            cfc22vmr_in[1, krad] = self.cfc22vmr[krad]
+            ccl4vmr_in[1, krad] = self.ccl4vmr[krad]
+
+
+            for i in xrange(UpdVar.n_updrafts):
+                play_in[2+i,krad] = self.p_full[krad]/100.0
+                tlay_in[2+i, krad] = UpdVar.T.values[i, k]
+                upd_qv = UpdVar.QT.values[i,k] - UpdVar.QL.values[i,k]
+                qv[2+i,k] = upd_qv
+                upd_rl = UpdVar.QL.values[i,k]/ (1.0 - upd_qv)
+                h2ovmr_in[2+i,krad] = upd_qv/ (1.0 - upd_qv)* Rv/Rd
+                cliqwp_in[2+i,krad] = (UpdVar.QL.values[i,k]/ (1.0 - upd_qv)*1.0e3*(self.pi_full[krad] - self.pi_full[krad+1])/g)
+                # cicewp_in[2+i,krad] = (UpdVar.QI.values[i,k]/ (1.0 - upd_qv)*1.0e3*(self.pi_full[krad] - self.pi_full[krad+1])/g)
+                cldfr_in[2+i, krad] = np.ceil(UpdVar.QL.values[i,k])
+                cldfr_in[0,krad] += UpdVar.Area.values[i,k] * cldfr_in[2+i, krad]
+
+                reliq_in[2+i, krad] = ((3.0*self.p_full[k]/Rd/tlay_in[2+i,krad]*upd_rl/fmax(cldfr_in[2+i,krad],1.0e-6))/(4.0*pi*1.0e3*100.0))**(1.0/3.0)
+                reliq_in[2+i, krad] = fmin(fmax(reliq_in[2+i, krad] * rv_to_reff, 2.5), 60.0)
+
+                o3vmr_in[2+i, krad] = self.o3vmr[krad]
+                co2vmr_in[2+i, krad] = self.co2vmr[krad]
+                ch4vmr_in[2+i, krad] = self.ch4vmr[krad]
+                n2ovmr_in[2+i, krad] = self.n2ovmr[krad]
+                o2vmr_in [2+i, krad] = self.o2vmr[krad]
+                cfc11vmr_in[2+i, krad] = self.cfc11vmr[krad]
+                cfc12vmr_in[2+i, krad] = self.cfc12vmr[krad]
+                cfc22vmr_in[2+i, krad] = self.cfc22vmr[krad]
+                ccl4vmr_in[2+i, krad] = self.ccl4vmr[krad]
+
+        for i in xrange(2+UpdVar.n_updrafts):
+            tlev_in[i, 0] = Tsurface
+            plev_in[i,0] = self.pi_full[0]/100.0
+            plev_in[i, nz_full] =self.pi_full[nz_full]/100.0
+            for krad in xrange(1,nz_full):
+                tlev_in[i,krad] = interp2pt(tlay_in[i,krad-1], tlay_in[i,krad])
+                plev_in[i,krad] = self.pi_full[krad]/100.0
+            tlev_in[i, nz_full] = 2.0*tlay_in[i,nz_full-1] - tlev_in[i,nz_full-1]
+            plev_in[i,nz_full] = self.pi_full[nz_full]/100.0
+
+
+
+
+        cdef:
+            int ncol = n_pencils
+            int nlay = nz_full
+            int icld = 1
+            int idrv = 0
+            int iaer = 0
+            int inflglw = 2
+            int iceflglw = 3
+            int liqflglw = 1
+            int inflgsw = 2
+            int iceflgsw = 3
+            int liqflgsw = 1
+
+        c_rrtmg_lw (
+             &ncol    ,&nlay    ,&icld    ,&idrv,
+             &play_in[0,0]    ,&plev_in[0,0]    ,&tlay_in[0,0]    ,&tlev_in[0,0]    ,&tsfc_in[0]    ,
+             &h2ovmr_in[0,0]  ,&o3vmr_in[0,0]   ,&co2vmr_in[0,0]  ,&ch4vmr_in[0,0]  ,&n2ovmr_in[0,0]  ,&o2vmr_in[0,0],
+             &cfc11vmr_in[0,0],&cfc12vmr_in[0,0],&cfc22vmr_in[0,0],&ccl4vmr_in[0,0] ,&emis_in[0,0]    ,
+             &inflglw ,&iceflglw,&liqflglw,&cldfr_in[0,0]   ,
+             &taucld_lw_in[0,0,0]  ,&cicewp_in[0,0]  ,&cliqwp_in[0,0]  ,&reice_in[0,0]   ,&reliq_in[0,0]   ,
+             &tauaer_lw_in[0,0,0]  ,
+             &uflx_lw_out[0,0]    ,&dflx_lw_out[0,0]    ,&hr_lw_out[0,0]      ,&uflxc_lw_out[0,0]   ,&dflxc_lw_out[0,0],  &hrc_lw_out[0,0],
+             &duflx_dt_out[0,0],&duflxc_dt_out[0,0] )
+
+
+        c_rrtmg_sw (
+            &ncol, &nlay, &icld, &iaer, &play_in[0,0], &plev_in[0,0], &tlay_in[0,0], &tlev_in[0,0],&tsfc_in[0],
+            &h2ovmr_in[0,0], &o3vmr_in[0,0], &co2vmr_in[0,0], &ch4vmr_in[0,0], &n2ovmr_in[0,0],&o2vmr_in[0,0],
+             &asdir_in[0]   ,&asdif_in[0]   ,&aldir_in[0]   ,&aldif_in[0]   ,
+             &coszen_in[0]  ,&self.adjes   ,&self.dyofyr  ,&self.scon   ,
+             &inflgsw ,&iceflgsw,&liqflgsw,&cldfr_in[0,0]   ,
+             &taucld_sw_in[0,0,0]  ,&ssacld_sw_in[0,0,0]  ,&asmcld_sw_in[0,0,0]  ,&fsfcld_sw_in[0,0,0]  ,
+             &cicewp_in[0,0]  ,&cliqwp_in[0,0]  ,&reice_in[0,0]   ,&reliq_in[0,0]   ,
+             &tauaer_sw_in[0,0,0]  ,&ssaaer_sw_in[0,0,0]  ,&asmaer_sw_in[0,0,0]  ,&ecaer_sw_in[0,0,0]   ,
+             &uflx_sw_out[0,0]    ,&dflx_sw_out[0,0]    ,&hr_sw_out[0,0]      ,&uflxc_sw_out[0,0]   ,&dflxc_sw_out[0,0], &hrc_sw_out[0,0])
+
+
+
+        if self.compute_on_subdomains:
+            self.zero_fluxes()
+            for i in xrange(1,n_pencils):
+               for k in xrange(nz_full):
+                   kgrid = k + self.Gr.gw
+                   self.gm_T_tendency[kgrid] += (hr_lw_out[i,k] + hr_sw_out[i,k])/86400.0
+                   self.heating_rate_lw[kgrid] += (hr_lw_out[i,k]) * self.Ref.rho0_half[kgrid] * cpm_c(qv[i,kgrid])/86400.0
+                   self.heating_rate_sw[kgrid] += (hr_sw_out[i,k]) * self.Ref.rho0_half[kgrid] * cpm_c(qv[i,kgrid])/86400.0
+                for k in xrange(nz_full+1):
+                    kgrid = k + self.Gr.gw - 1
+                    self.gm_uflux_lw[kgrid] += uflx_lw_out[i,k]
+                    self.gm_dflux_lw[kgrid] += dflx_lw_out[i,k]
+                    self.gm_uflux_swZ
+
+
+                   uflux_lw_pencil[ip,k] = (uflx_lw_out[ip,k] + uflx_lw_out[ip, k+1]) * 0.5
+                   dflux_lw_pencil[ip,k] = (dflx_lw_out[ip,k] + dflx_lw_out[ip, k+1]) * 0.5
+                   uflux_sw_pencil[ip,k] = (uflx_sw_out[ip,k] + uflx_sw_out[ip, k+1]) * 0.5
+                   dflux_sw_pencil[ip,k] = (dflx_sw_out[ip,k] + dflx_sw_out[ip, k+1]) * 0.5
+
+                   heating_rate_clear_pencil[ip, k] = (hrc_lw_out[ip,k] + hrc_sw_out[ip,k]) * Ref.rho0_half_global[k+gw] * cpm_c(qv_pencil[ip,k])/86400.0
+                   uflux_lw_clear_pencil[ip,k] = (uflxc_lw_out[ip,k] + uflxc_lw_out[ip, k+1]) * 0.5
+                   dflux_lw_clear_pencil[ip,k] = (dflxc_lw_out[ip,k] + dflxc_lw_out[ip, k+1]) * 0.5
+                   uflux_sw_clear_pencil[ip,k] = (uflxc_sw_out[ip,k] + uflxc_sw_out[ip, k+1]) * 0.5
+                   dflux_sw_clear_pencil[ip,k] = (dflxc_sw_out[ip,k] + dflxc_sw_out[ip, k+1]) * 0.5
+
+        self.srf_lw_up = Pa.domain_scalar_sum(srf_lw_up_local)
+        self.srf_lw_down = Pa.domain_scalar_sum(srf_lw_down_local)
+        self.srf_sw_up= Pa.domain_scalar_sum(srf_sw_up_local)
+        self.srf_sw_down= Pa.domain_scalar_sum(srf_sw_down_local)
+
+        self.toa_lw_up = Pa.domain_scalar_sum(toa_lw_up_local)
+        self.toa_lw_down = Pa.domain_scalar_sum(toa_lw_down_local)
+        self.toa_sw_up= Pa.domain_scalar_sum(toa_sw_up_local)
+        self.toa_sw_down= Pa.domain_scalar_sum(toa_sw_down_local)
+
+        self.srf_lw_up_clear = Pa.domain_scalar_sum(srf_lw_up_clear_local)
+        self.srf_lw_down_clear = Pa.domain_scalar_sum(srf_lw_down_clear_local)
+        self.srf_sw_up_clear = Pa.domain_scalar_sum(srf_sw_up_clear_local)
+        self.srf_sw_down_clear = Pa.domain_scalar_sum(srf_sw_down_clear_local)
+
+        self.toa_lw_up_clear = Pa.domain_scalar_sum(toa_lw_up_clear_local)
+        self.toa_lw_down_clear = Pa.domain_scalar_sum(toa_lw_down_clear_local)
+        self.toa_sw_up_clear = Pa.domain_scalar_sum(toa_sw_up_clear_local)
+        self.toa_sw_down_clear = Pa.domain_scalar_sum(toa_sw_down_clear_local)
+
+        self.z_pencil.reverse_double(&Gr.dims, Pa, heating_rate_pencil, &self.heating_rate[0])
+        self.z_pencil.reverse_double(&Gr.dims, Pa, uflux_lw_pencil, &self.uflux_lw[0])
+        self.z_pencil.reverse_double(&Gr.dims, Pa, dflux_lw_pencil, &self.dflux_lw[0])
+        self.z_pencil.reverse_double(&Gr.dims, Pa, uflux_sw_pencil, &self.uflux_sw[0])
+        self.z_pencil.reverse_double(&Gr.dims, Pa, dflux_sw_pencil, &self.dflux_sw[0])
+
+        self.z_pencil.reverse_double(&Gr.dims, Pa, heating_rate_clear_pencil, &self.heating_rate_clear[0])
+        self.z_pencil.reverse_double(&Gr.dims, Pa, uflux_lw_clear_pencil, &self.uflux_lw_clear[0])
+        self.z_pencil.reverse_double(&Gr.dims, Pa, dflux_lw_clear_pencil, &self.dflux_lw_clear[0])
+        self.z_pencil.reverse_double(&Gr.dims, Pa, uflux_sw_clear_pencil, &self.uflux_sw_clear[0])
+        self.z_pencil.reverse_double(&Gr.dims, Pa, dflux_sw_clear_pencil, &self.dflux_sw_clear[0])
         return
+
+    cpdef zero_fluxes(self):
+        for k in xrange(self.Gr.nzg):
+            self.gm_T_tendency[k] = 0.0
+            self.gm_heating_rate_lw[k] = 0.0
+            self.gm_heating_rate_sw[k] = 0.0
+            self.gm_uflux_lw[k] = 0.0
+            self.gm_dflux_lw[k] = 0.0
+            self.gm_uflux_sw[k] = 0.0
+            self.gm_dflux_sw[k] = 0.0
+        return
+
