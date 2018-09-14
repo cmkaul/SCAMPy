@@ -159,7 +159,7 @@ cdef class ForcingDYCOMS_RF01(ForcingBase):
             if (GMV.QT.values[k] < 8.0 / 1000):
                 idx_zi = k
                 # will be used at cell edges
-                zi     = self.Gr.z[idx_zi]
+                zi     = self.Gr.z_f[idx_zi]
                 rhoi   = self.Ref.rho0_f[idx_zi]
                 break
 
@@ -179,11 +179,11 @@ cdef class ForcingDYCOMS_RF01(ForcingBase):
 
         # cooling in free troposphere
         for k in xrange(0, self.Gr.nzg):
-            if self.Gr.z[k] > zi:
-                cbrt_z         = cbrt(self.Gr.z[k] - zi)
+            if self.Gr.z_f[k] > zi:
+                cbrt_z         = cbrt(self.Gr.z_f[k] - zi)
                 self.f_rad[k] += rhoi * dycoms_cp * self.divergence * self.alpha_z * (np.power(cbrt_z, 4) / 4.0 + zi * cbrt_z)
         # condition at the top
-        cbrt_z                   = cbrt(self.Gr.z[k] + self.Gr.dz - zi)
+        cbrt_z                   = cbrt(self.Gr.z_f[k] + self.Gr.dz - zi)
         self.f_rad[self.Gr.nzg] += rhoi * dycoms_cp * self.divergence * self.alpha_z * (np.power(cbrt_z, 4) / 4.0 + zi * cbrt_z)
 
         for k in xrange(self.Gr.gw, self.Gr.nzg - self.Gr.gw):
