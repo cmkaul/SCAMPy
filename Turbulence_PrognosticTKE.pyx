@@ -164,8 +164,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.massflux_qt = np.zeros((Gr.nzg,),dtype=np.double,order='c')
         self.diffusive_flux_h = np.zeros((Gr.nzg,),dtype=np.double,order='c')
         self.diffusive_flux_qt = np.zeros((Gr.nzg,),dtype=np.double,order='c')
-        if self.calc_tke:
-            self.massflux_tke = np.zeros((Gr.nzg,),dtype=np.double,order='c')
 
         return
 
@@ -205,7 +203,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Stats.add_profile('tke_detr_loss')
             Stats.add_profile('tke_shear')
             Stats.add_profile('tke_pressure')
-            Stats.add_profile('tke_massflux')
+            Stats.add_profile('tke_interdomain')
 
         if self.calc_scalar_var:
             Stats.add_profile('Hvar_dissipation')
@@ -223,9 +221,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Stats.add_profile('Hvar_rain')
             Stats.add_profile('QTvar_rain')
             Stats.add_profile('HQTcov_rain')
-            Stats.add_profile('Hvar_massflux')
-            Stats.add_profile('QTvar_massflux')
-            Stats.add_profile('HQTcov_massflux')
+            Stats.add_profile('Hvar_interdomain')
+            Stats.add_profile('QTvar_interdomain')
+            Stats.add_profile('HQTcov_interdomain')
 
         return
 
@@ -284,7 +282,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Stats.write_profile('tke_shear', self.EnvVar.TKE.shear[kmin:kmax])
             Stats.write_profile('tke_buoy', self.EnvVar.TKE.buoy[kmin:kmax])
             Stats.write_profile('tke_pressure', self.EnvVar.TKE.press[kmin:kmax])
-            Stats.write_profile('tke_massflux', self.EnvVar.TKE.massflux[kmin:kmax])
+            Stats.write_profile('tke_interdomain', self.EnvVar.TKE.interdomain[kmin:kmax])
 
         if self.calc_scalar_var:
             self.compute_covariance_dissipation(self.EnvVar.Hvar)
@@ -308,9 +306,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Stats.write_profile('Hvar_rain', self.EnvVar.Hvar.rain_src[kmin:kmax])
             Stats.write_profile('QTvar_rain', self.EnvVar.QTvar.rain_src[kmin:kmax])
             Stats.write_profile('HQTcov_rain', self.EnvVar.HQTcov.rain_src[kmin:kmax])
-            Stats.write_profile('Hvar_massflux', self.EnvVar.Hvar.massflux[kmin:kmax])
-            Stats.write_profile('QTvar_massflux', self.EnvVar.QTvar.massflux[kmin:kmax])
-            Stats.write_profile('HQTcov_massflux', self.EnvVar.HQTcov.massflux[kmin:kmax])
+            Stats.write_profile('Hvar_interdomain', self.EnvVar.Hvar.interdomain[kmin:kmax])
+            Stats.write_profile('QTvar_interdomain', self.EnvVar.QTvar.interdomain[kmin:kmax])
+            Stats.write_profile('HQTcov_interdomain', self.EnvVar.HQTcov.interdomain[kmin:kmax])
 
     # Perform the update of the scheme
 
@@ -1164,7 +1162,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.compute_tke_buoy(GMV)
                 self.compute_covariance_entr(self.EnvVar.TKE, self.UpdVar.W, self.UpdVar.W, self.EnvVar.W, self.EnvVar.W)
                 self.compute_covariance_shear(GMV, self.EnvVar.TKE, &self.UpdVar.W.values[0,0], &self.UpdVar.W.values[0,0], &self.EnvVar.W.values[0], &self.EnvVar.W.values[0])
-                self.compute_covariance_massflux(self.UpdVar.Area,self.UpdVar.W,self.UpdVar.W,self.EnvVar.W, self.EnvVar.W, self.EnvVar.TKE)
+                self.compute_covariance_interdomain_src(self.UpdVar.Area,self.UpdVar.W,self.UpdVar.W,self.EnvVar.W, self.EnvVar.W, self.EnvVar.TKE)
                 self.compute_tke_pressure()
             if self.calc_scalar_var:
                 self.compute_covariance_entr(self.EnvVar.Hvar, self.UpdVar.H, self.UpdVar.H, self.EnvVar.H, self.EnvVar.H)
@@ -1173,9 +1171,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.compute_covariance_shear(GMV, self.EnvVar.Hvar, &self.UpdVar.H.values[0,0], &self.UpdVar.H.values[0,0], &self.EnvVar.H.values[0], &self.EnvVar.H.values[0])
                 self.compute_covariance_shear(GMV, self.EnvVar.QTvar, &self.UpdVar.QT.values[0,0], &self.UpdVar.QT.values[0,0], &self.EnvVar.QT.values[0], &self.EnvVar.QT.values[0])
                 self.compute_covariance_shear(GMV, self.EnvVar.HQTcov, &self.UpdVar.H.values[0,0], &self.UpdVar.QT.values[0,0], &self.EnvVar.H.values[0], &self.EnvVar.QT.values[0])
-                self.compute_covariance_massflux(self.UpdVar.Area,self.UpdVar.H,self.UpdVar.H,self.EnvVar.H, self.EnvVar.H, self.EnvVar.Hvar)
-                self.compute_covariance_massflux(self.UpdVar.Area,self.UpdVar.QT,self.UpdVar.QT,self.EnvVar.QT, self.EnvVar.QT, self.EnvVar.QTvar)
-                self.compute_covariance_massflux(self.UpdVar.Area,self.UpdVar.H,self.UpdVar.QT,self.EnvVar.H, self.EnvVar.QT, self.EnvVar.HQTcov)
+                self.compute_covariance_interdomain_src(self.UpdVar.Area,self.UpdVar.H,self.UpdVar.H,self.EnvVar.H, self.EnvVar.H, self.EnvVar.Hvar)
+                self.compute_covariance_interdomain_src(self.UpdVar.Area,self.UpdVar.QT,self.UpdVar.QT,self.EnvVar.QT, self.EnvVar.QT, self.EnvVar.QTvar)
+                self.compute_covariance_interdomain_src(self.UpdVar.Area,self.UpdVar.H,self.UpdVar.QT,self.EnvVar.H, self.EnvVar.QT, self.EnvVar.HQTcov)
                 self.compute_covariance_rain(TS, GMV) # need to update this one
 
             self.reset_surface_covariance(GMV, Case)
@@ -1280,7 +1278,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                     (diff_var1*diff_var2 + pow(du,2.0) +  pow(dv,2.0)))
         return
 
-    cdef void compute_covariance_massflux(self, EDMF_Updrafts.UpdraftVariable au,
+    cdef void compute_covariance_interdomain_src(self, EDMF_Updrafts.UpdraftVariable au,
                         EDMF_Updrafts.UpdraftVariable phi_u, EDMF_Updrafts.UpdraftVariable psi_u,
                         EDMF_Environment.EnvironmentVariable phi_e,  EDMF_Environment.EnvironmentVariable psi_e,
                         EDMF_Environment.EnvironmentVariable_2m Covar):
@@ -1295,11 +1293,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         with nogil:
             for k in xrange(self.Gr.nzg):
-                Covar.massflux[k] = 0.0
+                Covar.interdomain[k] = 0.0
                 for i in xrange(self.n_updrafts):
                     phi_diff = phi_u.values[i,k]-phi_e.values[k]
                     psi_diff = psi_u.values[i,k]-psi_e.values[k]
-                    Covar.massflux[k] += tke_factor*au.values[i,k] * (1.0-au.values[i,k]) * phi_diff * psi_diff
+                    Covar.interdomain[k] += tke_factor*au.values[i,k] * (1.0-au.values[i,k]) * phi_diff * psi_diff
         return
 
     cdef void compute_covariance_dissipation(self, EDMF_Environment.EnvironmentVariable_2m Covar):

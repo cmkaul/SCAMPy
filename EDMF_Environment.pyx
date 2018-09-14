@@ -39,7 +39,7 @@ cdef class EnvironmentVariable_2m:
         self.buoy = np.zeros((nz,),dtype=np.double, order='c')
         self.press = np.zeros((nz,),dtype=np.double, order='c')
         self.shear = np.zeros((nz,),dtype=np.double, order='c')
-        self.massflux = np.zeros((nz,),dtype=np.double, order='c')
+        self.interdomain = np.zeros((nz,),dtype=np.double, order='c')
         self.rain_src = np.zeros((nz,),dtype=np.double, order='c')
         if loc != 'half':
             print('Invalid location setting for variable! Must be half')
