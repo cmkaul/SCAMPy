@@ -1424,7 +1424,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         with nogil:
             for kk in xrange(nz):
                 k = kk + gw
-                Covar.values[k] = fmax(x[kk],0.0)
+                if Covar.name != 'HQTcov':
+                    Covar.values[k] = fmax(x[kk],0.0)
                 GmvCovar.values[k] = (ae[k] * (Covar.values[k] + (EnvVar1.values[k]-GmvVar1.values[k]) * (EnvVar2.values[k]-GmvVar2.values[k]))
                                   + self.UpdVar.Area.bulkvalues[k] * (UpdVar1.bulkvalues[k]-GmvVar1.values[k])  * (UpdVar2.bulkvalues[k]-GmvVar2.values[k]))
 
