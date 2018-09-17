@@ -1421,13 +1421,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 c[nz-1] = 0.0
         tridiag_solve(self.Gr.nz, &x[0],&a[0], &b[0], &c[0])
 
-        with nogil:
-            for kk in xrange(nz):
-                k = kk + gw
-                if Covar.name != 'HQTcov':
-                    Covar.values[k] = fmax(x[kk],0.0)
+
+        for kk in xrange(nz):
+            k = kk + gw
+            if Covar.name != 'HQTcov':
+                Covar.values[k] = fmax(x[kk],0.0)
+            with nogil:
                 GmvCovar.values[k] = (ae[k] * (Covar.values[k] + (EnvVar1.values[k]-GmvVar1.values[k]) * (EnvVar2.values[k]-GmvVar2.values[k]))
-                                  + self.UpdVar.Area.bulkvalues[k] * (UpdVar1.bulkvalues[k]-GmvVar1.values[k])  * (UpdVar2.bulkvalues[k]-GmvVar2.values[k]))
+                            + self.UpdVar.Area.bulkvalues[k] * (UpdVar1.bulkvalues[k]-GmvVar1.values[k])  * (UpdVar2.bulkvalues[k]-GmvVar2.values[k]))
 
         self.get_GMV_CoVar(self.UpdVar.Area, UpdVar1, UpdVar2, EnvVar1, EnvVar2, Covar, &GmvVar1.values[0], &GmvVar2.values[0], &GmvCovar.values[0])
 
