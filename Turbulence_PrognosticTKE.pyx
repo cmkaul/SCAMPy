@@ -1131,7 +1131,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Py_ssize_t k
             double qv, alpha
 
-
         with nogil:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                 GMV.QL.values[k] = (self.UpdVar.Area.bulkvalues[k] * self.UpdVar.QL.bulkvalues[k]
@@ -1182,7 +1181,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             if self.calc_scalar_var:
                 self.update_covariance_ED(GMV, Case,TS, GMV.H, GMV.H, GMV.Hvar, self.EnvVar.Hvar, self.EnvVar.H, self.EnvVar.H, self.UpdVar.H, self.UpdVar.H)
                 self.update_covariance_ED(GMV, Case,TS, GMV.QT,GMV.QT,GMV.QTvar, self.EnvVar.QTvar, self.EnvVar.QT, self.EnvVar.QT, self.UpdVar.QT, self.UpdVar.QT)
-                self.update_covariance_ED(GMV, Case,TS, GMV.H, GMV.H, GMV.HQTcov, self.EnvVar.HQTcov, self.EnvVar.H, self.EnvVar.QT, self.UpdVar.H, self.UpdVar.QT)
+                self.update_covariance_ED(GMV, Case,TS, GMV.H, GMV.QT, GMV.HQTcov, self.EnvVar.HQTcov, self.EnvVar.H, self.EnvVar.QT, self.UpdVar.H, self.UpdVar.QT)
                 self.cleanup_covariance(GMV)
 
 
@@ -1235,7 +1234,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         if self.calc_scalar_var:
             GMV.Hvar.values[self.Gr.gw] =  get_surface_variance(flux1*alpha0LL,flux1*alpha0LL, ustar, zLL, oblength)
             GMV.QTvar.values[self.Gr.gw] = get_surface_variance(flux2*alpha0LL,flux2*alpha0LL, ustar, zLL, oblength)
-            GMV.HQTcov.values[self.Gr.gw] = get_surface_variance(flux1 * alpha0LL,flux2 * alpha0LL, ustar, zLL, oblength)
+            GMV.HQTcov.values[self.Gr.gw] = get_surface_variance(flux1*alpha0LL,flux2*alpha0LL, ustar, zLL, oblength)
         return
 
     cpdef cleanup_covariance(self, GridMeanVariables GMV):
@@ -1248,10 +1247,15 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     GMV.Hvar.values[k] = 0.0
                 if GMV.QTvar.values[k] < tmp_eps:
                     GMV.QTvar.values[k] = 0.0
+                if fabs(GMV.HQTcov.values[k]) < tmp_eps:
+                    GMV.HQTcov.values[k] = 0.0
                 if self.EnvVar.Hvar.values[k] < tmp_eps:
                     self.EnvVar.Hvar.values[k] = 0.0
                 if self.EnvVar.QTvar.values[k] < tmp_eps:
                     self.EnvVar.QTvar.values[k] = 0.0
+                if fabs(self.EnvVar.HQTcov.values[k]) < tmp_eps:
+                    self.EnvVar.HQTcov.values[k] = 0.0
+
         return
 
 
@@ -1421,12 +1425,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 c[nz-1] = 0.0
         tridiag_solve(self.Gr.nz, &x[0],&a[0], &b[0], &c[0])
 
-        with nogil:
-            for kk in xrange(nz):
-                k = kk + gw
+
+        for kk in xrange(nz):
+            k = kk + gw
+            if Covar.name != 'thetal_qt_covar':
                 Covar.values[k] = fmax(x[kk],0.0)
+            with nogil:
                 GmvCovar.values[k] = (ae[k] * (Covar.values[k] + (EnvVar1.values[k]-GmvVar1.values[k]) * (EnvVar2.values[k]-GmvVar2.values[k]))
-                                  + self.UpdVar.Area.bulkvalues[k] * (UpdVar1.bulkvalues[k]-GmvVar1.values[k])  * (UpdVar2.bulkvalues[k]-GmvVar2.values[k]))
+                            + self.UpdVar.Area.bulkvalues[k] * (UpdVar1.bulkvalues[k]-GmvVar1.values[k])  * (UpdVar2.bulkvalues[k]-GmvVar2.values[k]))
 
         self.get_GMV_CoVar(self.UpdVar.Area, UpdVar1, UpdVar2, EnvVar1, EnvVar2, Covar, &GmvVar1.values[0], &GmvVar2.values[0], &GmvCovar.values[0])
 
