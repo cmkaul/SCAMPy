@@ -178,9 +178,6 @@ cdef class UpdraftVariables:
                         self.H.bulkvalues[k] += self.Area.values[i,k] * self.H.values[i,k]/self.Area.bulkvalues[k]
                         self.T.bulkvalues[k] += self.Area.values[i,k] * self.T.values[i,k]/self.Area.bulkvalues[k]
                         self.B.bulkvalues[k] += self.Area.values[i,k] * self.B.values[i,k]/self.Area.bulkvalues[k]
-                        with gil:
-                            if self.B.bulkvalues[k]>1.0:
-                                print self.B.bulkvalues[k], self.B.values[i,k], self.Area.values[i,k], self.Area.bulkvalues[k]
                         self.W.bulkvalues[k] += ((self.Area.values[i,k] + self.Area.values[i,k+1]) * self.W.values[i,k]
                                             /(self.Area.bulkvalues[k] + self.Area.bulkvalues[k+1]))
                 else:

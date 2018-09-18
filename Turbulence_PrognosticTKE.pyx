@@ -664,16 +664,19 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Py_ssize_t i,k
             double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),au.bulkvalues)
             double phi_diff, psi_diff
+            double tke_factor = 1.0
+        if covar_e.name == 'tke':
+            tke_factor = 0.5
 
         with nogil:
             for k in xrange(self.Gr.nzg):
                 phi_diff = phi_e.values[k]-gmv_phi[k]
                 psi_diff = psi_e.values[k]-gmv_psi[k]
-                gmv_covar[k] = ae[k] * phi_diff * psi_diff + ae[k] * covar_e.values[k]
+                gmv_covar[k] = tke_factor * ae[k] * phi_diff * psi_diff + ae[k] * covar_e.values[k]
                 for i in xrange(self.n_updrafts):
                     phi_diff = phi_u.values[i,k]-gmv_phi[k]
                     psi_diff = psi_u.values[i,k]-gmv_psi[k]
-                    gmv_covar[k] += au.values[i,k] * phi_diff * psi_diff
+                    gmv_covar[k] += tke_factor * au.values[i,k] * phi_diff * psi_diff
         return
 
 
@@ -686,17 +689,20 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Py_ssize_t i,k
             double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),au.bulkvalues)
             double phi_diff, psi_diff
+            double tke_factor = 1.0
+        if covar_e.name == 'tke':
+            tke_factor = 0.5
 
         with nogil:
             for k in xrange(self.Gr.nzg):
                 if ae[k] > 0.0:
                     phi_diff = phi_e.values[k] - gmv_phi[k]
                     psi_diff = psi_e.values[k] - gmv_psi[k]
-                    covar_e.values[k] = gmv_covar[k] - ae[k] * phi_diff * psi_diff
+                    covar_e.values[k] = gmv_covar[k] - tke_factor * ae[k] * phi_diff * psi_diff
                     for i in xrange(self.n_updrafts):
                         phi_diff = phi_u.values[i,k] - gmv_phi[k]
                         psi_diff = psi_u.values[i,k] - gmv_psi[k]
-                        covar_e.values[k] -= au.values[i,k] * phi_diff * psi_diff
+                        covar_e.values[k] -= tke_factor * au.values[i,k] * phi_diff * psi_diff
                     covar_e.values[k] = covar_e.values[k]/ae[k]
                 else:
                     covar_e.values[k] = 0.0
@@ -1180,7 +1186,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.update_covariance_ED(GMV, Case,TS, GMV.W, GMV.W, GMV.TKE, self.EnvVar.TKE, self.EnvVar.W, self.EnvVar.W, self.UpdVar.W, self.UpdVar.W)
             if self.calc_scalar_var:
                 self.update_covariance_ED(GMV, Case,TS, GMV.H, GMV.H, GMV.Hvar, self.EnvVar.Hvar, self.EnvVar.H, self.EnvVar.H, self.UpdVar.H, self.UpdVar.H)
-                self.update_covariance_ED(GMV, Case,TS, GMV.QT,GMV.QT,GMV.QTvar, self.EnvVar.QTvar, self.EnvVar.QT, self.EnvVar.QT, self.UpdVar.QT, self.UpdVar.QT)
+                self.update_covariance_ED(GMV, Case,TS, GMV.QT,GMV.QT, GMV.QTvar, self.EnvVar.QTvar, self.EnvVar.QT, self.EnvVar.QT, self.UpdVar.QT, self.UpdVar.QT)
                 self.update_covariance_ED(GMV, Case,TS, GMV.H, GMV.QT, GMV.HQTcov, self.EnvVar.HQTcov, self.EnvVar.H, self.EnvVar.QT, self.UpdVar.H, self.UpdVar.QT)
                 self.cleanup_covariance(GMV)
 
@@ -1428,11 +1434,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         for kk in xrange(nz):
             k = kk + gw
-            if Covar.name != 'thetal_qt_covar':
+            if Covar.name == 'thetal_qt_covar':
+                Covar.values[k] = fmax(x[kk], - sqrt(self.EnvVar.Hvar.values[k]*self.EnvVar.QTvar.values[k]))
+                Covar.values[k] = fmin(x[kk],   sqrt(self.EnvVar.Hvar.values[k]*self.EnvVar.QTvar.values[k]))
+            else:
                 Covar.values[k] = fmax(x[kk],0.0)
             with nogil:
                 GmvCovar.values[k] = (ae[k] * (Covar.values[k] + (EnvVar1.values[k]-GmvVar1.values[k]) * (EnvVar2.values[k]-GmvVar2.values[k]))
-                            + self.UpdVar.Area.bulkvalues[k] * (UpdVar1.bulkvalues[k]-GmvVar1.values[k])  * (UpdVar2.bulkvalues[k]-GmvVar2.values[k]))
+                     + self.UpdVar.Area.bulkvalues[k] * (UpdVar1.bulkvalues[k]-GmvVar1.values[k])  * (UpdVar2.bulkvalues[k]-GmvVar2.values[k]))
 
         self.get_GMV_CoVar(self.UpdVar.Area, UpdVar1, UpdVar2, EnvVar1, EnvVar2, Covar, &GmvVar1.values[0], &GmvVar2.values[0], &GmvCovar.values[0])
 
