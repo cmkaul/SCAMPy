@@ -35,4 +35,6 @@ cdef double smooth_minimum(double x1, double x2,double x3,double a) nogil:
     smin = (x1*exp(-a*x1)+x2*exp(-a*x2)+x3*exp(-a*x3))/ (exp(-a*x1)+exp(-a*x2)+exp(-a*x3))
     return smin
 
-
+cdef double smooth_maximum(double x1, double x2,double x3,double a) nogil:
+    smax = (x1*exp(a*x1)+x2*exp(a*x2)+x3*exp(a*x3))/(exp(a*x1)+exp(a*x2)+exp(a*x3))
+    return smax
