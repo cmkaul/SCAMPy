@@ -20,7 +20,7 @@ from NetCDFIO cimport NetCDFIO_Stats
 from thermodynamic_functions cimport  *
 from turbulence_functions cimport *
 from utility_functions cimport *
-from libc.math cimport fmax, sqrt, exp, pow, cbrt, fmin
+from libc.math cimport fmax, sqrt, exp, pow, cbrt, fmin, fabs
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 
 cdef class EDMF_PrognosticTKE(ParameterizationBase):
@@ -899,7 +899,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double whalf_kp, whalf_k
             double a1, a2 # groupings of terms in area fraction discrete equation
             double au_lim
-            double anew_k, a_k, a_km, entr_w, detr_w, B_k, entr_term, detr_term, rho_ratio
+            double anew_k, a_k, a_km, entr_w, detr_w, B_k, entr_term, detr_term, rho_ratio, w_temp
             double adv, buoy, exch, press, press_buoy, press_drag # groupings of terms in velocity discrete equation
 
         with nogil:
@@ -909,6 +909,22 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.UpdVar.W.new[i,gw-1] = self.w_surface_bc[i]
                 self.UpdVar.Area.new[i,gw] = self.area_surface_bc[i]
                 au_lim = self.area_surface_bc[i] * self.max_area_factor
+
+                a_k = interp2pt(self.UpdVar.Area.values[i,gw], self.UpdVar.Area.values[i,gw+1])
+                entr_w = interp2pt(self.entr_sc[i,gw], self.entr_sc[i,gw+1])
+                detr_w = interp2pt(self.detr_sc[i,gw], self.detr_sc[i,gw+1])
+                B_k = interp2pt(self.UpdVar.B.values[i,gw], self.UpdVar.B.values[i,gw+1])
+                adv = self.Ref.rho0[gw] * a_k * self.UpdVar.W.values[i,gw] * self.UpdVar.W.values[i,gw] * dzi
+                exch = (self.Ref.rho0[gw] * a_k * self.UpdVar.W.values[i,gw]
+                        * (entr_w * self.EnvVar.W.values[gw] - detr_w * self.UpdVar.W.values[i,gw] ))
+                buoy= self.Ref.rho0[gw] * a_k * B_k
+                press_buoy =  -1.0 * self.Ref.rho0[gw] * a_k * B_k * self.pressure_buoy_coeff
+                press_drag = -1.0 * self.Ref.rho0[gw] * a_k * (self.pressure_drag_coeff/self.pressure_plume_spacing
+                                         * (self.UpdVar.W.values[i,gw] -self.EnvVar.W.values[gw])**2.0/sqrt(a_k))
+                press = press_buoy + press_drag
+                self.updraft_pressure_sink[i,gw] = press
+                w_temp= (self.Ref.rho0[gw] * a_k * self.UpdVar.W.values[i,gw] * dti_
+                                          -adv + exch + buoy + press)/(self.Ref.rho0[gw] * self.UpdVar.Area.values[i,gw] * dti_)
 
                 for k in range(gw, self.Gr.nzg-gw):
 
@@ -951,6 +967,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         self.updraft_pressure_sink[i,k] = press
                         self.UpdVar.W.new[i,k] = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * dti_
                                                   -adv + exch + buoy + press)/(self.Ref.rho0[k] * anew_k * dti_)
+                        with gil:
+                            if k==gw:
+                                print self.UpdVar.W.new[i,k]/fmax(w_temp,0.001)
+                                self.UpdVar.W.new[i,k] = w_temp*1.4
 
                         if self.UpdVar.W.new[i,k] <= 0.0:
                             self.UpdVar.W.new[i,k:] = 0.0
