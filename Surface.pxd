@@ -47,3 +47,8 @@ cdef class SurfaceMoninObukhov(SurfaceBase):
     cpdef initialize(self)
     cpdef update(self, GridMeanVariables GMV)
     cpdef free_convection_windspeed(self, GridMeanVariables GMV)
+
+cdef class SurfaceSullivanPatton(SurfaceBase):
+    cpdef initialize(self)
+    cpdef update(self, GridMeanVariables GMV)
+    cpdef free_convection_windspeed(self, GridMeanVariables GMV)

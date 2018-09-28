@@ -113,6 +113,31 @@ cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil:
 
     return  _ret
 
+cdef entr_struct entr_detr_suselj(entr_in_struct entr_in) nogil:
+    cdef:
+        entr_struct _ret
+        double entr_dry = 2.5e-3
+        double l0
+        double mc, mg_prod, turb_trans, buoy_prod
+
+    l0 = (entr_in.zbl - entr_in.zi)/10.0
+    if entr_in.z >= entr_in.zi :
+        _ret.detr_sc= 4.0e-3 +  0.12* fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
+        _ret.entr_sc = 0.1 / entr_in.dz * entr_in.poisson
+
+    else:
+        _ret.detr_sc = 0.0
+        _ret.entr_sc = 0.0 #entr_dry # Very low entrainment rate needed for Dycoms to work
+
+    return  _ret
+
+cdef entr_struct entr_detr_none(entr_in_struct entr_in)nogil:
+    cdef entr_struct _ret
+    cdef double eps = 1.0 # to avoid division by zero when z = 0 or z_i
+    _ret.entr_sc = 0.0
+    _ret.detr_sc = 0.0
+
+    return  _ret
 
 cdef evap_struct evap_sat_adjust(double p0, double thetal_, double qt_mix, double T_1, double qs_1, double ql_mix) nogil:
     cdef:
@@ -188,7 +213,7 @@ cdef double get_inversion(double *theta_rho, double *u, double *v, double *z_hal
 
 cdef double get_mixing_tau(double zi, double wstar) nogil:
     # return 0.5 * zi / wstar
-    return zi / (wstar + 0.001)
+    return zi / (wstar + 1e-5)
 
 
 

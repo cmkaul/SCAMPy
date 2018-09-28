@@ -33,6 +33,8 @@ def main():
         namelist = DYCOMS_RF01()
     elif case_name == 'GABLS':
         namelist = GABLS()
+    elif case_name == 'SP':
+        namelist = SP()
     else:
         print('Not a valid case name')
         exit()
@@ -391,7 +393,7 @@ def GABLS():
     namelist['grid']['dz'] = 3.125
 
     namelist['thermodynamics'] = {}
-    namelist['thermodynamics']['thermal_variable'] = 'entropy'
+    namelist['thermodynamics']['thermal_variable'] = 'thetal'
     namelist['thermodynamics']['saturation'] = 'sa_mean'
 
     namelist['time_stepping'] = {}
@@ -422,6 +424,51 @@ def GABLS():
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'GABLS'
     namelist['meta']['casename'] = 'GABLS'
+
+    return namelist
+
+def SP():
+
+    namelist = {}
+
+    namelist['grid'] = {}
+    namelist['grid']['dims'] = 1
+    namelist['grid']['nz'] = 256
+    namelist['grid']['gw'] = 2
+    namelist['grid']['dz'] = 8
+
+    namelist['thermodynamics'] = {}
+    namelist['thermodynamics']['thermal_variable'] = 'thetal'
+    namelist['thermodynamics']['saturation'] = 'sa_mean'
+
+    namelist['time_stepping'] = {}
+    namelist['time_stepping']['dt'] = 5.0
+    namelist['time_stepping']['t_max'] = 7200.0
+
+    namelist['turbulence'] = {}
+    namelist['turbulence']['scheme'] = 'EDMF_PrognosticTKE'
+    namelist['turbulence']['EDMF_PrognosticTKE'] = {}
+    namelist['turbulence']['EDMF_PrognosticTKE']['updraft_number'] = 1
+    namelist['turbulence']['EDMF_PrognosticTKE']['constant_area'] = False
+    namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] = 'b_w2'
+    namelist['turbulence']['EDMF_PrognosticTKE']['use_local_micro'] = False
+    namelist['turbulence']['EDMF_PrognosticTKE']['use_similarity_diffusivity'] = False
+    namelist['turbulence']['EDMF_PrognosticTKE']['updraft_surface_height'] = 0.0
+    namelist['turbulence']['EDMF_PrognosticTKE']['extrapolate_buoyancy'] = True
+    namelist['turbulence']['EDMF_PrognosticTKE']['use_steady_updrafts'] = False
+    namelist['turbulence']['EDMF_PrognosticTKE']['use_sommeria_deardorff'] = False
+    namelist['turbulence']['EDMF_PrognosticTKE']['use_scalar_var'] = True
+
+    namelist['output'] = {}
+    namelist['output']['output_root'] = './'
+
+    namelist['stats_io'] = {}
+    namelist['stats_io']['stats_dir'] = 'stats'
+    namelist['stats_io']['frequency'] = 60.0
+
+    namelist['meta'] = {}
+    namelist['meta']['simname'] = 'SP'
+    namelist['meta']['casename'] = 'SP'
 
     return namelist
 

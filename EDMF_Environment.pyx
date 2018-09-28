@@ -52,6 +52,7 @@ cdef class EnvironmentVariables:
         # TODO - kind of repeated from Variables.pyx logic
         if  namelist['turbulence']['scheme'] == 'EDMF_PrognosticTKE':
             self.use_tke = True
+
         else:
             self.use_tke = False
 
