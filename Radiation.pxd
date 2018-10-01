@@ -4,6 +4,7 @@ from Variables cimport GridMeanVariables
 from TimeStepping cimport TimeStepping
 from EDMF_Updrafts cimport UpdraftVariables
 from EDMF_Environment cimport EnvironmentVariables
+from NetCDFIO cimport NetCDFIO_Stats
 cdef class RadiationBase:
     cdef:
         Grid Gr
@@ -22,12 +23,19 @@ cdef class RadiationBase:
         double [:] gm_dflux_lw
         double [:] gm_uflux_sw
         double [:] gm_dflux_sw
-    cpdef initialize(self, Grid Gr, ReferenceState Ref)
+
+        double (*convert_forcing_prog_fp)(double p0, double qt, double qv, double T,
+                                          double qt_tendency, double T_tendency) nogil
+    cpdef initialize_io(self, NetCDFIO_Stats Stats)
+    cpdef io(self, NetCDFIO_Stats Stats)
+    cpdef initialize(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV)
     cpdef update(self, GridMeanVariables GMV, UpdraftVariables UpdVar,
                  EnvironmentVariables EnvVar, TimeStepping TS, double Tsurface)
 
 cdef class RadiationNone(RadiationBase):
-    cpdef initialize(self, Grid Gr, ReferenceState Ref)
+    cpdef initialize(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV)
+    cpdef initialize_io(self, NetCDFIO_Stats Stats)
+    cpdef io(self, NetCDFIO_Stats Stats)
     cpdef update(self, GridMeanVariables GMV, UpdraftVariables UpdVar,
                  EnvironmentVariables EnvVar, TimeStepping TS, double Tsurface)
 cdef class RadiationRRTM(RadiationBase):
@@ -55,7 +63,9 @@ cdef class RadiationRRTM(RadiationBase):
 
 
 
-    cpdef initialize(self, Grid Gr, ReferenceState Ref)
+    cpdef initialize(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV)
+    cpdef initialize_io(self, NetCDFIO_Stats Stats)
+    cpdef io(self, NetCDFIO_Stats Stats)
     cpdef update(self, GridMeanVariables GMV, UpdraftVariables UpdVar,
                  EnvironmentVariables EnvVar, TimeStepping TS, double Tsurface)
     cpdef zero_fluxes(self)

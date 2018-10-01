@@ -31,6 +31,12 @@ def main():
         namelist = GATE_III()
     elif case_name == 'DYCOMS_RF01':
         namelist = DYCOMS_RF01()
+    elif case_name == 'ZGILS_S6':
+        namelist = ZGILS_S6()
+    elif case_name == 'ZGILS_S11':
+        namelist = ZGILS_S11()
+    elif case_name == 'ZGILS_S12':
+        namelist = ZGILS_S12()
     else:
         print('Not a valid case name')
         exit()
@@ -375,6 +381,167 @@ def DYCOMS_RF01():
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'DYCOMS_RF01'
     namelist['meta']['casename'] = 'DYCOMS_RF01'
+
+    return namelist
+
+
+
+
+def ZGILS_S12():
+
+    namelist = {}
+
+    namelist['grid'] = {}
+    namelist['grid']['dims'] = 1
+    namelist['grid']['nz'] = 1000
+    namelist['grid']['gw'] = 2
+    namelist['grid']['dz'] = 20
+
+    namelist['thermodynamics'] = {}
+    namelist['thermodynamics']['thermal_variable'] = 'thetal'
+    namelist['thermodynamics']['saturation'] = 'sa_mean'  # sa_mean, sa_quadrature, sommeria_deardorff
+
+    namelist['time_stepping'] = {}
+    namelist['time_stepping']['dt'] = 10.0
+    namelist['time_stepping']['t_max'] = 86400.0 * 10
+
+    namelist['turbulence'] = {}
+    namelist['turbulence']['scheme'] = 'EDMF_PrognosticTKE'
+    namelist['turbulence']['EDMF_PrognosticTKE'] = {}
+    namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] = 'b_w2'
+    namelist['turbulence']['EDMF_PrognosticTKE']['updraft_number'] = 1
+    namelist['turbulence']['EDMF_PrognosticTKE']['use_steady_updrafts'] = False
+    namelist['turbulence']['EDMF_PrognosticTKE']['use_local_micro'] = True
+    namelist['turbulence']['EDMF_PrognosticTKE']['use_similarity_diffusivity'] = False
+    namelist['turbulence']['EDMF_PrognosticTKE']['extrapolate_buoyancy'] = True
+    #namelist['turbulence']['EDMF_PrognosticTKE']['constant_area'] = False
+    #namelist['turbulence']['EDMF_PrognosticTKE']['calc_scalar_var'] = True
+
+    namelist['output'] = {}
+    namelist['output']['output_root'] = './'
+
+    namelist['stats_io'] = {}
+    namelist['stats_io']['stats_dir'] = 'stats'
+    namelist['stats_io']['frequency'] = 60.0
+
+    namelist['meta'] = {}
+    namelist['meta']['simname'] = 'ZGILS_S12'
+    namelist['meta']['casename'] = 'ZGILS'
+
+    namelist['ZGILS'] = {}
+    namelist['ZGILS']['location'] = 12
+    namelist['ZGILS']['co2_factor'] = 1.0
+    namelist['ZGILS']['adjust_qt_adv_co2'] = False
+    namelist['ZGILS']['adjust_subsidence_co2'] = False
+
+    namelist['surface_budget'] = {}
+    namelist['surface_budget']['constant_sst'] = True
+
+
+
+    return namelist
+
+
+def ZGILS_S11():
+    namelist = {}
+
+    namelist['grid'] = {}
+    namelist['grid']['dims'] = 1
+    namelist['grid']['nz'] = 1000
+    namelist['grid']['gw'] = 2
+    namelist['grid']['dz'] = 20
+
+    namelist['thermodynamics'] = {}
+    namelist['thermodynamics']['thermal_variable'] = 'thetal'
+    namelist['thermodynamics']['saturation'] = 'sa_mean'  # sa_mean, sa_quadrature, sommeria_deardorff
+
+    namelist['time_stepping'] = {}
+    namelist['time_stepping']['dt'] = 10.0
+    namelist['time_stepping']['t_max'] = 86400.0 * 10
+
+    namelist['turbulence'] = {}
+    namelist['turbulence']['scheme'] = 'EDMF_PrognosticTKE'
+    namelist['turbulence']['EDMF_PrognosticTKE'] = {}
+    namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] = 'b_w2'
+    namelist['turbulence']['EDMF_PrognosticTKE']['updraft_number'] = 1
+    namelist['turbulence']['EDMF_PrognosticTKE']['use_steady_updrafts'] = False
+    namelist['turbulence']['EDMF_PrognosticTKE']['use_local_micro'] = True
+    namelist['turbulence']['EDMF_PrognosticTKE']['use_similarity_diffusivity'] = False
+    namelist['turbulence']['EDMF_PrognosticTKE']['extrapolate_buoyancy'] = True
+    # namelist['turbulence']['EDMF_PrognosticTKE']['constant_area'] = False
+    # namelist['turbulence']['EDMF_PrognosticTKE']['calc_scalar_var'] = True
+
+    namelist['output'] = {}
+    namelist['output']['output_root'] = './'
+
+    namelist['stats_io'] = {}
+    namelist['stats_io']['stats_dir'] = 'stats'
+    namelist['stats_io']['frequency'] = 60.0
+
+    namelist['meta'] = {}
+    namelist['meta']['simname'] = 'ZGILS_S11'
+    namelist['meta']['casename'] = 'ZGILS'
+
+    namelist['ZGILS'] = {}
+    namelist['ZGILS']['location'] = 11
+    namelist['ZGILS']['co2_factor'] = 1.0
+    namelist['ZGILS']['adjust_qt_adv_co2'] = False
+    namelist['ZGILS']['adjust_subsidence_co2'] = False
+
+    namelist['surface_budget'] = {}
+    namelist['surface_budget']['constant_sst'] = True
+
+    return namelist
+
+
+def ZGILS_S6():
+    namelist = {}
+
+    namelist['grid'] = {}
+    namelist['grid']['dims'] = 1
+    namelist['grid']['nz'] = 1000
+    namelist['grid']['gw'] = 2
+    namelist['grid']['dz'] = 20
+
+    namelist['thermodynamics'] = {}
+    namelist['thermodynamics']['thermal_variable'] = 'thetal'
+    namelist['thermodynamics']['saturation'] = 'sa_mean'  # sa_mean, sa_quadrature, sommeria_deardorff
+
+    namelist['time_stepping'] = {}
+    namelist['time_stepping']['dt'] = 10.0
+    namelist['time_stepping']['t_max'] = 86400.0 * 10
+
+    namelist['turbulence'] = {}
+    namelist['turbulence']['scheme'] = 'EDMF_PrognosticTKE'
+    namelist['turbulence']['EDMF_PrognosticTKE'] = {}
+    namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] = 'b_w2'
+    namelist['turbulence']['EDMF_PrognosticTKE']['updraft_number'] = 1
+    namelist['turbulence']['EDMF_PrognosticTKE']['use_steady_updrafts'] = False
+    namelist['turbulence']['EDMF_PrognosticTKE']['use_local_micro'] = True
+    namelist['turbulence']['EDMF_PrognosticTKE']['use_similarity_diffusivity'] = False
+    namelist['turbulence']['EDMF_PrognosticTKE']['extrapolate_buoyancy'] = True
+    # namelist['turbulence']['EDMF_PrognosticTKE']['constant_area'] = False
+    # namelist['turbulence']['EDMF_PrognosticTKE']['calc_scalar_var'] = True
+
+    namelist['output'] = {}
+    namelist['output']['output_root'] = './'
+
+    namelist['stats_io'] = {}
+    namelist['stats_io']['stats_dir'] = 'stats'
+    namelist['stats_io']['frequency'] = 60.0
+
+    namelist['meta'] = {}
+    namelist['meta']['simname'] = 'ZGILS_S16'
+    namelist['meta']['casename'] = 'ZGILS'
+
+    namelist['ZGILS'] = {}
+    namelist['ZGILS']['location'] = 6
+    namelist['ZGILS']['co2_factor'] = 1.0
+    namelist['ZGILS']['adjust_qt_adv_co2'] = False
+    namelist['ZGILS']['adjust_subsidence_co2'] = False
+
+    namelist['surface_budget'] = {}
+    namelist['surface_budget']['constant_sst'] = True
 
     return namelist
 

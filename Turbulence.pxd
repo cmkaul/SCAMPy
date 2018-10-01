@@ -1,5 +1,5 @@
-cimport EDMF_Updrafts
-cimport EDMF_Environment
+from EDMF_Updrafts cimport UpdraftVariables
+from EDMF_Environment cimport EnvironmentVariables
 from Grid cimport Grid
 from Variables cimport VariablePrognostic, VariableDiagnostic, GridMeanVariables
 from Surface cimport  SurfaceBase
@@ -22,8 +22,8 @@ cdef class ParameterizationBase:
         double Ri_bulk_crit
         bint extrapolate_buoyancy
         Py_ssize_t n_updrafts
-        EDMF_Updrafts.UpdraftVariables UpdVar
-        EDMF_Environment.EnvironmentVariables EnvVar
+    cdef public UpdraftVariables UpdVar
+    cdef public EnvironmentVariables EnvVar
 
     cpdef initialize(self, GridMeanVariables GMV)
     cpdef initialize_io(self, NetCDFIO_Stats Stats)

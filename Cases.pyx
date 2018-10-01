@@ -10,7 +10,7 @@ cimport Surface
 cimport Forcing
 cimport Nudging
 cimport ForcingReference
-cimport SurfaceBudget
+from SurfaceBudget cimport SurfaceBudget
 cimport Radiation
 from EDMF_Updrafts cimport UpdraftVariables
 from EDMF_Environment cimport EnvironmentVariables
@@ -18,6 +18,7 @@ from NetCDFIO cimport NetCDFIO_Stats
 from thermodynamic_functions cimport *
 import math as mt
 from libc.math cimport sqrt, log, fabs,atan, exp, fmax, fmin, sin, cos, pow, log2
+import pylab as plt
 
 def CasesFactory(namelist, paramlist):
     if namelist['meta']['casename'] == 'Soares':
@@ -55,14 +56,14 @@ cdef class CasesBase:
         return
     cpdef initialize_forcing(self, Grid Gr,  ReferenceState Ref, GridMeanVariables GMV):
         return
-    cpdef initialize_radiation(self, Grid Gr, ReferenceState Ref ):
+    cpdef initialize_radiation(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV ):
         return
     cpdef initialize(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV, NetCDFIO_Stats Stats):
         self.initialize_reference(Gr, Ref, Stats)
         self.initialize_profiles(Gr, GMV, Ref)
         self.initialize_surface(Gr,Ref)
         self.initialize_forcing(Gr,Ref,GMV)
-        self.initialize_radiation(Gr, Ref)
+        self.initialize_radiation(Gr, Ref, GMV)
         return
     cpdef initialize_io(self, NetCDFIO_Stats Stats):
         Stats.add_ts('Tsurface')
@@ -163,15 +164,15 @@ cdef class Soares(CasesBase):
         self.Fo.Ref = Ref
         self.Fo.initialize(GMV)
         return
-    cpdef initialize_radiation(self, Grid Gr, ReferenceState Ref ):
-        self.Ra.initialize(Gr,Ref)
+    cpdef initialize_radiation(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV ):
+        self.Ra.initialize(Gr,Ref, GMV)
         return
     cpdef initialize(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV, NetCDFIO_Stats Stats):
         self.initialize_reference(Gr, Ref, Stats)
         self.initialize_profiles(Gr, GMV, Ref)
         self.initialize_surface(Gr,Ref)
         self.initialize_forcing(Gr,Ref,GMV)
-        self.initialize_radiation(Gr, Ref)
+        self.initialize_radiation(Gr, Ref, GMV)
         return
     cpdef initialize_io(self, NetCDFIO_Stats Stats):
         CasesBase.initialize_io(self, Stats)
@@ -305,15 +306,15 @@ cdef class Bomex(CasesBase):
             if Gr.z_half[k] > 1500.0 and Gr.z_half[k] <= 2100.0:
                 self.Fo.subsidence[k] = -0.65/100 + (Gr.z_half[k] - 1500.0)* (0.0 - -0.65/100.0)/(2100.0 - 1500.0)
         return
-    cpdef initialize_radiation(self, Grid Gr, ReferenceState Ref ):
-        self.Ra.initialize(Gr, Ref)
+    cpdef initialize_radiation(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV ):
+        self.Ra.initialize(Gr, Ref, GMV)
         return
     cpdef initialize(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV, NetCDFIO_Stats Stats):
         self.initialize_reference(Gr, Ref, Stats)
         self.initialize_profiles(Gr, GMV, Ref)
         self.initialize_surface(Gr,Ref)
         self.initialize_forcing(Gr,Ref,GMV)
-        self.initialize_radiation(Gr, Ref)
+        self.initialize_radiation(Gr, Ref, GMV)
         return
     cpdef initialize_io(self, NetCDFIO_Stats Stats):
         CasesBase.initialize_io(self, Stats)
@@ -451,15 +452,15 @@ cdef class life_cycle_Tan2018(CasesBase):
             if Gr.z_half[k] > 1500.0 and Gr.z_half[k] <= 2100.0:
                 self.Fo.subsidence[k] = -0.65/100 + (Gr.z_half[k] - 1500.0)* (0.0 - -0.65/100.0)/(2100.0 - 1500.0)
         return
-    cpdef initialize_radiation(self, Grid Gr, ReferenceState Ref ):
-        self.Ra.initialize(Gr, Ref)
+    cpdef initialize_radiation(self, Grid Gr, ReferenceState Ref , GridMeanVariables GMV):
+        self.Ra.initialize(Gr, Ref, GMV)
         return
     cpdef initialize(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV, NetCDFIO_Stats Stats):
         self.initialize_reference(Gr, Ref, Stats)
         self.initialize_profiles(Gr, GMV, Ref)
         self.initialize_surface(Gr,Ref)
         self.initialize_forcing(Gr,Ref,GMV)
-        self.initialize_radiation(Gr, Ref)
+        self.initialize_radiation(Gr, Ref, GMV)
         return
     cpdef initialize_io(self, NetCDFIO_Stats Stats):
         CasesBase.initialize_io(self, Stats)
@@ -593,15 +594,15 @@ cdef class Rico(CasesBase):
                 self.Fo.subsidence[k] = -0.005
         return
 
-    cpdef initialize_radiation(self, Grid Gr, ReferenceState Ref ):
-        self.Ra.initialize(Gr,Ref)
+    cpdef initialize_radiation(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV ):
+        self.Ra.initialize(Gr,Ref, GMV)
         return
     cpdef initialize(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV, NetCDFIO_Stats Stats):
         self.initialize_reference(Gr, Ref, Stats)
         self.initialize_profiles(Gr, GMV, Ref)
         self.initialize_surface(Gr,Ref)
         self.initialize_forcing(Gr,Ref,GMV)
-        self.initialize_radiation(Gr, Ref)
+        self.initialize_radiation(Gr, Ref, GMV)
         return
     cpdef initialize_io(self, NetCDFIO_Stats Stats):
         CasesBase.initialize_io(self, Stats)
@@ -894,15 +895,15 @@ cdef class TRMM_LBA(CasesBase):
 
 
         return
-    cpdef initialize_radiation(self, Grid Gr, ReferenceState Ref ):
-        self.Ra.initialize(Gr, Ref)
+    cpdef initialize_radiation(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV ):
+        self.Ra.initialize(Gr, Ref, GMV)
         return
     cpdef initialize(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV, NetCDFIO_Stats Stats):
         self.initialize_reference(Gr, Ref, Stats)
         self.initialize_profiles(Gr, GMV, Ref)
         self.initialize_surface(Gr,Ref)
         self.initialize_forcing(Gr,Ref,GMV)
-        self.initialize_radiation(Gr, Ref)
+        self.initialize_radiation(Gr, Ref, GMV)
         return
     cpdef initialize_io(self, NetCDFIO_Stats Stats):
         CasesBase.initialize_io(self, Stats)
@@ -1041,15 +1042,15 @@ cdef class ARM_SGP(CasesBase):
             self.Fo.vg[k] = 0.0
 
         return
-    cpdef initialize_radiation(self, Grid Gr, ReferenceState Ref ):
-        self.Ra.initialize(Gr,Ref)
+    cpdef initialize_radiation(self, Grid Gr, ReferenceState Ref , GridMeanVariables GMV):
+        self.Ra.initialize(Gr,Ref, GMV)
         return
     cpdef initialize(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV, NetCDFIO_Stats Stats):
         self.initialize_reference(Gr, Ref, Stats)
         self.initialize_profiles(Gr, GMV, Ref)
         self.initialize_surface(Gr,Ref)
         self.initialize_forcing(Gr,Ref,GMV)
-        self.initialize_radiation(Gr, Ref)
+        self.initialize_radiation(Gr, Ref, GMV)
         return
     cpdef initialize_io(self, NetCDFIO_Stats Stats):
         CasesBase.initialize_io(self, Stats)
@@ -1220,15 +1221,15 @@ cdef class GATE_III(CasesBase):
         self.Fo.dqtdt = np.interp(Gr.z_half,z_in,Qtend_in)
         self.Fo.dTdt = np.interp(Gr.z_half,z_in,Ttend_in) + np.interp(Gr.z_half,z_in,RAD_in)
         return
-    cpdef initialize_radiation(self, Grid Gr, ReferenceState Ref ):
-        self.Ra.initialize(Gr,Ref)
+    cpdef initialize_radiation(self, Grid Gr, ReferenceState Ref , GridMeanVariables GMV):
+        self.Ra.initialize(Gr,Ref, GMV)
         return
     cpdef initialize(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV, NetCDFIO_Stats Stats):
         self.initialize_reference(Gr, Ref, Stats)
         self.initialize_profiles(Gr, GMV, Ref)
         self.initialize_surface(Gr,Ref)
         self.initialize_forcing(Gr,Ref,GMV)
-        self.initialize_radiation(Gr, Ref)
+        self.initialize_radiation(Gr, Ref, GMV)
         return
     cpdef initialize_io(self, NetCDFIO_Stats Stats):
         CasesBase.initialize_io(self, Stats)
@@ -1432,15 +1433,15 @@ cdef class DYCOMS_RF01(CasesBase):
         # cloud-top cooling + cloud-base warming + cooling in free troposphere
         self.Fo.calculate_radiation(GMV)
         return
-    cpdef initialize_radiation(self, Grid Gr, ReferenceState Ref ):
-        self.Ra.initialize(Gr,Ref)
+    cpdef initialize_radiation(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV ):
+        self.Ra.initialize(Gr,Ref, GMV)
         return
     cpdef initialize(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV, NetCDFIO_Stats Stats):
         self.initialize_reference(Gr, Ref, Stats)
         self.initialize_profiles(Gr, GMV, Ref)
         self.initialize_surface(Gr,Ref)
         self.initialize_forcing(Gr,Ref,GMV)
-        self.initialize_radiation(Gr, Ref)
+        self.initialize_radiation(Gr, Ref, GMV)
         return
     cpdef initialize_io(self, NetCDFIO_Stats Stats):
         CasesBase.initialize_io(self, Stats)
@@ -1476,7 +1477,7 @@ cdef class ZGILS(CasesBase):
         self.casename = 'ZGILS'
         self.Sur = Surface.SurfaceMoninObukhov(paramlist)
         self.Fo = Forcing.ForcingStandard()
-        self.Ra = Radiation.RadiationRRTM()
+        self.Ra = Radiation.RadiationRRTM(namelist)
         self.inversion_option = 'critical_Ri'
         self.Fo.apply_coriolis = True
         self.Fo.apply_subsidence = True
@@ -1497,12 +1498,12 @@ cdef class ZGILS(CasesBase):
         except:
             self.adjust_subsidence_co2 = False
 
-        self.SurBud = SurfaceBudget.SurfaceBudget(namelist)
+        self.SurBud = SurfaceBudget(namelist)
         return
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats):
         Ref.Pg = 1.018e5  #Pressure at ground
         Ref.Tg = 289.472  #Temperature at ground
-        Ref.qtg = 0.098449   #Total water mixing ratio at surface
+        Ref.qtg = 0.008449   #Total water mixing ratio at surface
         Ref.initialize(Gr, Stats)
         return
     cpdef initialize_profiles(self, Grid Gr, GridMeanVariables GMV, ReferenceState Ref):
@@ -1525,6 +1526,8 @@ cdef class ZGILS(CasesBase):
                                     np.flipud(self.FoRef.u))
         v =  np.interp(Ref.p0_half, np.flipud(self.FoRef.pressure),
                                     np.flipud(self.FoRef.v))
+
+
 
         for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
             GMV.U.values[k] = u[k]
@@ -1553,6 +1556,13 @@ cdef class ZGILS(CasesBase):
         GMV.H.set_bcs(Gr)
         GMV.T.set_bcs(Gr)
         GMV.satadjust()
+
+
+        # plt.figure('thetal')
+        # plt.plot(GMV.H.values[:], Ref.p0_half,'-b')
+        # plt.plot(GMV.THL.values[:], Ref.p0_half, '--r')
+        # plt.gca().invert_yaxis()
+        # plt.show()
 
         return
 
@@ -1584,13 +1594,13 @@ cdef class ZGILS(CasesBase):
         # setting some values
         if self.location == 12:
             divergence = 6.0e-6
-            self.coriolis_param = 2.0 * omega * sin(34.5/180.0*pi)
+            self.Fo.coriolis_param = 2.0 * omega * sin(34.5/180.0*pi)
         elif self.location == 11:
             divergence = 3.5e-6
-            self.coriolis_param = 2.0 * omega * sin(31.5/180.0*pi)
+            self.Fo.coriolis_param = 2.0 * omega * sin(31.5/180.0*pi)
         elif self.location == 6:
             divergence = 2.0e-6
-            self.coriolis_param = 2.0 * omega * sin(16.5/180.0*pi)
+            self.Fo.coriolis_param = 2.0 * omega * sin(16.5/180.0*pi)
 
         if self.adjust_subsidence_co2:
             divergence = divergence * pow(0.86,n_double_co2)
@@ -1636,21 +1646,25 @@ cdef class ZGILS(CasesBase):
         self.alpha_h = 1.2 # ad hoc qt/qt_ref threshold ratio for determining BL height
 
         return
-    cpdef initialize_radiation(self, Grid Gr, ReferenceState Ref ):
-        self.Ra.initialize(Gr, Ref)
+    cpdef initialize_radiation(self, Grid Gr, ReferenceState Ref , GridMeanVariables GMV):
+        self.Ra.initialize(Gr, Ref, GMV)
         return
     cpdef initialize(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV, NetCDFIO_Stats Stats):
         self.initialize_reference(Gr, Ref, Stats)
         self.initialize_profiles(Gr, GMV, Ref)
         self.initialize_surface(Gr,Ref)
         self.initialize_forcing(Gr,Ref,GMV)
-        self.initialize_radiation(Gr, Ref)
+        self.initialize_radiation(Gr, Ref, GMV)
+        self.Ra.initialize_io(Stats)
+
+
         return
     cpdef initialize_io(self, NetCDFIO_Stats Stats):
         CasesBase.initialize_io(self, Stats)
         return
     cpdef io(self, NetCDFIO_Stats Stats):
         CasesBase.io(self,Stats)
+        self.Ra.io(Stats)
         return
     cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS):
         self.Sur.update(GMV)

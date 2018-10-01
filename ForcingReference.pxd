@@ -3,10 +3,8 @@ cdef class ForcingReferenceBase:
         double sst
         Py_ssize_t npressure
         double [:] pressure
-        double [:] s
         double [:] qt
         double [:] temperature
-        double [:] rv
         double [:] u
         double [:] v
         bint is_init

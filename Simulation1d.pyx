@@ -3,6 +3,8 @@ import numpy as np
 cimport numpy as np
 from Variables cimport GridMeanVariables
 from Turbulence import ParameterizationFactory
+from Turbulence cimport ParameterizationBase
+from Turbulence_PrognosticTKE cimport EDMF_PrognosticTKE
 from Cases import CasesFactory
 cimport Grid
 cimport ReferenceState
@@ -35,21 +37,23 @@ class Simulation1d:
         self.initialize_io()
         self.io()
 
+
+
         return
 
     def run(self):
-
+        print('in run')
+        counter = 0
         while self.TS.t <= self.TS.t_max:
+            print('step=', counter)
             self.GMV.zero_tendencies()
-            # self.Case.update_surface(self.GMV, self.TS)
-            # self.Case.update_forcing(self.GMV, self.TS)
-            # self.Case.update_radiation(self.GMV, self.TS)
             self.Case.update(self.GMV, self.Turb.UpdVar, self.Turb.EnvVar,  self.TS)
             self.Turb.update(self.GMV, self.Case, self.TS)
             self.TS.update()
             # Apply the tendencies, also update the BCs and diagnostic thermodynamics
             self.GMV.update(self.TS)
             self.Turb.update_GMV_diagnostics(self.GMV)
+            counter += 1
             if np.mod(self.TS.t, self.Stats.frequency) == 0:
                 self.io()
 

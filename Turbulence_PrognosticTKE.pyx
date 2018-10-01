@@ -13,6 +13,7 @@ from Grid cimport Grid
 cimport EDMF_Environment
 from Variables cimport VariablePrognostic, VariableDiagnostic, GridMeanVariables
 from Surface cimport SurfaceBase
+from Turbulence cimport ParameterizationBase
 from Cases cimport  CasesBase
 from ReferenceState cimport  ReferenceState
 from TimeStepping cimport TimeStepping

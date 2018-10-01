@@ -13,6 +13,14 @@ import string
 # Now get include paths from relevant python modules
 include_path = [np.get_include()]
 
+
+def get_netcdf_include():
+    return sp.check_output(['nc-config', '--includedir']).strip().decode()
+
+def get_netcdf_prefix():
+    return sp.check_output(['nc-config', '--prefix']).strip().decode()
+
+
 if sys.platform == 'darwin':
     #Compile flags for MacOSX
     library_dirs = []
@@ -20,10 +28,9 @@ if sys.platform == 'darwin':
     extensions = []
     extra_compile_args = []
     extra_compile_args += ['-O3', '-march=native', '-Wno-unused', '-Wno-#warnings','-fPIC']
-    # extra_objects=['./RRTMG/rrtmg_build/rrtmg_combined.o']
-    extra_objects = []
-    netcdf_include = '/opt/local/include'
-    netcdf_lib = '/opt/local/lib'
+    extra_objects=['./RRTMG/rrtmg_build/rrtmg_combined.o']
+    netcdf_include = get_netcdf_include()
+    netcdf_lib = os.path.join(get_netcdf_prefix(), 'lib')
     f_compiler = 'gfortran'
 elif 'eu' in platform.node():
     #Compile flags for euler @ ETHZ
@@ -156,7 +163,7 @@ extensions.append(_ext)
 
 _ext = Extension('Radiation', ['Radiation.pyx'], include_dirs=include_path,
                  extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
-                 runtime_library_dirs=library_dirs)
+                 runtime_library_dirs=library_dirs, extra_objects=extra_objects)
 extensions.append(_ext)
 
 
@@ -182,21 +189,18 @@ extensions.append(_ext)
 
 
 #Build RRTMG
-# First check if RRTMG has been downloaded
-rrtmg_path = './RRTMG/'
 
-exists_lw = os.path.exists('./')
 
-# rrtmg_compiled = os.path.exists('./RRTMG/rrtmg_build/rrtmg_combined.o')
-# if not rrtmg_compiled:
-#     run_str = 'cd ./RRTMG; '
-#     run_str += ('FC='+ f_compiler + ' LIB_NETCDF=' + netcdf_lib + ' INC_NETCDF='+
-#                netcdf_include + ' csh ./compile_RRTMG_combined.csh')
-#     print run_str
-#     sp.call([run_str], shell=True)
-# else:
-#     print("RRTMG Seems to be already compiled.")
-#
+rrtmg_compiled = os.path.exists('./RRTMG/rrtmg_build/rrtmg_combined.o')
+if not rrtmg_compiled:
+    run_str = 'cd ./RRTMG; '
+    run_str += ('FC='+ f_compiler + ' LIB_NETCDF=' + netcdf_lib + ' INC_NETCDF='+
+               netcdf_include + ' csh ./compile_RRTMG_combined.csh')
+    print run_str
+    sp.call([run_str], shell=True)
+else:
+    print("RRTMG Seems to be already compiled.")
+
 
 
 
