@@ -554,7 +554,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Py_ssize_t gw = self.Gr.gw
             double tau =  get_mixing_tau(self.zi, self.wstar)
             double l1, l2, l3, l4, l5, z_, N
-            double l[5], pr_vec[2]
+            double l[5]
+            double pr_vec[2]
             double ri_grad, shear2, ri_bulk
             double du_high = 0.0
             double dv_high = 0.0
@@ -844,7 +845,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Py_ssize_t gw = self.Gr.gw
             double lm
             double we_half
-            double pr_vec[2], prandtl, ri_thl, shear2
+            double pr_vec[2]
+            double prandtl, ri_thl, shear2
 
         if self.similarity_diffusivity:
             ParameterizationBase.compute_eddy_diffusivities_similarity(self,GMV, Case)
@@ -1171,7 +1173,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
     cpdef double compute_zbl_qt_grad(self, GridMeanVariables GMV):
         cdef: 
-            double qt_up, qt_, z_, zbl_qt, qt_grad = 0.0
+            double qt_up, qt_, z_
+            double zbl_qt = 0.0
+            double qt_grad = 0.0
 
         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
             z_ = self.Gr.z_half[k]
@@ -1181,6 +1185,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             if fabs(qt_up-qt_)*self.Gr.dzi > qt_grad:
                 qt_grad = fabs(qt_up-qt_)*self.Gr.dzi
                 zbl_qt = z_
+
         return zbl_qt
 
     cpdef solve_updraft_velocity_area(self, GridMeanVariables GMV, TimeStepping TS):
