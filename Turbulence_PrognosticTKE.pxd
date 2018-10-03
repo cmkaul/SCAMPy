@@ -80,7 +80,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double [:] QTvar_dissipation
         double [:] HQTcov_dissipation
 
-        double [:] MLS
+        double [:] mls
         double [:] ml_ratio
         str mixing_scheme
 

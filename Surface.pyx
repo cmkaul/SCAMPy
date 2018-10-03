@@ -11,7 +11,7 @@ from thermodynamic_functions cimport *
 from surface_functions cimport entropy_flux, compute_ustar, buoyancy_flux, exchange_coefficients_byun
 from turbulence_functions cimport get_wstar, get_inversion
 from Variables cimport GridMeanVariables
-from libc.math cimport cbrt, fabs, sqrt, cos
+from libc.math cimport cbrt, fabs, sqrt
 
 
 
@@ -205,6 +205,7 @@ cdef class SurfaceMoninObukhov(SurfaceBase):
         SurfaceBase.free_convection_windspeed(self, GMV)
         return
 
+# Not fully implemented yet. Maybe not needed - Ignacio
 cdef class SurfaceSullivanPatton(SurfaceBase):
     def __init__(self, paramlist):
         SurfaceBase.__init__(self, paramlist)

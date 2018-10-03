@@ -1314,7 +1314,7 @@ cdef class GABLS(CasesBase):
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats):
         Ref.Pg = 1.0e5  #Pressure at ground
         Ref.Tg = 265.0  #Temperature at ground
-        Ref.qtg = 1.0e-4 #0.02   #Total water mixing ratio at surface. if set to 0, alpha0, rho0, p0 are NaN. 
+        Ref.qtg = 1.0e-4 #Total water mixing ratio at surface. if set to 0, alpha0, rho0, p0 are NaN (TBD)
         Ref.initialize(Gr, Stats)
         return
     cpdef initialize_profiles(self, Grid Gr, GridMeanVariables GMV, ReferenceState Ref):
@@ -1325,8 +1325,10 @@ cdef class GABLS(CasesBase):
             Py_ssize_t k
 
         for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
+            #Set wind velocity profile
             GMV.U.values[k] =  8.0
             GMV.V.values[k] =  0.0
+
             #Set Thetal profile
             if Gr.z_half[k] <= 100.0:
                 thetal[k] = 265.0
@@ -1339,7 +1341,7 @@ cdef class GABLS(CasesBase):
         if GMV.H.name == 'thetal':
             for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
                 GMV.H.values[k] = thetal[k]
-                GMV.T.values[k] =  thetal[k] * exner_c(Ref.p0_half[k])
+                GMV.T.values[k] =  thetal[k] * exner_c(Ref.p0_half[k]) # No water content
                 GMV.THL.values[k] = thetal[k]
         elif GMV.H.name == 's':
             for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
@@ -1355,9 +1357,8 @@ cdef class GABLS(CasesBase):
         GMV.H.set_bcs(Gr)
         GMV.T.set_bcs(Gr)
         GMV.satadjust()
-
-
         return
+
     cpdef initialize_surface(self, Grid Gr, ReferenceState Ref):
         self.Sur.Gr = Gr
         self.Sur.Ref = Ref
@@ -1372,19 +1373,19 @@ cdef class GABLS(CasesBase):
         self.Fo.initialize(GMV)
         cdef Py_ssize_t k
         for k in xrange(Gr.gw, Gr.nzg - Gr.gw):
-            # Geostrophic velocity profiles. vg = 0
+            # Geostrophic velocity profiles.
             self.Fo.ug[k] = 8.0
             self.Fo.vg[k] = 0.0
-
         return
-
 
     cpdef initialize_io(self, NetCDFIO_Stats Stats):
         CasesBase.initialize_io(self, Stats)
         return
+
     cpdef io(self, NetCDFIO_Stats Stats):
         CasesBase.io(self,Stats)
         return
+
     cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS):
         self.Sur.Tsurface = 265.0 - (0.25/3600.0)*TS.t
         self.Sur.update(GMV)
@@ -1394,6 +1395,7 @@ cdef class GABLS(CasesBase):
         self.Fo.update(GMV)
         return
 
+# Not fully implemented yet - Ignacio
 cdef class SP(CasesBase):
     def __init__(self, paramlist):
         self.casename = 'SP'
@@ -1452,9 +1454,8 @@ cdef class SP(CasesBase):
         GMV.H.set_bcs(Gr)
         GMV.T.set_bcs(Gr)
         GMV.satadjust()
-
-
         return
+
     cpdef initialize_surface(self, Grid Gr, ReferenceState Ref):
         self.Sur.Gr = Gr
         self.Sur.Ref = Ref
@@ -1476,16 +1477,17 @@ cdef class SP(CasesBase):
             # Geostrophic velocity profiles. vg = 0
             self.Fo.ug[k] = 1.0
             self.Fo.vg[k] = 0.0
-
         return
 
 
     cpdef initialize_io(self, NetCDFIO_Stats Stats):
         CasesBase.initialize_io(self, Stats)
         return
+
     cpdef io(self, NetCDFIO_Stats Stats):
         CasesBase.io(self,Stats)
         return
+        
     cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS):
         self.Sur.update(GMV)
         return
