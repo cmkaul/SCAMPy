@@ -76,9 +76,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             print('Turbulence--EDMF_PrognosticTKE: defaulting to extrapolation of updraft buoyancy along a pseudoadiabat')
 
         try:
-            self.mixing_scheme = namelist['turbulence']['EDMF_PrognosticTKE']['mixing_length']
+            self.mixing_scheme = str(namelist['turbulence']['EDMF_PrognosticTKE']['mixing_length'])
         except:
             self.mixing_scheme = 'default'
+            print 'Using default mixing length formulation'
 
 
         # Get values from paramlist
@@ -227,6 +228,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         Stats.add_profile('HQTcov_shear')
         Stats.add_profile('ed_length_scheme')
         Stats.add_profile('mixing_length_ratio')
+
         return
 
     cpdef io(self, NetCDFIO_Stats Stats):
@@ -537,8 +539,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 for k in xrange(self.Gr.nzg):
                     z = self.Gr.z_half[k]
                     if (z<=250.0):
-                        GMV.TKE.values[k] = 0.4*(1.0-z/250.0)*(1.0-z/250.0)*(1.0-z/250.0)       
-                        
+                        GMV.TKE.values[k] = 0.4*(1.0-z/250.0)*(1.0-z/250.0)*(1.0-z/250.0)
+
         self.reset_surface_tke(GMV, Case)
         self.compute_mixing_length(Case.Sur.obukhov_length, GMV)
         return
@@ -855,37 +857,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             with nogil:
                 for k in xrange(gw, self.Gr.nzg-gw):
                     lm = self.mixing_length[k]
-                    # shear2 = pow((GMV.U.values[k+1] - GMV.U.values[k-1]) * 0.5 * self.Gr.dzi, 2) + \
-                    #     pow((GMV.V.values[k+1] - GMV.V.values[k-1]) * 0.5 * self.Gr.dzi, 2)
-                    # THL_lapse_rate = fmax(fabs((self.EnvVar.THL.values[k+1]-self.EnvVar.THL.values[k-1])*0.5*self.Gr.dzi),1e-10)
-
-                    # # Shear-dissipation TKE equilibrium scale (Stable)
-                    # qt_dry = self.EnvThermo.qt_dry[k]
-                    # th_dry = self.EnvThermo.th_dry[k]
-                    # t_cloudy = self.EnvThermo.t_cloudy[k]
-                    # qv_cloudy = self.EnvThermo.qv_cloudy[k]
-                    # qt_cloudy = self.EnvThermo.qt_cloudy[k]
-                    # th_cloudy = self.EnvThermo.th_cloudy[k]
-
-                    # lh = latent_heat(t_cloudy)
-                    # cpm = cpm_c(qt_cloudy)
-                    # grad_thl_plus = (self.EnvVar.THL.values[k+1] - self.EnvVar.THL.values[k]) * self.Gr.dzi
-                    # prefactor = g * ( Rd / self.Ref.alpha0_half[k] /self.Ref.p0_half[k]) * exner_c(self.Ref.p0_half[k])
-
-                    # d_alpha_thetal_dry = prefactor * (1.0 + (eps_vi-1.0) * qt_dry)
-
-                    # if self.EnvVar.CF.values[k] > 0.0:
-                    #     d_alpha_thetal_cloudy = (prefactor * (1.0 + eps_vi * (1.0 + lh / Rv / t_cloudy) * qv_cloudy - qt_cloudy )
-                    #                              / (1.0 + lh * lh / cpm / Rv / t_cloudy / t_cloudy * qv_cloudy))
-                    # else:
-                    #     d_alpha_thetal_cloudy = 0.0
-
-                    # d_alpha_thetal_total = (self.EnvVar.CF.values[k] * d_alpha_thetal_cloudy
-                    #                     + (1.0-self.EnvVar.CF.values[k]) * d_alpha_thetal_dry)
-                    # ri_thl = grad_thl_plus * d_alpha_thetal_total / fmax(shear2, 1e-10)
-                    # pr_vec[0] = 1.6; pr_vec[1] =  0.6 + 1.0 * ri_thl/0.066
-                    # prandtl = smooth_minimum(pr_vec, 7.0)
                     self.KM.values[k] = self.tke_ed_coeff * lm * sqrt(fmax(self.EnvVar.TKE.values[k],0.0) )
+                    # Prandtl number is fixed. It should be defined as a function of height - Ignacio
                     self.KH.values[k] = self.KM.values[k] / self.prandtl_number
 
         return
@@ -1135,6 +1108,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 input.tke_ed_coeff  = self.tke_ed_coeff
                 input.T_mean = (self.EnvVar.T.values[k]+self.UpdVar.T.values[i,k])/2
                 input.L = 20000.0 # need to define the scale of the GCM grid resolution
+                ## Ignacio
                 input.n_up = self.n_updrafts
                 input.thv_e = theta_virt_c(self.Ref.p0_half[k], self.EnvVar.T.values[k], self.EnvVar.QT.values[k],
                      self.EnvVar.QL.values[k], self.EnvVar.QR.values[k])
@@ -1160,11 +1134,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     (interp2pt(self.UpdVar.W.values[i,k-1],self.UpdVar.W.values[i,k-2]) - self.EnvVar.W.values[k-1]) )
 
                 input.transport_der = (transport_plus - transport_minus)/2.0/self.Gr.dz
-                input.af*input.w + (1.0-input.af)*input.w_env
+
                 if input.zbl-self.UpdVar.cloud_base[i] > 0.0:
                     input.poisson = np.random.poisson(self.Gr.dz/((input.zbl-self.UpdVar.cloud_base[i])/10.0))
                 else:
                     input.poisson = 0.0
+                ## End: Ignacio
                 ret = self.entr_detr_fp(input)
                 self.entr_sc[i,k] = ret.entr_sc * self.entrainment_factor
                 self.detr_sc[i,k] = ret.detr_sc * self.detrainment_factor
@@ -1172,6 +1147,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         return
 
     cpdef double compute_zbl_qt_grad(self, GridMeanVariables GMV):
+    # computes inversion height as z with max gradient of qt
         cdef: 
             double qt_up, qt_, z_
             double zbl_qt = 0.0
@@ -1819,12 +1795,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         with nogil:
             for k in xrange(self.Gr.nzg):
                 z = self.Gr.z_half[k]
-                # need to rethink of how to initilize the covarinace profiles - for nowmI took the TKE profile
+                # need to rethink of how to initialize the covariance profiles - for now I took the TKE profile
                 if ws<1e-6:
-                    GMV.Hvar.values[k]   = 0.4*(1.0-z/250.0)*(1.0-z/250.0)*(1.0-z/250.0)
+                    GMV.Hvar.values[k]   = 0.4*(1.0-z/250.0)*(1.0-z/250.0)*(1.0-z/250.0) # Taken from Beare et al 2006 for SBL
                     GMV.QTvar.values[k]  = 0.0
                     GMV.HQTcov.values[k] = 0.0
-                else:
+                else:  # Only works in convective conditions - Ignacio
                     GMV.Hvar.values[k]   = GMV.Hvar.values[self.Gr.gw] * ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
                     GMV.QTvar.values[k]  = GMV.QTvar.values[self.Gr.gw] * ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
                     GMV.HQTcov.values[k] = GMV.HQTcov.values[self.Gr.gw] * ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))

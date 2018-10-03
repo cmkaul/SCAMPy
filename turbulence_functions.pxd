@@ -34,10 +34,6 @@ cdef struct entr_in_struct:
     double zbl
     double poisson
     double n_up
-    double thv_e
-    double thv_u
-    double dwdz
-    double transport_der
 
 cdef entr_struct entr_detr_dry(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_inverse_z(entr_in_struct entr_in) nogil

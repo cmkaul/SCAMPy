@@ -118,7 +118,6 @@ cdef entr_struct entr_detr_suselj(entr_in_struct entr_in) nogil:
         entr_struct _ret
         double entr_dry = 2.5e-3
         double l0
-        double mc, mg_prod, turb_trans, buoy_prod
 
     l0 = (entr_in.zbl - entr_in.zi)/10.0
     if entr_in.z >= entr_in.zi :
@@ -133,7 +132,6 @@ cdef entr_struct entr_detr_suselj(entr_in_struct entr_in) nogil:
 
 cdef entr_struct entr_detr_none(entr_in_struct entr_in)nogil:
     cdef entr_struct _ret
-    cdef double eps = 1.0 # to avoid division by zero when z = 0 or z_i
     _ret.entr_sc = 0.0
     _ret.detr_sc = 0.0
 
@@ -188,7 +186,7 @@ cdef double get_inversion(double *theta_rho, double *u, double *v, double *z_hal
                           Py_ssize_t kmin, Py_ssize_t kmax, double Ri_bulk_crit):
     cdef:
         double theta_rho_b = theta_rho[kmin]
-        double h, Ri_bulk=0.0, Ri_bulk_low
+        double h, Ri_bulk=0.0, Ri_bulk_low = 0.0
         Py_ssize_t k = kmin
 
 
@@ -210,10 +208,10 @@ cdef double get_inversion(double *theta_rho, double *u, double *v, double *z_hal
 
     return h
 
-
+# Teixiera convective tau
 cdef double get_mixing_tau(double zi, double wstar) nogil:
     # return 0.5 * zi / wstar
-    return zi / (wstar + 1e-5)
+    return zi / (fmax(wstar, 1e-5))
 
 
 
