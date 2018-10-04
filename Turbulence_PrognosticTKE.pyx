@@ -792,11 +792,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 
                 # kz scale (surface layer terms)
                 if obukhov_length < 0.0: #unstable
-                    l2 = vkb * z_ # * ( (1.0 - 100.0 * z_/obukhov_length)**0.2 )
+                    l2 = vkb * z_  * ( (1.0 - 100.0 * z_/obukhov_length)**0.2 )
                 elif obukhov_length > 0.0: #stable
-                    l2 = vkb * z_ #/  (1. + 2.7 *z_/obukhov_length)
+                    l2 = vkb * z_ /  (1. + 2.7 *z_/obukhov_length)
                 else:
                     l2 = vkb * z_
+                self.mixing_length[k] = fmax( 1.0/(1.0/fmax(l1,1e-10) + 1.0/l2), 1e-3)
 
                 # Shear-dissipation TKE equilibrium scale (Stable)
                 qt_dry = self.EnvThermo.qt_dry[k]
