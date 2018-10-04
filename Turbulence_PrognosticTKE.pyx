@@ -758,10 +758,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         with nogil:
             for k in xrange(self.Gr.nzg):
                 interp_w_diff = interp2pt(we.values[k-1]-gmv_w[k-1],we.values[k]-gmv_w[k])
-                gmv_tke[k] = ae[k] * interp_w_diff * interp_w_diff + ae[k] * tke_e.values[k]
+                gmv_tke[k] = ae[k] * 0.5 * interp_w_diff * interp_w_diff + ae[k] * tke_e.values[k]
                 for i in xrange(self.n_updrafts):
                     interp_w_diff = interp2pt(wu.values[i,k-1]-gmv_w[k-1],wu.values[i,k]-gmv_w[k])
-                    gmv_tke[k] += au.values[i,k] *interp_w_diff * interp_w_diff
+                    gmv_tke[k] += au.values[i,k] * 0.5 * interp_w_diff * interp_w_diff
         return
 
 
@@ -778,11 +778,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for k in xrange(self.Gr.nzg):
                 if ae[k] > 0.0:
                     interp_w_diff = interp2pt(we.values[k-1]-gmv_w[k-1],we.values[k]-gmv_w[k])
-                    tke_e.values[k] = gmv_tke[k] - ae[k] * interp_w_diff * interp_w_diff
+                    tke_e.values[k] = gmv_tke[k] - ae[k] * 0.5 * interp_w_diff * interp_w_diff
 
                     for i in xrange(self.n_updrafts):
                         interp_w_diff = interp2pt(wu.values[i,k-1]-gmv_w[k-1],wu.values[i,k]-gmv_w[k])
-                        tke_e.values[k] -= au.values[i,k] *interp_w_diff * interp_w_diff
+                        tke_e.values[k] -= au.values[i,k] * 0.5 *interp_w_diff * interp_w_diff
                     tke_e.values[k] = tke_e.values[k]/ae[k]
                 else:
                     tke_e.values[k] = 0.0
