@@ -8,6 +8,7 @@ cdef double sc_c(double L, double T)   nogil
 cdef double exner_c(double p0, double kappa=?)   nogil
 cdef double theta_c(double p0, double T)   nogil
 cdef double thetali_c(double p0, double T, double qt, double ql, double qi, double L)  nogil
+cdef double theta_virt_c(double p0, double T, double qt, double ql, double qr)  nogil
 cdef double pd_c(double p0, double qt, double qv)   nogil
 cdef double pv_c(double p0, double qt, double qv)   nogil
 cdef double density_temperature_c(double T, double qt, double qv)   nogil

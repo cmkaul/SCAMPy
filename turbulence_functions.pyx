@@ -142,6 +142,29 @@ cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil:
 
     return  _ret
 
+cdef entr_struct entr_detr_suselj(entr_in_struct entr_in) nogil:
+    cdef:
+        entr_struct _ret
+        double entr_dry = 2.5e-3
+        double l0
+
+    l0 = (entr_in.zbl - entr_in.zi)/10.0
+    if entr_in.z >= entr_in.zi :
+        _ret.detr_sc= 4.0e-3 +  0.12* fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
+        _ret.entr_sc = 0.1 / entr_in.dz * entr_in.poisson
+
+    else:
+        _ret.detr_sc = 0.0
+        _ret.entr_sc = 0.0 #entr_dry # Very low entrainment rate needed for Dycoms to work
+
+    return  _ret
+
+cdef entr_struct entr_detr_none(entr_in_struct entr_in)nogil:
+    cdef entr_struct _ret
+    _ret.entr_sc = 0.0
+    _ret.detr_sc = 0.0
+
+    return  _ret
 
 cdef evap_struct evap_sat_adjust(double p0, double thetal_, double qt_mix) nogil:
     cdef:
@@ -199,7 +222,7 @@ cdef double get_inversion(double *theta_rho, double *u, double *v, double *z_hal
                           Py_ssize_t kmin, Py_ssize_t kmax, double Ri_bulk_crit):
     cdef:
         double theta_rho_b = theta_rho[kmin]
-        double h, Ri_bulk=0.0, Ri_bulk_low
+        double h, Ri_bulk=0.0, Ri_bulk_low = 0.0
         Py_ssize_t k = kmin
 
 
@@ -221,10 +244,10 @@ cdef double get_inversion(double *theta_rho, double *u, double *v, double *z_hal
 
     return h
 
-
+# Teixiera convective tau
 cdef double get_mixing_tau(double zi, double wstar) nogil:
     # return 0.5 * zi / wstar
-    return zi / (wstar + 0.001)
+    return zi / (fmax(wstar, 1e-5))
 
 
 

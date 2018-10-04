@@ -7,11 +7,11 @@
 import numpy as np
 include "parameters.pxi"
 import cython
-from thermodynamic_functions cimport latent_heat, cpm_c, exner_c, qv_star_t, sd_c, sv_c, pv_star, theta_rho_c
-from surface_functions cimport entropy_flux, compute_ustar, buoyancy_flux
+from thermodynamic_functions cimport *
+from surface_functions cimport entropy_flux, compute_ustar, buoyancy_flux, exchange_coefficients_byun
 from turbulence_functions cimport get_wstar, get_inversion
 from Variables cimport GridMeanVariables
-from libc.math cimport cbrt,fabs
+from libc.math cimport cbrt, fabs, sqrt
 
 
 
@@ -152,10 +152,118 @@ cdef class SurfaceMoninObukhov(SurfaceBase):
     cpdef initialize(self):
         return
     cpdef update(self, GridMeanVariables GMV):
+        self.qsurface = qv_star_t(self.Ref.Pg, self.Tsurface)
         cdef:
             Py_ssize_t k, gw = self.Gr.gw
+            double zb = self.Gr.z_half[gw]
+            double theta_rho_g = theta_rho_c(self.Ref.Pg, self.Tsurface, self.qsurface, self.qsurface)
+            double theta_rho_b = theta_rho_c(self.Ref.p0_half[gw], GMV.T.values[gw], self.qsurface, self.qsurface)
+            double Nb2,
+            double h_star
+            double pv, pd, sv, sd
+            double lv = latent_heat(GMV.T.values[gw])
+
+        if GMV.H.name == 'thetal':
+            h_star = t_to_thetali_c(self.Ref.Pg, self.Tsurface, self.qsurface, 0.0, 0.0)
+        elif GMV.H.name == 's':
+            h_star = t_to_entropy_c(self.Ref.Pg, self.Tsurface, self.qsurface, 0.0, 0.0)
+
 
         self.windspeed = np.sqrt(GMV.U.values[gw]*GMV.U.values[gw] + GMV.V.values[gw] * GMV.V.values[gw])
+        Nb2 = g/theta_rho_g*(theta_rho_b-theta_rho_g)/zb
+        Ri = Nb2 * zb * zb/(self.windspeed * self.windspeed)
+
+        exchange_coefficients_byun(Ri, self.Gr.z_half[gw], self.zrough, &self.cm, &self.ch, &self.obukhov_length)
+        self.rho_uflux = -self.cm * self.windspeed * (GMV.U.values[gw] ) * self.Ref.rho0[gw-1]
+        self.rho_vflux = -self.cm * self.windspeed * (GMV.V.values[gw] ) * self.Ref.rho0[gw-1]
+
+        self.rho_hflux =  -self.ch * self.windspeed * (GMV.H.values[gw] - h_star) * self.Ref.rho0[gw-1]
+        self.rho_qtflux = -self.ch * self.windspeed * (GMV.QT.values[gw] - self.qsurface) * self.Ref.rho0[gw-1]
+        self.lhf = lv * self.rho_qtflux
+
+        if GMV.H.name == 'thetal':
+            self.shf = cpm_c(GMV.QT.values[gw])  * self.rho_hflux
+
+        elif GMV.H.name == 's':
+            pv = pv_star(GMV.T.values[gw])
+            pd = self.Ref.p0_half[gw] - pv
+            sv = sv_c(pv,GMV.T.values[gw])
+            sd = sd_c(pd, GMV.T.values[gw])
+            self.shf = (self.rho_hflux - self.lhf/lv * (sv-sd)) * GMV.T.values[gw]
+
+        self.bflux = buoyancy_flux(self.shf, self.lhf, GMV.T.values[gw], GMV.QT.values[gw],self.Ref.alpha0[gw-1]  )
+        self.ustar =  sqrt(self.cm) * self.windspeed
+        # CK--testing this--EDMF scheme checks greater or less than zero,
+        if fabs(self.bflux) < 1e-10:
+            self.obukhov_length = 0.0
+        else:
+            self.obukhov_length = -self.ustar *self.ustar *self.ustar /self.bflux /vkb
+
+        return
+
+    cpdef free_convection_windspeed(self, GridMeanVariables GMV):
+        SurfaceBase.free_convection_windspeed(self, GMV)
+        return
+
+# Not fully implemented yet. Maybe not needed - Ignacio
+cdef class SurfaceSullivanPatton(SurfaceBase):
+    def __init__(self, paramlist):
+        SurfaceBase.__init__(self, paramlist)
+        return
+    cpdef initialize(self):
+        return
+    cpdef update(self, GridMeanVariables GMV):
+        cdef:
+            Py_ssize_t k, gw = self.Gr.gw
+            double zb = self.Gr.z_half[gw]
+            double theta_rho_g = theta_rho_c(self.Ref.Pg, self.Tsurface, self.qsurface, self.qsurface)
+            double theta_rho_b = theta_rho_c(self.Ref.p0_half[gw], GMV.T.values[gw], self.qsurface, self.qsurface)
+            double Nb2
+            double h_star
+            double pv, pd, sv, sd
+            double lv = latent_heat(GMV.T.values[gw])
+            double theta_flux, theta_surface, g=9.81
+            double T0 = self.Ref.p0_half[gw] * self.Ref.alpha0_half[gw]/Rd
+
+        theta_flux = 0.24
+        self.bflux = g * theta_flux * exner_c(self.Ref.p0_half[gw]) / T0
+
+        self.qsurface = qv_star_t(self.Ref.Pg, self.Tsurface)
+        if GMV.H.name == 'thetal':
+            h_star = t_to_thetali_c(self.Ref.Pg, self.Tsurface, self.qsurface, 0.0, 0.0)
+        elif GMV.H.name == 's':
+            h_star = t_to_entropy_c(self.Ref.Pg, self.Tsurface, self.qsurface, 0.0, 0.0)
+
+
+        self.windspeed = np.sqrt(GMV.U.values[gw]*GMV.U.values[gw] + GMV.V.values[gw] * GMV.V.values[gw])
+        Nb2 = g/theta_rho_g*(theta_rho_b-theta_rho_g)/zb
+        Ri = Nb2 * zb * zb/(self.windspeed * self.windspeed)
+
+        exchange_coefficients_byun(Ri, self.Gr.z_half[gw], self.zrough, &self.cm, &self.ch, &self.obukhov_length)
+        self.rho_uflux = -self.cm * self.windspeed * (GMV.U.values[gw] ) * self.Ref.rho0[gw-1]
+        self.rho_vflux = -self.cm * self.windspeed * (GMV.V.values[gw] ) * self.Ref.rho0[gw-1]
+
+        self.rho_hflux =  -self.ch * self.windspeed * (GMV.H.values[gw] - h_star) * self.Ref.rho0[gw-1]
+        self.rho_qtflux = -self.ch * self.windspeed * (GMV.QT.values[gw] - self.qsurface) * self.Ref.rho0[gw-1]
+        self.lhf = lv * self.rho_qtflux
+
+        if GMV.H.name == 'thetal':
+            self.shf = cpm_c(GMV.QT.values[gw])  * self.rho_hflux
+
+        elif GMV.H.name == 's':
+            pv = pv_star(GMV.T.values[gw])
+            pd = self.Ref.p0_half[gw] - pv
+            sv = sv_c(pv,GMV.T.values[gw])
+            sd = sd_c(pd, GMV.T.values[gw])
+            self.shf = (self.rho_hflux - self.lhf/lv * (sv-sd)) * GMV.T.values[gw]
+
+        
+        self.ustar =  sqrt(self.cm) * self.windspeed
+        # CK--testing this--EDMF scheme checks greater or less than zero,
+        if fabs(self.bflux) < 1e-10:
+            self.obukhov_length = 0.0
+        else:
+            self.obukhov_length = -self.ustar *self.ustar *self.ustar /self.bflux /vkb
 
         return
 

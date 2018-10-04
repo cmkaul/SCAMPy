@@ -30,6 +30,10 @@ def CasesFactory(namelist, paramlist):
         return GATE_III(paramlist)
     elif namelist['meta']['casename'] == 'DYCOMS_RF01':
         return DYCOMS_RF01(paramlist)
+    elif namelist['meta']['casename'] == 'GABLS':
+        return GABLS(paramlist)
+    elif namelist['meta']['casename'] == 'SP':
+        return SP(paramlist)
 
     else:
         print('case not recognized')
@@ -1251,7 +1255,7 @@ cdef class DYCOMS_RF01(CasesBase):
         self.Sur.initialize()
 
         return
-
+ 
     cpdef initialize_forcing(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV):
         self.Fo.Gr = Gr
         self.Fo.Ref = Ref
@@ -1285,6 +1289,204 @@ cdef class DYCOMS_RF01(CasesBase):
         self.Fo.io(Stats)
         return
 
+    cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS):
+        self.Sur.update(GMV)
+        return
+
+    cpdef update_forcing(self, GridMeanVariables GMV, TimeStepping TS):
+        self.Fo.update(GMV)
+        return
+
+cdef class GABLS(CasesBase):
+    def __init__(self, paramlist):
+        self.casename = 'GABLS'
+        self.Sur = Surface.SurfaceMoninObukhov(paramlist)
+        self.Fo = Forcing.ForcingStandard()
+        self.inversion_option = 'critical_Ri'
+        self.Fo.apply_coriolis = True
+        cdef double latitude = 73.0
+        self.Fo.coriolis_param = 1.39e-4 # s^{-1}
+        # self.Fo.coriolis_param = 2.0 * omega * np.sin(latitude * pi / 180.0 ) # s^{-1}
+        self.Fo.apply_subsidence = False
+        return
+
+    cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats):
+        Ref.Pg = 1.0e5  #Pressure at ground
+        Ref.Tg = 265.0  #Temperature at ground
+        Ref.qtg = 1.0e-4 #Total water mixing ratio at surface. if set to 0, alpha0, rho0, p0 are NaN (TBD)
+        Ref.initialize(Gr, Stats)
+        return
+    cpdef initialize_profiles(self, Grid Gr, GridMeanVariables GMV, ReferenceState Ref):
+        cdef:
+            double [:] thetal = np.zeros((Gr.nzg,), dtype=np.double, order='c')
+            double ql=0.0, qi =0.0 # IC of GABLS cloud-free
+            double [:] theta_pert = np.random.random_sample(Gr.nzg)
+            Py_ssize_t k
+
+        for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
+            #Set wind velocity profile
+            GMV.U.values[k] =  8.0
+            GMV.V.values[k] =  0.0
+
+            #Set Thetal profile
+            if Gr.z_half[k] <= 100.0:
+                thetal[k] = 265.0
+            else:
+                thetal[k] = 265.0 + (Gr.z_half[k] - 100.0) * 0.01
+
+            #Set qt profile
+            GMV.QT.values[k] = 0.0
+
+        if GMV.H.name == 'thetal':
+            for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
+                GMV.H.values[k] = thetal[k]
+                GMV.T.values[k] =  thetal[k] * exner_c(Ref.p0_half[k]) # No water content
+                GMV.THL.values[k] = thetal[k]
+        elif GMV.H.name == 's':
+            for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
+                GMV.T.values[k] = thetal[k] * exner_c(Ref.p0_half[k])
+                GMV.H.values[k] = t_to_entropy_c(Ref.p0_half[k],GMV.T.values[k],
+                                                 GMV.QT.values[k], ql, qi)
+                GMV.THL.values[k] = thetali_c(Ref.p0_half[k],GMV.T.values[k],
+                                                 GMV.QT.values[k], ql, qi, latent_heat(GMV.T.values[k]))
+
+        GMV.U.set_bcs(Gr)
+        GMV.V.set_bcs(Gr)
+        GMV.QT.set_bcs(Gr)
+        GMV.H.set_bcs(Gr)
+        GMV.T.set_bcs(Gr)
+        GMV.satadjust()
+        return
+
+    cpdef initialize_surface(self, Grid Gr, ReferenceState Ref):
+        self.Sur.Gr = Gr
+        self.Sur.Ref = Ref
+        self.Sur.zrough = 0.1
+        self.Sur.Tsurface = 265.0
+        self.Sur.initialize()
+        return
+
+    cpdef initialize_forcing(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV):
+        self.Fo.Gr = Gr
+        self.Fo.Ref = Ref
+        self.Fo.initialize(GMV)
+        cdef Py_ssize_t k
+        for k in xrange(Gr.gw, Gr.nzg - Gr.gw):
+            # Geostrophic velocity profiles.
+            self.Fo.ug[k] = 8.0
+            self.Fo.vg[k] = 0.0
+        return
+
+    cpdef initialize_io(self, NetCDFIO_Stats Stats):
+        CasesBase.initialize_io(self, Stats)
+        return
+
+    cpdef io(self, NetCDFIO_Stats Stats):
+        CasesBase.io(self,Stats)
+        return
+
+    cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS):
+        self.Sur.Tsurface = 265.0 - (0.25/3600.0)*TS.t
+        self.Sur.update(GMV)
+        return
+
+    cpdef update_forcing(self, GridMeanVariables GMV, TimeStepping TS):
+        self.Fo.update(GMV)
+        return
+
+# Not fully implemented yet - Ignacio
+cdef class SP(CasesBase):
+    def __init__(self, paramlist):
+        self.casename = 'SP'
+        self.Sur = Surface.SurfaceSullivanPatton(paramlist)
+        self.Fo = Forcing.ForcingStandard()
+        self.inversion_option = 'critical_Ri'
+        self.Fo.apply_coriolis = True
+        self.Fo.coriolis_param = 1.0e-4 # s^{-1}
+        # self.Fo.coriolis_param = 2.0 * omega * np.sin(latitude * pi / 180.0 ) # s^{-1}
+        self.Fo.apply_subsidence = False
+        return
+
+    cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats):
+        Ref.Pg = 1.0e5  #Pressure at ground
+        Ref.Tg = 300.0  #Temperature at ground
+        Ref.qtg = 1.0e-4   #Total water mixing ratio at surface. if set to 0, alpha0, rho0, p0 are NaN. 
+        Ref.initialize(Gr, Stats)
+        return
+        
+    cpdef initialize_profiles(self, Grid Gr, GridMeanVariables GMV, ReferenceState Ref):
+        cdef:
+            double [:] thetal = np.zeros((Gr.nzg,), dtype=np.double, order='c')
+            double ql=0.0, qi =0.0 # IC of SP cloud-free
+            Py_ssize_t k
+
+        for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
+            GMV.U.values[k] =  1.0
+            GMV.V.values[k] =  0.0
+            #Set Thetal profile
+            if Gr.z_half[k] <= 974.0:
+                thetal[k] = 300.0
+            elif Gr.z_half[k] < 1074.0:
+                thetal[k] = 300.0 + (Gr.z_half[k] - 974.0) * 0.08
+            else:
+                thetal[k] = 308.0 + (Gr.z_half[k] - 1074.0) * 0.003
+
+            #Set qt profile
+            GMV.QT.values[k] = 0.0
+
+        if GMV.H.name == 'thetal':
+            for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
+                GMV.H.values[k] = thetal[k]
+                GMV.T.values[k] =  thetal[k] * exner_c(Ref.p0_half[k])
+                GMV.THL.values[k] = thetal[k]
+        elif GMV.H.name == 's':
+            for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
+                GMV.T.values[k] = thetal[k] * exner_c(Ref.p0_half[k])
+                GMV.H.values[k] = t_to_entropy_c(Ref.p0_half[k],GMV.T.values[k],
+                                                 GMV.QT.values[k], ql, qi)
+                GMV.THL.values[k] = thetali_c(Ref.p0_half[k],GMV.T.values[k],
+                                                 GMV.QT.values[k], ql, qi, latent_heat(GMV.T.values[k]))
+
+        GMV.U.set_bcs(Gr)
+        GMV.V.set_bcs(Gr)
+        GMV.QT.set_bcs(Gr)
+        GMV.H.set_bcs(Gr)
+        GMV.T.set_bcs(Gr)
+        GMV.satadjust()
+        return
+
+    cpdef initialize_surface(self, Grid Gr, ReferenceState Ref):
+        self.Sur.Gr = Gr
+        self.Sur.Ref = Ref
+        self.Sur.zrough = 0.1
+        self.Sur.Tsurface = 300.0
+        theta_surface    = self.Sur.Tsurface / exner_c(Ref.Pg)
+        theta_flux = 0.24
+        self.Sur.bflux   =  g * theta_flux / theta_surface
+        # self.Sur.bflux = 0.24 * exner_c(Ref.p0_half[Gr.gw]) * g / (Ref.p0_half[Gr.gw]*Ref.alpha0_half[Gr.gw]/Rd)
+        self.Sur.initialize()
+        return
+
+    cpdef initialize_forcing(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV):
+        self.Fo.Gr = Gr
+        self.Fo.Ref = Ref
+        self.Fo.initialize(GMV)
+        cdef Py_ssize_t k
+        for k in xrange(Gr.gw, Gr.nzg - Gr.gw):
+            # Geostrophic velocity profiles. vg = 0
+            self.Fo.ug[k] = 1.0
+            self.Fo.vg[k] = 0.0
+        return
+
+
+    cpdef initialize_io(self, NetCDFIO_Stats Stats):
+        CasesBase.initialize_io(self, Stats)
+        return
+
+    cpdef io(self, NetCDFIO_Stats Stats):
+        CasesBase.io(self,Stats)
+        return
+        
     cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS):
         self.Sur.update(GMV)
         return
