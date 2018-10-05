@@ -63,8 +63,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double tke_ed_coeff
         double tke_diss_coeff
 
-        #double [:] Hvar
-        #double [:] QTvar
         double [:] Hvar_shear
         double [:] QTvar_shear
         double [:] Hvar_entr_gain
@@ -85,6 +83,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double [:] QTvar_rain
         double [:] HQTcov_rain
 
+
         double [:] mls
         double [:] ml_ratio
         str mixing_scheme
@@ -98,7 +97,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef update_inversion(self, GridMeanVariables GMV, option)
     cpdef compute_mixing_length(self, double obukhov_length, GridMeanVariables GMV)
     cpdef compute_eddy_diffusivities_tke(self, GridMeanVariables GMV, CasesBase Case)
-    cpdef reset_surface_tke(self, GridMeanVariables GMV, CasesBase Case)
     cpdef reset_surface_covariance(self, GridMeanVariables GMV, CasesBase Case)
     cpdef set_updraft_surface_bc(self, GridMeanVariables GMV, CasesBase Case)
     cpdef decompose_environment(self, GridMeanVariables GMV, whichvals)
@@ -107,45 +105,35 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef solve_updraft_scalars(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
     cpdef update_GMV_MF(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef update_GMV_ED(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
-    cpdef compute_tke(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
     cpdef compute_covariance(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
-    cpdef initialize_tke(self, GridMeanVariables GMV, CasesBase Case)
+
     cpdef initialize_covariance(self, GridMeanVariables GMV, CasesBase Case)
     cpdef cleanup_covariance(self, GridMeanVariables GMV)
     cpdef compute_tke_buoy(self, GridMeanVariables GMV)
-    cpdef compute_tke_dissipation(self)
-    cpdef compute_covariance_dissipation(self)
-    cpdef compute_tke_entr(self)
-    cpdef compute_covariance_entr(self)
-    cpdef compute_tke_detr(self)
-    cdef void compute_covariance_detr(self, EDMF_Environment.EnvironmentVariable_2m Covar)
-    cpdef compute_tke_shear(self, GridMeanVariables GMV)
-    cpdef compute_covariance_shear(self, GridMeanVariables GMV)
     cpdef compute_tke_pressure(self)
+    cdef void compute_covariance_dissipation(self, EDMF_Environment.EnvironmentVariable_2m Covar)
+    cdef void compute_covariance_entr(self, EDMF_Environment.EnvironmentVariable_2m Covar, EDMF_Updrafts.UpdraftVariable UpdVar1,
+                EDMF_Updrafts.UpdraftVariable UpdVar2, EDMF_Environment.EnvironmentVariable EnvVar1, EDMF_Environment.EnvironmentVariable EnvVar2)
+    cdef void compute_covariance_detr(self, EDMF_Environment.EnvironmentVariable_2m Covar)
+    cdef void compute_covariance_shear(self,GridMeanVariables GMV, EDMF_Environment.EnvironmentVariable_2m Covar,
+                                       double *UpdVar1, double *UpdVar2, double *EnvVar1, double *EnvVar2)
     cpdef compute_covariance_rain(self, TimeStepping TS, GridMeanVariables GMV)
-    cpdef update_tke_ED(self, GridMeanVariables GMV, CasesBase Case,TimeStepping TS)
+    cdef void compute_covariance_interdomain_src(self, EDMF_Updrafts.UpdraftVariable au, EDMF_Updrafts.UpdraftVariable phi_u, EDMF_Updrafts.UpdraftVariable psi_u,
+                        EDMF_Environment.EnvironmentVariable phi_e,  EDMF_Environment.EnvironmentVariable psi_e, EDMF_Environment.EnvironmentVariable_2m covar_e)
     cdef void update_covariance_ED(self, GridMeanVariables GMV, CasesBase Case,TimeStepping TS, VariablePrognostic GmvVar1, VariablePrognostic GmvVar2,
             VariableDiagnostic GmvCovar, EDMF_Environment.EnvironmentVariable_2m Covar, EDMF_Environment.EnvironmentVariable  EnvVar1, EDMF_Environment.EnvironmentVariable  EnvVar2,
             EDMF_Updrafts.UpdraftVariable UpdVar1, EDMF_Updrafts.UpdraftVariable UpdVar2)
 
     cpdef update_GMV_diagnostics(self, GridMeanVariables GMV)
     cpdef double compute_zbl_qt_grad(self, GridMeanVariables GMV)
-    cdef get_GMV_TKE(self, EDMF_Updrafts.UpdraftVariable au, EDMF_Updrafts.UpdraftVariable wu,
-                      EDMF_Environment.EnvironmentVariable we, EDMF_Environment.EnvironmentVariable tke_e,
-                      double *gmv_w, double *gmv_tke)
-    cdef get_env_tke_from_GMV(self, EDMF_Updrafts.UpdraftVariable au, EDMF_Updrafts.UpdraftVariable wu,
-                      EDMF_Environment.EnvironmentVariable we, EDMF_Environment.EnvironmentVariable tke_e,
-                      double *gmv_w, double *gmv_tke)
-
     cdef get_GMV_CoVar(self, EDMF_Updrafts.UpdraftVariable au,
                         EDMF_Updrafts.UpdraftVariable phi_u, EDMF_Updrafts.UpdraftVariable psi_u,
                         EDMF_Environment.EnvironmentVariable phi_e,  EDMF_Environment.EnvironmentVariable psi_e,
-                        EDMF_Environment.EnvironmentVariable covar_e,
+                        EDMF_Environment.EnvironmentVariable_2m covar_e,
                        double *gmv_phi, double *gmv_psi, double *gmv_covar)
-
     cdef get_env_covar_from_GMV(self, EDMF_Updrafts.UpdraftVariable au,
                                 EDMF_Updrafts.UpdraftVariable phi_u, EDMF_Updrafts.UpdraftVariable psi_u,
                                 EDMF_Environment.EnvironmentVariable phi_e, EDMF_Environment.EnvironmentVariable psi_e,
-                                EDMF_Environment.EnvironmentVariable covar_e,
+                                EDMF_Environment.EnvironmentVariable_2m covar_e,
                                 double *gmv_phi, double *gmv_psi, double *gmv_covar)
 
