@@ -1669,6 +1669,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         with nogil:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+                if GMV.TKE.values[k] < tmp_eps:
+                    GMV.TKE.values[k] = 0.0
                 if GMV.Hvar.values[k] < tmp_eps:
                     GMV.Hvar.values[k] = 0.0
                 if GMV.QTvar.values[k] < tmp_eps:
@@ -1677,6 +1679,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     GMV.HQTcov.values[k] = 0.0
                 if self.EnvVar.Hvar.values[k] < tmp_eps:
                     self.EnvVar.Hvar.values[k] = 0.0
+                if self.EnvVar.TKE.values[k] < tmp_eps:
+                    self.EnvVar.TKE.values[k] = 0.0
                 if self.EnvVar.QTvar.values[k] < tmp_eps:
                     self.EnvVar.QTvar.values[k] = 0.0
                 if fabs(self.EnvVar.HQTcov.values[k]) < tmp_eps:
@@ -1733,8 +1737,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for i in xrange(self.n_updrafts):
                 if Covar.name == 'tke':
                     tke_factor = 0.5
-                    phi_diff = interp2pt(phi_u.values[i,k-1]-phi_e.values[k-1], phi_u.values[i,k]-phi_e.values[k])
-                    psi_diff = interp2pt(psi_u.values[i,k-1]-psi_e.values[k-1], psi_u.values[i,k]-psi_e.values[k])
+                    phi_diff = interp2pt(phi_u.values[i,k-1], phi_u.values[i,k])-interp2pt(phi_e.values[k-1], phi_e.values[k])
+                    psi_diff = interp2pt(psi_u.values[i,k-1], psi_u.values[i,k])-interp2pt(psi_e.values[k-1], psi_e.values[k])
                 else:
                     tke_factor = 1.0
                     phi_diff = phi_u.values[i,k]-phi_e.values[k]
@@ -1775,13 +1779,13 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cdef void compute_covariance_detr(self, EDMF_Environment.EnvironmentVariable_2m Covar):
         cdef:
             Py_ssize_t i, k
-        with nogil:
-            for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                Covar.detr_loss[k] = 0.0
-                for i in xrange(self.n_updrafts):
-                    w_u = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
-                    Covar.detr_loss[k] += self.UpdVar.Area.values[i,k] * fabs(w_u) * self.entr_sc[i,k]
-                Covar.detr_loss[k] *= self.Ref.rho0_half[k] * Covar.values[k]
+        #with nogil:
+        for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+            Covar.detr_loss[k] = 0.0
+            for i in xrange(self.n_updrafts):
+                w_u = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
+                Covar.detr_loss[k] += self.UpdVar.Area.values[i,k] * fabs(w_u) * self.entr_sc[i,k]
+            Covar.detr_loss[k] *= self.Ref.rho0_half[k] * Covar.values[k]
         return
 
     cpdef compute_covariance_rain(self, TimeStepping TS, GridMeanVariables GMV):
