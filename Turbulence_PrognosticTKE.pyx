@@ -943,7 +943,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         cdef:
             Py_ssize_t k, gw = self.Gr.gw
             double val1, val2, au_full
-            double Hvar_e, QTvar_e, HQTcov_e, Hvar_u, QTvar_u, HQTcov_u
         if whichvals == 'values':
 
             with nogil:
@@ -1023,8 +1022,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             gmv_covar[k] = tke_factor * ae[k] * phi_diff * psi_diff + ae[k] * covar_e.values[k]
             for i in xrange(self.n_updrafts):
                 if covar_e.name == 'tke':
-                    phi_diff = interp2pt(phi_u.values[i,k-1]-gmv_phi[k-1],phi_u.values[i,k]-gmv_phi[k])
-                    psi_diff = interp2pt(psi_u.values[i,k-1]-gmv_psi[k-1],psi_u.values[i,k]-gmv_psi[k])
+                    phi_diff = interp2pt(phi_u.values[i,k-1]-gmv_phi[k-1], phi_u.values[i,k]-gmv_phi[k])
+                    psi_diff = interp2pt(psi_u.values[i,k-1]-gmv_psi[k-1], psi_u.values[i,k]-gmv_psi[k])
                 else:
                     phi_diff = phi_u.values[i,k]-gmv_phi[k]
                     psi_diff = psi_u.values[i,k]-gmv_psi[k]
