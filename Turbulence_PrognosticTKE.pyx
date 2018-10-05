@@ -1722,18 +1722,20 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Py_ssize_t i,k
             double phi_diff, psi_diff, tke_factor
 
-        if Covar.name == 'tke':
-            tke_factor = 0.5
-        else:
-            tke_factor = 1.0
-
-        with nogil:
-            for k in xrange(self.Gr.nzg):
-                Covar.interdomain[k] = 0.0
-                for i in xrange(self.n_updrafts):
+        #with nogil:
+        for k in xrange(self.Gr.nzg):
+            Covar.interdomain[k] = 0.0
+            for i in xrange(self.n_updrafts):
+                if Covar.name == 'tke':
+                    tke_factor = 0.5
+                    phi_diff = interp2pt(phi_u.values[i,k-1]-phi_e.values[k-1], phi_u.values[i,k]-phi_e.values[k])
+                    psi_diff = interp2pt(psi_u.values[i,k-1]-psi_e.values[k-1], psi_u.values[i,k]-psi_e.values[k])
+                else:
+                    tke_factor = 1.0
                     phi_diff = phi_u.values[i,k]-phi_e.values[k]
                     psi_diff = psi_u.values[i,k]-psi_e.values[k]
-                    Covar.interdomain[k] += tke_factor*au.values[i,k] * (1.0-au.values[i,k]) * phi_diff * psi_diff
+
+                Covar.interdomain[k] += tke_factor*au.values[i,k] * (1.0-au.values[i,k]) * phi_diff * psi_diff
         return
 
     cdef void compute_covariance_entr(self, EDMF_Environment.EnvironmentVariable_2m Covar, EDMF_Updrafts.UpdraftVariable UpdVar1,
@@ -1743,7 +1745,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double tke_factor
             double updvar1, updvar2, envvar1, envvar2
 
+        #with nogil:
         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+            Covar.entr_gain[k] = 0.0
             for i in xrange(self.n_updrafts):
                 if Covar.name =='tke':
                     updvar1 = interp2pt(UpdVar1.values[i,k], UpdVar1.values[i,k-1])
@@ -1757,15 +1761,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     envvar1 = EnvVar1.values[k]
                     envvar2 = EnvVar2.values[k]
                     tke_factor = 1.0
-
-        with nogil:
-            for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                Covar.entr_gain[k] = 0.0
-                for i in xrange(self.n_updrafts):
-                    w_u = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
-                    Covar.entr_gain[k] +=  tke_factor*self.UpdVar.Area.values[i,k] * fabs(w_u) * self.detr_sc[i,k] * \
-                                                 (updvar1 - envvar1) * (updvar2 - envvar2)
-                Covar.entr_gain[k] *= self.Ref.rho0_half[k]
+                w_u = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
+                Covar.entr_gain[k] +=  tke_factor*self.UpdVar.Area.values[i,k] * fabs(w_u) * self.detr_sc[i,k] * \
+                                             (updvar1 - envvar1) * (updvar2 - envvar2)
+            Covar.entr_gain[k] *= self.Ref.rho0_half[k]
         return
 
     cdef void compute_covariance_detr(self, EDMF_Environment.EnvironmentVariable_2m Covar):
