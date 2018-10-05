@@ -1693,7 +1693,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double du = 0.0
             double dv = 0.0
             double tke_factor = 1.0
-            double du_low, dv_low, dw_low
+            double du_low, dv_low
             double du_high = 0.0
             double dv_high = 0.0
 
@@ -1701,21 +1701,18 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             if Covar.name == 'tke':
                 du_low = du_high
                 dv_low = dv_high
-                dw_low = dw_high
                 du_high = (GMV.U.values[k+1] - GMV.U.values[k]) * self.Gr.dzi
                 dv_high = (GMV.V.values[k+1] - GMV.V.values[k]) * self.Gr.dzi
-                diff_var2 = interp2pt((EnvVar2[k+1] - EnvVar2[k]),(EnvVar2[k] - EnvVar2[k-1])) * self.Gr.dzi
-                diff_var1 = interp2pt((EnvVar1[k+1] - EnvVar1[k]),(EnvVar1[k] - EnvVar1[k-1])) * self.Gr.dzi
+                diff_var2 = (EnvVar2[k] - EnvVar2[k-1]) * self.Gr.dzi
+                diff_var1 = (EnvVar1[k] - EnvVar1[k-1]) * self.Gr.dzi
                 tke_factor = 0.5
             else:
                 du_low = 0.0
                 dv_low = 0.0
-                dw_low = 0.0
                 du_high = 0.0
                 dv_high = 0.0
-                dw_high = 0.0
-                diff_var2 = (EnvVar2[k+1] - EnvVar2[k-1]) * self.Gr.dzi/2.0
-                diff_var1 = (EnvVar1[k+1] - EnvVar1[k-1]) * self.Gr.dzi/2.0
+                diff_var2 = interp2pt((EnvVar2[k+1] - EnvVar2[k]),(EnvVar2[k] - EnvVar2[k-1])) * self.Gr.dzi
+                diff_var1 = interp2pt((EnvVar1[k+1] - EnvVar1[k]),(EnvVar1[k] - EnvVar1[k-1])) * self.Gr.dzi
                 tke_factor = 1.0
             with nogil:
                 Covar.shear[k] = tke_factor*2.0*(self.Ref.rho0_half[k] * ae[k] * self.KH.values[k] *
