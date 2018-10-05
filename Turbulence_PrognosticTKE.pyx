@@ -152,35 +152,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         # mixing length
         self.mixing_length = np.zeros((Gr.nzg,),dtype=np.double, order='c')
 
-        if self.calc_tke:
-            # environmental tke source terms
-            self.tke_buoy = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-            self.tke_dissipation = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-            self.tke_entr_gain = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-            self.tke_detr_loss = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-            self.tke_shear = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-            self.tke_pressure = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-
-        if self.calc_scalar_var:
-            #self.Hvar = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-            #self.QTvar = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-            #self.HQTcov = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-            self.Hvar_dissipation = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-            self.QTvar_dissipation = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-            self.HQTcov_dissipation = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-            self.Hvar_entr_gain = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-            self.QTvar_entr_gain = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-            self.HQTcov_entr_gain = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-            self.Hvar_detr_loss = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-            self.QTvar_detr_loss = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-            self.HQTcov_detr_loss = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-            self.Hvar_shear = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-            self.QTvar_shear = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-            self.HQTcov_shear = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-            self.Hvar_rain = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-            self.QTvar_rain = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-            self.HQTcov_rain = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-
         # Near-surface BC of updraft area fraction
         self.area_surface_bc= np.zeros((self.n_updrafts,),dtype=np.double, order='c')
         self.w_surface_bc= np.zeros((self.n_updrafts,),dtype=np.double, order='c')
