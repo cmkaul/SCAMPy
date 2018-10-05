@@ -1154,7 +1154,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 input.quadrature_order = quadrature_order
                 input.b = self.UpdVar.B.values[i,k]
                 input.w = interp2pt(self.UpdVar.W.values[i,k],self.UpdVar.W.values[i,k-1])
-                input.w = self.UpdVar.W.values[i,k]   ### BY IGNACIO TO AVOID NUMERICAL ARTIFACT
+                #input.w = self.UpdVar.W.values[i,k]   ### BY IGNACIO TO AVOID NUMERICAL ARTIFACT
                 input.z = self.Gr.z_half[k]
                 input.af = self.UpdVar.Area.values[i,k]
                 input.tke = self.EnvVar.TKE.values[k]
