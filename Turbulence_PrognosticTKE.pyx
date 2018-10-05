@@ -1671,20 +1671,19 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),self.UpdVar.Area.bulkvalues) # area of environment
             double du_high = 0.0
             double dv_high = 0.0
-            double dw_high = 2.0 * self.EnvVar.W.values[gw]  * self.Gr.dzi
-            double du_low, dv_low, dw_low,
+            double dw =  self.EnvVar.W.values[gw]  * self.Gr.dzi
+            double du_low, dv_low
 
         with nogil:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                 du_low = du_high
                 dv_low = dv_high
-                dw_low = dw_high
                 du_high = (GMV.U.values[k+1] - GMV.U.values[k]) * self.Gr.dzi
                 dv_high = (GMV.V.values[k+1] - GMV.V.values[k]) * self.Gr.dzi
-                dw_high = (self.EnvVar.W.values[k+1] - self.EnvVar.W.values[k]) * self.Gr.dzi
+                dw = (self.EnvVar.W.values[k] - self.EnvVar.W.values[k-1]) * self.Gr.dzi
                 self.tke_shear[k] =( self.Ref.rho0_half[k] * ae[k] * self.KM.values[k] *
                                     ( pow(interp2pt(du_low, du_high),2.0) +  pow(interp2pt(dv_low, dv_high),2.0)
-                                      + pow(interp2pt(dw_low, dw_high),2.0)))
+                                      + pow(dw,2.0)))
         return
 
     cpdef compute_tke_pressure(self):
@@ -2012,7 +2011,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                     *sqrt(fmax(self.EnvVar.TKE.values[k],0))/fmax(self.mixing_length[k],1.0))
                 c[kk] = (self.Ref.rho0_half[k+1] * ae[k+1] * whalf[k+1] * dzi - rho_ae_K_m[k] * dzi * dzi)
                 x[kk] = (self.Ref.rho0_half[k] * ae_old[k] * self.EnvVar.Hvar.values[k] * dti
-                         + self.Hvar_shear[k] + self.Hvar_entr_gain[k]) #
+                         + self.Hvar_shear[k] + self.Hvar_entr_gain[k]+ self.Hvar_rain[k])
 
             a[0] = 0.0
             b[0] = 1.0
