@@ -39,7 +39,6 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
         _ret.detr_sc = 0.0
     return _ret
 
-
 cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
 
         cdef:
