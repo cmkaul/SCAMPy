@@ -1139,6 +1139,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             entr_in_struct input
             eos_struct sa
             double transport_plus, transport_minus
+            long quadrature_order = 3
 
 
         self.UpdVar.get_cloud_base_top_cover()
@@ -1150,6 +1151,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         for i in xrange(self.n_updrafts):
             input.zi = self.UpdVar.cloud_base[i]
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+                input.quadrature_order = quadrature_order
                 input.b = self.UpdVar.B.values[i,k]
                 input.w = interp2pt(self.UpdVar.W.values[i,k],self.UpdVar.W.values[i,k-1])
                 input.w = self.UpdVar.W.values[i,k]   ### BY IGNACIO TO AVOID NUMERICAL ARTIFACT
@@ -1167,6 +1169,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 input.ql_up = self.UpdVar.QL.values[i,k]
                 input.p0 = self.Ref.p0_half[k]
                 input.alpha0 = self.Ref.alpha0_half[k]
+                input.env_Hvar = self.EnvVar.Hvar.values[k]
+                input.env_QTvar = self.EnvVar.QTvar.values[k]
+                input.env_HQTcov = self.EnvVar.HQTcov.values[k]
+
                 if self.calc_tke:
                         input.tke = self.EnvVar.TKE.values[k]
                         input.tke_ed_coeff  = self.tke_ed_coeff
