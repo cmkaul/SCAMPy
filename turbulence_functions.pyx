@@ -133,17 +133,21 @@ cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil:
 #     return  _ret
 
 
-
 cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil:
-    cdef entr_struct _ret
+    cdef :
+        entr_struct _ret
+        double effective_buoyancy
     # in cloud portion from Soares 2004
+    effective_buoyancy = entr_in.b +entr_in.alpha0* entr_in.nh_press/fmax(entr_in.af, 1e-3)
+    with gil:
+        print effective_buoyancy, entr_in.b
     if entr_in.z >= entr_in.zi :
     #if entr_in.ql_up >= 0.0:
-        _ret.detr_sc= 4.0e-3 + entr_in.af *fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)#(entr_in.af+1/entr_in.af)*entr_in.af*
+        _ret.detr_sc= 4.0e-3 + 0.12 *fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
     else:
         _ret.detr_sc = 0.0
 
-    _ret.entr_sc = 0.12 *  fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-3)
+    _ret.entr_sc = 0.012 *  fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2) #
 
     return  _ret
 

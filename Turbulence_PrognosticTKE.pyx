@@ -145,7 +145,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         # Pressure term in updraft vertical momentum equation
         self.updraft_pressure_sink = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
-
+        self.nh_pressure_term = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
         # Mass flux
         self.m = np.zeros((self.n_updrafts, Gr.nzg),dtype=np.double, order='c')
 
@@ -839,7 +839,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double lm
             double we_half
             double pr_vec[2]
-            double prandtl, ri_thl, shear2
+            double ri_thl, shear2
 
         if self.similarity_diffusivity:
             ParameterizationBase.compute_eddy_diffusivities_similarity(self,GMV, Case)
@@ -1080,6 +1080,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 input.env_Hvar = self.EnvVar.Hvar.values[k]
                 input.env_QTvar = self.EnvVar.QTvar.values[k]
                 input.env_HQTcov = self.EnvVar.HQTcov.values[k]
+                input.nh_press = self.nh_pressure_term[i,k]
 
                 if self.calc_tke:
                         input.tke = self.EnvVar.TKE.values[k]
@@ -1200,10 +1201,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         press_buoy =  -1.0 * self.Ref.rho0[k] * a_k * B_k * self.pressure_buoy_coeff
                         press_drag = -1.0 * self.Ref.rho0[k] * a_k * (self.pressure_drag_coeff/self.pressure_plume_spacing
                                                                      * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k])**2.0/sqrt(fmax(a_k,self.minimum_area)))
-                        press = press_buoy + press_drag
+                        self.nh_pressure_term[i,k] = press_buoy + press_drag
                         self.updraft_pressure_sink[i,k] = press
                         self.UpdVar.W.new[i,k] = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * dti_
-                                                  -adv + exch + buoy + press)/(self.Ref.rho0[k] * anew_k * dti_)
+                                                  -adv + exch + buoy + self.nh_pressure_term[i,k])/(self.Ref.rho0[k] * anew_k * dti_)
                         if self.UpdVar.W.new[i,k] <= 0.0:
                             self.UpdVar.W.new[i,k:] = 0.0
                             self.UpdVar.Area.new[i,k+1:] = 0.0
