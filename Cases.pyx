@@ -37,8 +37,15 @@ def CasesFactory(namelist, paramlist):
         return GATE_III(paramlist)
     elif namelist['meta']['casename'] == 'DYCOMS_RF01':
         return DYCOMS_RF01(paramlist)
+<<<<<<< HEAD
     elif namelist['meta']['casename'] == 'ZGILS':
         return ZGILS(namelist, paramlist)
+=======
+    elif namelist['meta']['casename'] == 'GABLS':
+        return GABLS(paramlist)
+    elif namelist['meta']['casename'] == 'SP':
+        return SP(paramlist)
+>>>>>>> c3a17d334ae4f0ff928b13e56507aaee35ccfb0f
 
     else:
         print('case not recognized')
@@ -1409,7 +1416,7 @@ cdef class DYCOMS_RF01(CasesBase):
         self.Sur.initialize()
 
         return
-
+ 
     cpdef initialize_forcing(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV):
         self.Fo.Gr = Gr
         self.Fo.Ref = Ref
@@ -1694,9 +1701,6 @@ cdef class ZGILS(CasesBase):
             # self.Nud.relax_coeff[k] = 0.5 * self.tau_relax_inverse * (1-cos(factor))
 
         self.Nud.update(GMV)
-
-
-
 
         return
     cpdef update_radiation(self, GridMeanVariables GMV,  UpdraftVariables UpdVar,

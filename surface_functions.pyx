@@ -142,5 +142,3 @@ cdef void exchange_coefficients_byun(double Ri, double zb, double z0, double *cm
     cm[0] = cu * cu
     ch[0] = cu * cth
     return
-
-
