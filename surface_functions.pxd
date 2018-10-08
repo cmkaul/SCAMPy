@@ -24,3 +24,5 @@ cpdef double entropy_flux(tflux,qtflux, p0_1, T_1, qt_1)
 
 
 cpdef double compute_ustar(double windspeed, double buoyancy_flux, double z0, double z1)
+
+cdef void exchange_coefficients_byun(double Ri, double zb, double z0, double* cm, double* ch, double* lmo)

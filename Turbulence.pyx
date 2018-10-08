@@ -131,8 +131,12 @@ cdef class ParameterizationBase:
             for k in xrange(gw,nzg-gw):
                 zzi = self.Gr.z_half[k]/self.zi
                 if zzi <= 1.0:
-                    self.KH.values[k] = vkb * ( (ustar/self.wstar)**3 + 39.0*vkb*zzi)**(1.0/3.0) * zzi * (1.0-zzi) * (1.0-zzi) * self.wstar * self.zi
-                    self.KM.values[k] = self.KH.values[k] * self.prandtl_number
+                    if self.wstar<1e-6:
+                        self.KH.values[k] = 0.0
+                        self.KM.values[k] = 0.0
+                    else:
+                        self.KH.values[k] = vkb * ( (ustar/self.wstar)**3 + 39.0*vkb*zzi)**(1.0/3.0) * zzi * (1.0-zzi) * (1.0-zzi) * self.wstar * self.zi
+                        self.KM.values[k] = self.KH.values[k] * self.prandtl_number
                 else:
                     self.KH.values[k] = 0.0
                     self.KM.values[k] = 0.0

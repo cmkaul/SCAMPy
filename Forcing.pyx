@@ -141,7 +141,7 @@ cdef class ForcingDYCOMS_RF01(ForcingBase):
         self.divergence = 3.75e-6  # divergence is defined twice: here and in initialize_forcing method of DYCOMS_RF01 case class
                                    # where it is used to initialize large scale subsidence
 
-        self.f_rad = np.zeros((self.Gr.nzg + 1,), dtype=np.double, order='c') # radiative flux at cell edges
+        self.f_rad = np.zeros((self.Gr.nzg + 1), dtype=np.double, order='c') # radiative flux at cell edges
         return
 
     cpdef calculate_radiation(self, GridMeanVariables GMV):
@@ -165,6 +165,8 @@ cdef class ForcingDYCOMS_RF01(ForcingBase):
 
         # cloud-top cooling
         q_0 = 0.0
+    
+        self.f_rad = np.zeros((self.Gr.nzg + 1), dtype=np.double, order='c')
         self.f_rad[self.Gr.nzg] = self.F0 * np.exp(-q_0)
         for k in xrange(self.Gr.nzg - 1, -1, -1):
             q_0           += self.kappa * self.Ref.rho0_half[k] * GMV.QL.values[k] * self.Gr.dz
