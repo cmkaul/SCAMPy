@@ -1334,8 +1334,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),self.UpdVar.Area.bulkvalues) # area of environment
             double du_high = 0.0
             double dv_high = 0.0
-            double dw_high = 2.0 * self.EnvVar.W.values[gw]  * self.Gr.dzi
-            double du_low, dv_low, dw_low,
+            double du_low, dv_low
 
         with nogil:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
@@ -1344,10 +1343,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 dw_low = dw_high
                 du_high = (GMV.U.values[k+1] - GMV.U.values[k]) * self.Gr.dzi
                 dv_high = (GMV.V.values[k+1] - GMV.V.values[k]) * self.Gr.dzi
-                dw_high = (self.EnvVar.W.values[k+1] - self.EnvVar.W.values[k]) * self.Gr.dzi
+                dw = (self.EnvVar.W.values[k] - self.EnvVar.W.values[k-1]) * self.Gr.dzi
                 self.tke_shear[k] =( self.Ref.rho0_half[k] * ae[k] * self.KM.values[k] *
-                                    ( pow(interp2pt(du_low, du_high),2.0) +  pow(interp2pt(dv_low, dv_high),2.0)
-                                      + pow(interp2pt(dw_low, dw_high),2.0)))
+                                    ( pow(interp2pt(du_low, du_high),2.0) +  pow(interp2pt(dv_low, dv_high),2.0) + dw * dw))
         return
 
     cpdef compute_tke_pressure(self):
