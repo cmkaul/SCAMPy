@@ -1306,7 +1306,16 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         # keep this in mind if we modify updraft top treatment!
                         self.updraft_pressure_sink[i,k:] = 0.0
                         break
-
+                    # the above lines were replaced by the followings to allow integration above negative w
+                    # the model output is sensitive to the choice of value inthe condition : <= 0.01
+                    #     if self.UpdVar.W.new[i,k] <= 0.01:
+                    #         self.UpdVar.W.new[i,k] = 0.0
+                    #         self.UpdVar.Area.new[i,k+1] = 0.0
+                    #         #break
+                    # else:
+                    #     self.UpdVar.W.new[i,k] = 0.0
+                    #     self.UpdVar.Area.new[i,k+1] = 0.0
+                    #     #break
         return
 
     cpdef solve_updraft_scalars(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
