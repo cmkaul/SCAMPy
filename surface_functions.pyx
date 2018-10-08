@@ -1,6 +1,6 @@
 import numpy as np
 from thermodynamic_functions cimport latent_heat, pd_c, pv_c, sd_c, sv_c, cpm_c, theta_rho_c
-from turbulence_functions cimport get_wstar, get_inversion
+from libc.math cimport acos, sqrt, cbrt, fabs, cos
 include "parameters.pxi"
 
 #Adapated from PyCLES: https://github.com/pressel/pycles
@@ -101,3 +101,44 @@ cpdef double compute_ustar(double windspeed, double buoyancy_flux, double z0, do
 
 
     return ustar
+
+cdef void exchange_coefficients_byun(double Ri, double zb, double z0, double *cm, double *ch, double *lmo):
+
+    #Monin-Obukhov similarity based on
+    #Daewon W. Byun, 1990: On the Analytical Solutions of Flux-Profile Relationships for the Atmospheric Surface Layer. J. Appl. Meteor., 29, 652–657.
+    #doi: http://dx.doi.org/10.1175/1520-0450(1990)029<0652:OTASOF>2.0.CO;2
+    cdef:
+        double logz = np.log(zb/z0)
+        double zfactor = zb/(zb-z0)*logz
+        double zeta, zeta0, psi_m, psi_h
+        double sb = Ri/Pr0
+        double qb, pb, crit, angle, tb
+        double  cu, cth
+
+
+    if Ri > 0.0:
+        zeta = zfactor/(2.0*beta_h*(beta_m*Ri -1.0))*((1.0-2.0*beta_h*Ri)-sqrt(1.0+4.0*(beta_h - beta_m)*sb))
+        lmo[0] = zb/zeta
+        zeta0 = z0/lmo[0]
+        psi_m = psi_m_stable(zeta, zeta0)
+        psi_h = psi_h_stable(zeta,zeta0)
+    else:
+        qb = 1.0/9.0 * (1.0 /(gamma_m * gamma_m) + 3.0 * gamma_h/gamma_m * sb * sb)
+        pb = 1.0/54.0 * (-2.0/(gamma_m*gamma_m*gamma_m) + 9.0/gamma_m * (-gamma_h/gamma_m + 3.0)*sb * sb)
+        crit = qb * qb *qb - pb * pb
+        if crit < 0.0:
+            tb = cbrt(sqrt(-crit) + fabs(pb))
+            zeta = zfactor * (1.0/(3.0*gamma_m)-(tb + qb/tb))
+        else:
+            angle = acos(pb/sqrt(qb * qb * qb))
+            zeta = zfactor * (-2.0 * sqrt(qb) * cos(angle/3.0)+1.0/(3.0*gamma_m))
+        lmo[0] = zb/zeta
+        zeta0 = z0/lmo[0]
+        psi_m = psi_m_unstable(zeta, zeta0)
+        psi_h = psi_h_unstable(zeta,zeta0)
+
+    cu = vkb/(logz-psi_m)
+    cth = vkb/(logz-psi_h)/Pr0
+    cm[0] = cu * cu
+    ch[0] = cu * cth
+    return

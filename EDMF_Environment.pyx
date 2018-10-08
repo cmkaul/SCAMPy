@@ -29,6 +29,26 @@ cdef class EnvironmentVariable:
         self.name = name
         self.units = units
 
+cdef class EnvironmentVariable_2m:
+    def __init__(self, nz, loc, kind, name, units):
+        self.values = np.zeros((nz,),dtype=np.double, order='c')
+        self.dissipation = np.zeros((nz,),dtype=np.double, order='c')
+        self.entr_gain = np.zeros((nz,),dtype=np.double, order='c')
+        self.detr_loss = np.zeros((nz,),dtype=np.double, order='c')
+        self.buoy = np.zeros((nz,),dtype=np.double, order='c')
+        self.press = np.zeros((nz,),dtype=np.double, order='c')
+        self.shear = np.zeros((nz,),dtype=np.double, order='c')
+        self.interdomain = np.zeros((nz,),dtype=np.double, order='c')
+        self.rain_src = np.zeros((nz,),dtype=np.double, order='c')
+        if loc != 'half':
+            print('Invalid location setting for variable! Must be half')
+        self.loc = loc
+        if kind != 'scalar' and kind != 'velocity':
+            print ('Invalid kind setting for variable! Must be scalar or velocity')
+        self.kind = kind
+        self.name = name
+        self.units = units
+
 
 cdef class EnvironmentVariables:
     def __init__(self,  namelist, Grid Gr  ):
@@ -71,16 +91,16 @@ cdef class EnvironmentVariables:
             print('Defaulting to saturation adjustment with respect to environmental means')
 
         if self.calc_tke:
-            self.TKE = EnvironmentVariable( nz, 'half', 'scalar', 'tke','m^2/s^2' )
+            self.TKE = EnvironmentVariable_2m( nz, 'half', 'scalar', 'tke','m^2/s^2' )
 
         if self.calc_scalar_var:
-            self.QTvar = EnvironmentVariable( nz, 'half', 'scalar', 'qt_var','kg^2/kg^2' )
+            self.QTvar = EnvironmentVariable_2m( nz, 'half', 'scalar', 'qt_var','kg^2/kg^2' )
             if namelist['thermodynamics']['thermal_variable'] == 'entropy':
-                self.Hvar = EnvironmentVariable(nz, 'half', 'scalar', 's_var', '(J/kg/K)^2')
-                self.HQTcov = EnvironmentVariable(nz, 'half', 'scalar', 's_qt_covar', '(J/kg/K)(kg/kg)' )
+                self.Hvar = EnvironmentVariable_2m(nz, 'half', 'scalar', 's_var', '(J/kg/K)^2')
+                self.HQTcov = EnvironmentVariable_2m(nz, 'half', 'scalar', 's_qt_covar', '(J/kg/K)(kg/kg)' )
             elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
-                self.Hvar = EnvironmentVariable(nz, 'half', 'scalar', 'thetal_var', 'K^2')
-                self.HQTcov = EnvironmentVariable(nz, 'half', 'scalar', 'thetal_qt_covar', 'K(kg/kg)' )
+                self.Hvar = EnvironmentVariable_2m(nz, 'half', 'scalar', 'thetal_var', 'K^2')
+                self.HQTcov = EnvironmentVariable_2m(nz, 'half', 'scalar', 'thetal_qt_covar', 'K(kg/kg)' )
 
         if self.EnvThermo_scheme == 'sommeria_deardorff':
             self.THVvar = EnvironmentVariable(nz, 'half', 'scalar', 'thetav_var', 'K^2' )

@@ -1,7 +1,8 @@
 import numpy as np
 import scipy.special as sp
-from libc.math cimport exp
+from libc.math cimport exp, log
 from scipy.stats import norm
+cimport cython
 
 # compute the mean of the values above a given percentile (0 to 1) for a standard normal distribution
 # this gives the surface scalar coefficient for a single updraft or nth updraft of n updrafts
@@ -26,4 +27,8 @@ cdef double interp2pt(double val1, double val2) nogil:
 
 cdef double logistic(double x, double slope, double mid) nogil:
     return 1.0/(1.0 + exp( -slope * (x-mid)))
+
+
+
+
 
