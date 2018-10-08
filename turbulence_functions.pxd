@@ -39,7 +39,6 @@ cdef struct entr_in_struct:
     double env_HQTcov
     double dw_env
     double L
-    double nh_press
     double tke_ed_coeff
     double Poisson_rand
     double logfn
