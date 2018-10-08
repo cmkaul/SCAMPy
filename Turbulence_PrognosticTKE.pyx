@@ -5,7 +5,6 @@
 #cython: cdivision=False
 
 import numpy as np
-include "parameters.pxi"
 import cython
 import sys
 cimport  EDMF_Updrafts
@@ -22,6 +21,9 @@ from turbulence_functions cimport *
 from utility_functions cimport *
 from libc.math cimport fmax, sqrt, exp, pow, cbrt, fmin, fabs
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
+
+include "parameters.pxi"
+
 
 cdef class EDMF_PrognosticTKE(ParameterizationBase):
     # Initialize the class
@@ -631,7 +633,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         # layers. Q.J.R. Meteorol. Soc., 136: 213-221. doi:10.1002/qj.529
         if (self.mixing_scheme == 'grisogono'):
             # print 'Using Grisogono mixing length'
-            g = 9.81
             for k in xrange(gw, self.Gr.nzg-gw):
 
                 shear2 = pow((GMV.U.values[k+1] - GMV.U.values[k]) * self.Gr.dzi, 2) + \
@@ -668,7 +669,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         # https://doi.org/10.1175/JAS-D-12-0106.1
         elif self.mixing_scheme=='suselj':
             for k in xrange(gw, self.Gr.nzg-gw):
-                g = 9.81
                 z_ = self.Gr.z_half[k]
                 l[0] = fmax(vkb * z_, 1e-6);
                 # tau = 400.0 # Value taken in the paper
@@ -684,11 +684,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         elif (self.mixing_scheme == 'sbl'):
             #print 'Shear mixing length'
-            g = 9.81
+
             for k in xrange(gw, self.Gr.nzg-gw):
                 z_ = self.Gr.z_half[k]
-                shear2 = pow((GMV.U.values[k+1] - GMV.U.values[k-1]) * 0.5 * self.Gr.dzi, 2) + \
-                    pow((GMV.V.values[k+1] - GMV.V.values[k-1]) * 0.5 * self.Gr.dzi, 2)
+                shear2 = (pow((GMV.U.values[k+1] - GMV.U.values[k-1]) * 0.5 * self.Gr.dzi, 2) +
+                          pow((GMV.V.values[k+1] - GMV.V.values[k-1]) * 0.5 * self.Gr.dzi, 2) +
+                          pow(self.EnvVar.W.values[k]-self.EnvVar.W.values[k-1] * self.Gr.dzi,2))
                 ri_bulk = g * (GMV.THL.values[k] - GMV.THL.values[gw]) * self.Gr.z_half[k]/ \
                 GMV.THL.values[gw] / (GMV.U.values[k] * GMV.U.values[k] + GMV.V.values[k] * GMV.V.values[k])
                 THL_lapse_rate = fmax(fabs((self.EnvVar.THL.values[k+1]-self.EnvVar.THL.values[k-1])*0.5*self.Gr.dzi),1e-10)
@@ -738,8 +739,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 ri_qt  = grad_qt_plus  * d_alpha_qt_total / fmax(shear2, 1e-10)
                 
                 # Turbulent Prandtl number
-                pr_vec[0] = 1.6; pr_vec[1] =  0.6 + 1.0 * (ri_thl+ri_qt)/0.066
-                prandtl = smooth_minimum(pr_vec, 7.0)
+                # pr_vec[0] = 1.6; pr_vec[1] =  0.6 + 1.0 * (ri_thl+ri_qt)/0.066
+                # prandtl = smooth_minimum(pr_vec, 7.0)
+                # Colleen-- for now I am setting prandtl number to 1
+                self.prandtl_number = 1.0
+                prandtl = 1.0
 
                 l3 = sqrt(self.tke_diss_coeff/self.tke_ed_coeff) * sqrt(fmax(self.EnvVar.TKE.values[k],0.0))/fmax(sqrt(shear2), 1.0e-10)
                 l3 /= sqrt(fmax(1.0 - ri_thl/prandtl - ri_qt/prandtl, 1e-7))
@@ -754,7 +758,13 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 if (N<1e-7):
                     l1 = 1.0e5
                 l2 = fmin(l2, 1000.0)
-                l[0]=l2; l[1]=l1; l[2]=l3; l[3]=1.0e5; l[4]=1.0e5
+
+                l[0]=l2
+                l[1]=l1
+                l[2]=l3
+                # Colleen- I added in the "old" mixing length for kicks
+                l[3]=l1 = tau * sqrt(fmax(self.EnvVar.TKE.values[k],0.0))
+                l[4]=1.0e5
                 # self.mixing_length[k] = smooth_minimum2(l, 0.1*self.Gr.dz) #
                 j = 0
                 while(j<len(l)):
@@ -777,12 +787,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.ml_ratio[k] = self.mixing_length[k]/l[int(self.mls[k])]
 
         elif (self.mixing_scheme == 'trials'):
-            #print 'Shear mixing length'
-            g = 9.81
             for k in xrange(gw, self.Gr.nzg-gw):
                 z_ = self.Gr.z_half[k]
-                shear2 = pow((GMV.U.values[k+1] - GMV.U.values[k-1]) * 0.5 * self.Gr.dzi, 2) + \
-                    pow((GMV.V.values[k+1] - GMV.V.values[k-1]) * 0.5 * self.Gr.dzi, 2)
+                shear2 = (pow((GMV.U.values[k+1] - GMV.U.values[k-1]) * 0.5 * self.Gr.dzi, 2) +
+                          pow((GMV.V.values[k+1] - GMV.V.values[k-1]) * 0.5 * self.Gr.dzi, 2) +
+                          pow(self.EnvVar.W.values[k]-self.EnvVar.W.values[k-1] * self.Gr.dzi,2))
                 ri_bulk = g * (GMV.THL.values[k] - GMV.THL.values[gw]) * self.Gr.z_half[k]/ \
                 GMV.THL.values[gw] / (GMV.U.values[k] * GMV.U.values[k] + GMV.V.values[k] * GMV.V.values[k])
                 THL_lapse_rate = fmax(fabs((self.EnvVar.THL.values[k+1]-self.EnvVar.THL.values[k-1])*0.5*self.Gr.dzi),1e-10)
