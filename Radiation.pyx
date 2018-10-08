@@ -84,14 +84,15 @@ cdef class RadiationBase:
 
 
         # set surface values
-        self.srf_lw_up = self.gm_uflux_lw[0]
-        self.srf_lw_down = self.gm_dflux_lw[0]
-        self.srf_sw_up = self.gm_uflux_sw[0]
-        self.srf_sw_down = self.gm_dflux_sw[0]
+        self.srf_lw_up = self.gm_uflux_lw[self.Gr.gw-1]
+        self.srf_lw_down = self.gm_dflux_lw[self.Gr.gw-1]
+        self.srf_sw_up = self.gm_uflux_sw[self.Gr.gw-1]
+        self.srf_sw_down = self.gm_dflux_sw[self.Gr.gw-1]
 
-        self.toa_lw_up = np.flipud(self.gm_uflux_lw)[0]
-        self.toa_sw_up = np.flipud(self.gm_uflux_sw)[0]
-        self.toa_sw_down = np.flipud(self.gm_dflux_sw)[0]
+        self.toa_lw_up = self.gm_uflux_lw[self.Gr.gw-1+self.Gr.nz]
+        self.toa_sw_up = self.gm_uflux_sw[self.Gr.gw-1+self.Gr.nz]
+        self.toa_sw_down = self.gm_dflux_sw[self.Gr.gw-1+self.Gr.nz]
+
 
         return
 cdef class RadiationNone(RadiationBase):
@@ -436,6 +437,16 @@ cdef class RadiationRRTM(RadiationBase):
             tlev_in[i, nz_full] = 2.0*tlay_in[i,nz_full-1] - tlev_in[i,nz_full-1]
             plev_in[i,nz_full] = self.pi_full[nz_full]/100.0
 
+        # plt.figure('Tlev, tlay')
+        # plt.plot(tlev_in[0,:], plev_in[0,:], '-b')
+        # plt.plot(tlay_in[0,:], play_in[0,:], '--r')
+        # plt.gca().invert_yaxis()
+        #
+        # plt.figure('p vs z')
+        # plt.plot(self.Ref.p0[self.Gr.gw-1:self.Gr.nzg-self.Gr.gw],self.Gr.z[self.Gr.gw-1:self.Gr.nzg-self.Gr.gw],  '-b')
+        # plt.plot( self.Ref.p0_half[self.Gr.gw:self.Gr.nzg-self.Gr.gw], self.Gr.z_half[self.Gr.gw:self.Gr.nzg-self.Gr.gw],'--r')
+        #
+
 
 
         cdef:
@@ -462,6 +473,7 @@ cdef class RadiationRRTM(RadiationBase):
              &uflx_lw_out[0,0]    ,&dflx_lw_out[0,0]    ,&hr_lw_out[0,0]      ,&uflxc_lw_out[0,0]   ,&dflxc_lw_out[0,0],  &hrc_lw_out[0,0],
              &duflx_dt_out[0,0],&duflxc_dt_out[0,0] )
 
+
         c_rrtmg_sw (
             &ncol, &nlay, &icld, &iaer, &play_in[0,0], &plev_in[0,0], &tlay_in[0,0], &tlev_in[0,0],&tsfc_in[0],
             &h2ovmr_in[0,0], &o3vmr_in[0,0], &co2vmr_in[0,0], &ch4vmr_in[0,0], &n2ovmr_in[0,0],&o2vmr_in[0,0],
@@ -472,6 +484,7 @@ cdef class RadiationRRTM(RadiationBase):
              &cicewp_sw_in[0,0,0]  ,&cliqwp_sw_in[0,0,0]  ,&reice_in[0,0]   ,&reliq_in[0,0]   ,
              &tauaer_sw_in[0,0,0]  ,&ssaaer_sw_in[0,0,0]  ,&asmaer_sw_in[0,0,0]  ,&ecaer_sw_in[0,0,0]   ,
              &uflx_sw_out[0,0]    ,&dflx_sw_out[0,0]    ,&hr_sw_out[0,0]      ,&uflxc_sw_out[0,0]   ,&dflxc_sw_out[0,0], &hrc_sw_out[0,0])
+
 
 
         if self.compute_on_subdomains:
@@ -502,7 +515,11 @@ cdef class RadiationRRTM(RadiationBase):
                 self.gm_dflux_sw[kgrid] = dflx_sw_out[0,k]
 
         RadiationBase.update(self, GMV, UpdVar, EnvVar, TS, Tsurface)
-
+        # plt.figure('rad_T_tendemcy')
+        # plt.plot(np.divide(np.add(hr_lw_out[0,:],hr_sw_out[0,:]),86400.0), play_in[0,:],'-o')
+        #
+        # plt.gca().invert_yaxis()
+        # plt.show()
 
 
         return

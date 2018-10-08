@@ -15,7 +15,7 @@ cdef class EnvironmentVariable:
 
 cdef class EnvironmentVariables:
     cdef:
-
+        EnvironmentVariable Area
         EnvironmentVariable W
         EnvironmentVariable QT
         EnvironmentVariable QL
@@ -40,9 +40,13 @@ cdef class EnvironmentVariables:
         bint use_sommeria_deardorff
         bint use_quadrature
         str EnvThermo_scheme
+        double cloud_top
+        double cloud_base
+        double cloud_cover
 
     cpdef initialize_io(self, NetCDFIO_Stats Stats )
     cpdef io(self, NetCDFIO_Stats Stats)
+    cpdef get_cloud_base_top_cover(self)
 
 cdef class EnvironmentThermodynamics:
     cdef:

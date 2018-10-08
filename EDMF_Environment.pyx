@@ -34,7 +34,7 @@ cdef class EnvironmentVariables:
     def __init__(self,  namelist, Grid Gr  ):
         cdef Py_ssize_t nz = Gr.nzg
         self.Gr = Gr
-
+        self.Area = EnvironmentVariable(nz, 'half', 'scalar', 'area_fraction','[-]' )
         self.W = EnvironmentVariable(nz, 'full', 'velocity', 'w','m/s' )
         self.QT = EnvironmentVariable( nz, 'half', 'scalar', 'qt','kg/kg' )
         self.QL = EnvironmentVariable( nz, 'half', 'scalar', 'ql','kg/kg' )
@@ -119,6 +119,10 @@ cdef class EnvironmentVariables:
             Stats.add_profile('env_HQTcov')
         if self.EnvThermo_scheme == 'sommeria_deardorff':
             Stats.add_profile('env_THVvar')
+
+        Stats.add_ts('env_cloud_cover')
+        Stats.add_ts('env_cloud_base')
+        Stats.add_ts('env_cloud_top')
         return
 
     cpdef io(self, NetCDFIO_Stats Stats):
@@ -141,11 +145,29 @@ cdef class EnvironmentVariables:
         if self.EnvThermo_scheme  == 'sommeria_deardorff':
             Stats.write_profile('env_THVvar', self.THVvar.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
 
-        #ToDo [suggested by CK for AJ ;]
-        # Add output of environmental cloud fraction, cloud base, cloud top (while the latter can be gleaned from ql profiles
-        # it is more convenient to simply have them in the stats files!
-        # Add the same with respect to the grid mean
+        self.get_cloud_base_top_cover()
+        Stats.write_ts('env_cloud_cover',self.cloud_cover)
+        Stats.write_ts('env_cloud_base', self.cloud_base)
+        Stats.write_ts('env_cloud_top', self.cloud_top)
+
         return
+
+    cpdef get_cloud_base_top_cover(self):
+        cdef Py_ssize_t  k
+
+
+        self.cloud_base = self.Gr.z_half[self.Gr.nzg-self.Gr.gw-1]
+        self.cloud_top = 0.0
+        self.cloud_cover = 0.0
+        for k in xrange(self.Gr.gw,self.Gr.nzg-self.Gr.gw):
+            if self.QL.values[k] > 1e-8 :
+                self.cloud_base = fmin(self.cloud_base, self.Gr.z_half[k])
+                self.cloud_top = fmax(self.cloud_top, self.Gr.z_half[k])
+                self.cloud_cover = fmax(self.cloud_cover, self.CF.values[k]*self.Area.values[k])
+
+
+        return
+
 
 cdef class EnvironmentThermodynamics:
     def __init__(self, namelist, paramlist, Grid Gr, ReferenceState Ref, EnvironmentVariables EnvVar):

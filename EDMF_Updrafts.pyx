@@ -68,7 +68,7 @@ cdef class UpdraftVariables:
             Py_ssize_t i, k
 
         self.W = UpdraftVariable(nu, nzg, 'full', 'velocity', 'w','m/s' )
-        self.Area = UpdraftVariable(nu, nzg, 'full', 'scalar', 'area_fraction','[-]' )
+        self.Area = UpdraftVariable(nu, nzg, 'half', 'scalar', 'area_fraction','[-]' )
         self.QT = UpdraftVariable(nu, nzg, 'half', 'scalar', 'qt','kg/kg' )
         self.QL = UpdraftVariable(nu, nzg, 'half', 'scalar', 'ql','kg/kg' )
         self.QR = UpdraftVariable(nu, nzg, 'half', 'scalar', 'qr','kg/kg' )

@@ -10,7 +10,7 @@ from ReferenceState cimport ReferenceState
 from ForcingReference cimport ForcingReferenceBase
 from Variables cimport GridMeanVariables
 from forcing_functions cimport  convert_forcing_entropy, convert_forcing_thetal
-
+import pylab as plt
 cdef class NudgingBase:
     def __init__(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV):
         self.Gr = Gr
@@ -65,6 +65,12 @@ cdef class NudgingStandard(NudgingBase):
                         self.v_tendency[k] = self.relax_coeff[k] * (self.v_ref[k] - GMV.V.values[k])
                         GMV.U.tendencies[k] += self.u_tendency[k]
                         GMV.V.tendencies[k] += self.v_tendency[k]
+
+        #
+        # plt.figure('nudge')
+        # plt.plot(self.t_tendency[self.Gr.gw:self.Gr.nzg-self.Gr.gw], self.Ref.p0_half[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        # plt.plot(self.h_tendency[self.Gr.gw:self.Gr.nzg-self.Gr.gw], self.Ref.p0_half[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        # plt.gca().invert_yaxis()
         return
 
 

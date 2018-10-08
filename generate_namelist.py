@@ -399,11 +399,11 @@ def ZGILS_S12():
 
     namelist['thermodynamics'] = {}
     namelist['thermodynamics']['thermal_variable'] = 'thetal'
-    namelist['thermodynamics']['saturation'] = 'sa_mean'  # sa_mean, sa_quadrature, sommeria_deardorff
+    namelist['thermodynamics']['saturation'] = 'sa_quadrature'  # sa_mean, sa_quadrature, sommeria_deardorff
 
     namelist['time_stepping'] = {}
-    namelist['time_stepping']['dt'] = 10.0
-    namelist['time_stepping']['t_max'] = 86400.0 * 10
+    namelist['time_stepping']['dt'] = 60.0
+    namelist['time_stepping']['t_max'] = 86400.0 * 20
 
     namelist['turbulence'] = {}
     namelist['turbulence']['scheme'] = 'EDMF_PrognosticTKE'
@@ -415,14 +415,15 @@ def ZGILS_S12():
     namelist['turbulence']['EDMF_PrognosticTKE']['use_similarity_diffusivity'] = False
     namelist['turbulence']['EDMF_PrognosticTKE']['extrapolate_buoyancy'] = True
     #namelist['turbulence']['EDMF_PrognosticTKE']['constant_area'] = False
-    #namelist['turbulence']['EDMF_PrognosticTKE']['calc_scalar_var'] = True
+    namelist['turbulence']['EDMF_PrognosticTKE']['calc_scalar_var'] = True
+    namelist['turbulence']['EDMF_PrognosticTKE']['calc_tke'] = True
 
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['frequency'] = 60.0
+    namelist['stats_io']['frequency'] = 1800.0
 
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'ZGILS_S12'
@@ -453,11 +454,11 @@ def ZGILS_S11():
 
     namelist['thermodynamics'] = {}
     namelist['thermodynamics']['thermal_variable'] = 'thetal'
-    namelist['thermodynamics']['saturation'] = 'sa_mean'  # sa_mean, sa_quadrature, sommeria_deardorff
+    namelist['thermodynamics']['saturation'] = 'sa_quadrature'  # sa_mean, sa_quadrature, sommeria_deardorff
 
     namelist['time_stepping'] = {}
-    namelist['time_stepping']['dt'] = 10.0
-    namelist['time_stepping']['t_max'] = 86400.0 * 10
+    namelist['time_stepping']['dt'] = 60.0
+    namelist['time_stepping']['t_max'] = 86400.0 * 20
 
     namelist['turbulence'] = {}
     namelist['turbulence']['scheme'] = 'EDMF_PrognosticTKE'
@@ -469,14 +470,15 @@ def ZGILS_S11():
     namelist['turbulence']['EDMF_PrognosticTKE']['use_similarity_diffusivity'] = False
     namelist['turbulence']['EDMF_PrognosticTKE']['extrapolate_buoyancy'] = True
     # namelist['turbulence']['EDMF_PrognosticTKE']['constant_area'] = False
-    # namelist['turbulence']['EDMF_PrognosticTKE']['calc_scalar_var'] = True
+    namelist['turbulence']['EDMF_PrognosticTKE']['calc_scalar_var'] = True
+    namelist['turbulence']['EDMF_PrognosticTKE']['calc_tke'] = True
 
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['frequency'] = 60.0
+    namelist['stats_io']['frequency'] = 1800.0
 
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'ZGILS_S11'
@@ -505,11 +507,11 @@ def ZGILS_S6():
 
     namelist['thermodynamics'] = {}
     namelist['thermodynamics']['thermal_variable'] = 'thetal'
-    namelist['thermodynamics']['saturation'] = 'sa_mean'  # sa_mean, sa_quadrature, sommeria_deardorff
+    namelist['thermodynamics']['saturation'] = 'sa_quadrature'  # sa_mean, sa_quadrature, sommeria_deardorff
 
     namelist['time_stepping'] = {}
-    namelist['time_stepping']['dt'] = 10.0
-    namelist['time_stepping']['t_max'] = 86400.0 * 10
+    namelist['time_stepping']['dt'] = 60.0
+    namelist['time_stepping']['t_max'] = 86400.0 * 20
 
     namelist['turbulence'] = {}
     namelist['turbulence']['scheme'] = 'EDMF_PrognosticTKE'
@@ -521,14 +523,15 @@ def ZGILS_S6():
     namelist['turbulence']['EDMF_PrognosticTKE']['use_similarity_diffusivity'] = False
     namelist['turbulence']['EDMF_PrognosticTKE']['extrapolate_buoyancy'] = True
     # namelist['turbulence']['EDMF_PrognosticTKE']['constant_area'] = False
-    # namelist['turbulence']['EDMF_PrognosticTKE']['calc_scalar_var'] = True
+    namelist['turbulence']['EDMF_PrognosticTKE']['calc_scalar_var'] = True
+    namelist['turbulence']['EDMF_PrognosticTKE']['calc_tke'] = True
 
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['frequency'] = 60.0
+    namelist['stats_io']['frequency'] = 1800.0
 
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'ZGILS_S16'

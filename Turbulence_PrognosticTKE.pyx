@@ -699,6 +699,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 for k in xrange(self.Gr.nzg-1):
                     val1 = 1.0/(1.0-self.UpdVar.Area.bulkvalues[k])
                     val2 = self.UpdVar.Area.bulkvalues[k] * val1
+                    self.EnvVar.Area.values[k] = 1.0 - self.UpdVar.Area.bulkvalues[k]
                     self.EnvVar.QT.values[k] = val1 * GMV.QT.values[k] - val2 * self.UpdVar.QT.bulkvalues[k]
                     self.EnvVar.H.values[k] = val1 * GMV.H.values[k] - val2 * self.UpdVar.H.bulkvalues[k]
                     # Have to account for staggering of W--interpolate area fraction to the "full" grid points
@@ -726,7 +727,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 for k in xrange(self.Gr.nzg-1):
                     val1 = 1.0/(1.0-self.UpdVar.Area.bulkvalues[k])
                     val2 = self.UpdVar.Area.bulkvalues[k] * val1
-
+                    self.EnvVar.Area.values[k] = 1.0 - self.UpdVar.Area.bulkvalues[k]
                     self.EnvVar.QT.values[k] = val1 * GMV.QT.mf_update[k] - val2 * self.UpdVar.QT.bulkvalues[k]
                     self.EnvVar.H.values[k] = val1 * GMV.H.mf_update[k] - val2 * self.UpdVar.H.bulkvalues[k]
                     # Have to account for staggering of W
@@ -759,10 +760,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         with nogil:
             for k in xrange(self.Gr.nzg):
                 interp_w_diff = interp2pt(we.values[k-1]-gmv_w[k-1],we.values[k]-gmv_w[k])
-                gmv_tke[k] = ae[k] * interp_w_diff * interp_w_diff + ae[k] * tke_e.values[k]
+                gmv_tke[k] = ae[k] * 0.5 * interp_w_diff * interp_w_diff + ae[k] * tke_e.values[k]
                 for i in xrange(self.n_updrafts):
                     interp_w_diff = interp2pt(wu.values[i,k-1]-gmv_w[k-1],wu.values[i,k]-gmv_w[k])
-                    gmv_tke[k] += au.values[i,k] *interp_w_diff * interp_w_diff
+                    gmv_tke[k] += au.values[i,k] * 0.5 *interp_w_diff * interp_w_diff
         return
 
 
@@ -779,11 +780,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for k in xrange(self.Gr.nzg):
                 if ae[k] > 0.0:
                     interp_w_diff = interp2pt(we.values[k-1]-gmv_w[k-1],we.values[k]-gmv_w[k])
-                    tke_e.values[k] = gmv_tke[k] - ae[k] * interp_w_diff * interp_w_diff
+                    tke_e.values[k] = gmv_tke[k] - ae[k] * 0.5 * interp_w_diff * interp_w_diff
 
                     for i in xrange(self.n_updrafts):
                         interp_w_diff = interp2pt(wu.values[i,k-1]-gmv_w[k-1],wu.values[i,k]-gmv_w[k])
-                        tke_e.values[k] -= au.values[i,k] *interp_w_diff * interp_w_diff
+                        tke_e.values[k] -= au.values[i,k] * 0.5 * interp_w_diff * interp_w_diff
                     tke_e.values[k] = tke_e.values[k]/ae[k]
                 else:
                     tke_e.values[k] = 0.0

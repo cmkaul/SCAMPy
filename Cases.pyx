@@ -1671,19 +1671,28 @@ cdef class ZGILS(CasesBase):
         return
     cpdef update_forcing(self, GridMeanVariables GMV, TimeStepping TS):
         cdef:
-            double z_h, factor
+            double z_h, factor, tau_hr
         self.Fo.update(GMV)
         # Update relaxation coefficients
         # Do the nudging (call self.Nud.update)
-        self.h_bl = self.Fo.Gr.z_half[self.Fo.Gr.nzg-self.Fo.Gr.gw]
+        self.h_bl = self.Fo.Ref.p0_half[self.Fo.Gr.nzg-self.Fo.Gr.gw]
         for k in xrange(self.Fo.Gr.nzg-self.Fo.Gr.gw, self.Fo.Gr.gw-1, -1):
             if GMV.QT.values[k] < self.alpha_h * self.Nud.qt_ref[k]:
-                self.h_bl = self.Fo.Gr.z_half[k]
+                #self.h_bl = self.Fo.Gr.z_half[k]
+                self.h_bl = self.Fo.Ref.p0_half[k]
 
         for k in xrange(self.Fo.Gr.nzg):
-            z_h = self.Fo.Gr.z_half[k]/self.h_bl
-            factor =fmax(fmin((z_h-1.2)/0.3, 1.0), 0.0)
-            self.Nud.relax_coeff[k] = 0.5 * self.tau_relax_inverse * (1-cos(factor))
+            # z_h = self.Fo.Gr.z_half[k]/self.h_bl
+            if self.Fo.Ref.p0_half[k] > self.h_bl:
+                self.Nud.relax_coeff[k] = 0.0
+            elif self.Fo.Ref.p0_half[k] < 500.0e2:
+                self.Nud.relax_coeff[k] = 1.0/(0.25*3600.0)
+            else:
+                tau_hr = (24.0-0.25)* (self.Fo.Ref.p0_half[k]-500e2)/(self.h_bl-500.0e2) + 0.25
+                self.Nud.relax_coeff[k] = 1.0/(tau_hr*3600.0)
+            # factor =fmax(fmin((z_h-1.2)/0.3, 1.0), 0.0)
+            # self.Nud.relax_coeff[k] = 0.5 * self.tau_relax_inverse * (1-cos(factor))
+
         self.Nud.update(GMV)
 
 
